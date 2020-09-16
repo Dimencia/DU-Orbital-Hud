@@ -6,12 +6,12 @@ Currently only compatible with a hoverseat, I'm not sure why yet.
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
 
 # Usage
-Before you begin, save your current seat config if you wish.  Due to a bug with pasting, first right click your seat -> Advanced -> Edit Lua Configuration.  Take a screenshot or write down the names on the left, as shown here, starting after unit: 
+Before you begin, save your current seat config if you wish.  Due to a bug with pasting, first right click your seat -> Advanced -> Edit Lua Configuration.  Take a screenshot or write down the blue names on the left, as shown here, starting after unit: 
 ![Example](Capture.PNG)
 
 Then copy the contents of HoverSeat file above, and right click the seat, then Advanced -> Paste Lua Configuration from Clipboard
 
-Once this is done, you need to put the names back to how they were.  As you can see in the above screenshot, if anything was changed to say 'slot4' 'slot5' etc, those will cause script errors if the names are not fixed
+Once this is done, you need to put the names back to how they were.  As you can see in the above screenshot example, some slots may be changed to say 'slot4' 'slot5' etc, those will cause script errors if the names are not fixed
 
 Otherwise no gyro or any other components required, that should do it.
 
