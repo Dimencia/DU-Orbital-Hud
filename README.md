@@ -7,7 +7,7 @@ If you wish to save your current config, right click your seat and Copy Lua Conf
 
 # Usage
 Before you begin, save your current seat config if you wish.  Due to a bug with pasting, first right click your seat -> Advanced -> Edit Lua Configuration.  Take a screenshot or write down the names on the left, as shown here, starting after unit: 
-![Example](Capture.png)
+![Example](Capture.PNG)
 
 Then copy the contents of HoverSeat file above, and right click the seat, then Advanced -> Paste Lua Configuration from Clipboard
 
