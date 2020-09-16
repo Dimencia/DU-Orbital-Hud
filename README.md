@@ -6,9 +6,14 @@ Currently only compatible with a hoverseat, I'm not sure why yet.
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
 
 # Usage
-Copy the contents of HoverSeat file above, and right click the seat, the Paste Lua Configuration from Clipboard
+Before you begin, save your current seat config if you wish.  Due to a bug with pasting, first right click your seat -> Advanced -> Edit Lua Configuration.  Take a screenshot or write down the names on the left, as shown here, starting after unit: 
+![Example](Capture.png)
 
-That's it, it should work out of the box.  No gyro or any other components required.
+Then copy the contents of HoverSeat file above, and right click the seat, then Advanced -> Paste Lua Configuration from Clipboard
+
+Once this is done, you need to put the names back to how they were.  As you can see in the above screenshot, if anything was changed to say 'slot4' 'slot5' etc, those will cause script errors if the names are not fixed
+
+Otherwise no gyro or any other components required, that should do it.
 
 # Warnings
 If you are in atmosphere, the Max Brake Distance listed on the Interplanetary widget will be inaccurate, since it will be using your atmospheric brakes to calculate.  Once you enter space, it should be accurate.
