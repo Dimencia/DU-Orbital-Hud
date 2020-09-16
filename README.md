@@ -1,17 +1,19 @@
 ## DU-Orbital-Hud
 Dual Universe HUD with orbital information, braking distances, and Rezoix's pitch/roll hud with some fixes
+Works with Command Seat and Hover Seat, not Cockpit
 
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
 
 # Usage
-Before you begin, save your current seat config if you wish.  Due to a bug with pasting, first right click your seat -> Advanced -> Edit Lua Configuration.  Take a screenshot or write down the blue names on the left, as shown here, starting after unit: 
-![Example](Capture.PNG)
+Click on **D_flying_construct_HUD.conf** above.  On the top right, right click the 'RAW' button and click Save Link As...
 
-Then copy the contents of HoverSeat file above, and right click the seat, then Advanced -> Paste Lua Configuration from Clipboard
+Save the file to %ProgramData%\Dual Universe\Game\data\lua\autoconf\custom, the filename does not matter (as long as it's still .conf)
 
-Once this is done, you need to put the names back to how they were.  As you can see in the above screenshot example, some slots may be changed to say 'slot4' 'slot5' etc, those will cause script errors if the names are not fixed.  **You must put them back exactly the same, in the same order**
 
-Otherwise no gyro or any other components required, that should do it.
+In-game, right click your seat and go to Advanced -> Update custom autoconf list
+Then Advanced -> Run Custom Autoconfigure -> D's Flying Construct with HUD
+
+This should set everything up and you're good to go
 
 # Warnings
 If you are in atmosphere, the Max Brake Distance listed on the Interplanetary widget will be inaccurate, since it will be using your atmospheric brakes to calculate.  Once you enter space, it should be accurate.
