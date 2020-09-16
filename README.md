@@ -10,8 +10,9 @@ Click on **D_flying_construct_HUD.conf** above.  On the top right, right click t
 Save the file to *%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom*, the filename does not matter (as long as it's still .conf)
 
 
-In-game, right click your seat and go to Advanced -> Update custom autoconf list
-Then Advanced -> Run Custom Autoconfigure -> D's Flying Construct with HUD
+In-game, right click your seat and go to *Advanced -> Update custom autoconf list*
+
+Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct with HUD*
 
 This should set everything up and you're good to go
 
