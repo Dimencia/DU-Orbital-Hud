@@ -7,7 +7,7 @@ If you wish to save your current config, right click your seat and Copy Lua Conf
 # Usage
 Click on **D_flying_construct_HUD.conf** above.  On the top right, right click the 'RAW' button and click Save Link As...
 
-Save the file to %ProgramData%\Dual Universe\Game\data\lua\autoconf\custom, the filename does not matter (as long as it's still .conf)
+Save the file to *%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom*, the filename does not matter (as long as it's still .conf)
 
 
 In-game, right click your seat and go to Advanced -> Update custom autoconf list
