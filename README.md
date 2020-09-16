@@ -14,7 +14,7 @@ That's it, it should work out of the box.  No gyro or any other components requi
 If you are in atmosphere, the Max Brake Distance listed on the Interplanetary widget will be inaccurate, since it will be using your atmospheric brakes to calculate.  Once you enter space, it should be accurate.
 
 ## Controls
-Alt+1 and Alt+2 (Option1 and Option2) to scroll between target planets for the Interplanetary Helper.  This widget will not display if no planet is selected
+Alt+1 and Alt+2 (Option1 and Option2) to scroll between target planets for the Interplanetary Helper.  This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
 
 ## Customization
 You may edit the R,G,B LUA parameters to set the main color of the HUD
