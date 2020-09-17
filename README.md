@@ -32,7 +32,7 @@ It cannot detect if there is a planet in the way.  It'll just go for it.
 ## Autopilot is relatively untested, use with supervision
 
 ## Controls
-**Alt+1** and **Alt+2** (Option1 and Option2) **to scroll between target planets for the Interplanetary Helper**.  This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
+**Alt+1** and **Alt+2** (Option1 and Option2) **to scroll between target planets for Autopilot and display**.  This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
 
 **Alt+3** to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with Alt+1 and Alt+2, and disengage it once it's gotten as close to an orbit as it can just by braking.  This is an alternative to auto-pilot if you don't want to give the autopilot control over where your ship is facing or thrusters
 
