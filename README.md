@@ -67,3 +67,9 @@ The following LUA parameters were added
 
 **Turn & Burn** - Use Alt+5 to toggle Turn & Burn mode, which changes all your readouts to assume you will turn and burn when braking, and sets autopilot to turn and burn for you.  
 **NOTE** This is absolutely untested.  I mean, the math checks out and the code hasn't given me any errors yet.  But I haven't had a reason to leave the planet and try it
+
+
+### Credits
+
+Rezoix and his HUD - https://github.com/Rezoix/DU-hud
+JayleBreak and his orbital maths/atlas - https://gitlab.com/JayleBreak/dualuniverse/-/tree/master/DUflightfiles/autoconf/custom
