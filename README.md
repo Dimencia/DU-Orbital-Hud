@@ -21,12 +21,15 @@ If you are in atmosphere, the Max Brake Distance listed on the Interplanetary wi
 
 The autopilot is relatively untested at this stage.  Do not rely on it if you go AFK, and let me know of any issues you encounter with it.
 
-**Do not engage the autopilot if you do not have clear line of sight to the target.**  It cannot detect if there is a planet in the way.  It'll just go for it.
+# Do not engage the autopilot if you do not have clear line of sight to the target
+
+It cannot detect if there is a planet in the way.  It'll just go for it.
 
 ## Controls
-Alt+1 and Alt+2 (Option1 and Option2) to scroll between target planets for the Interplanetary Helper.  This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
-Alt+3 to engage Auto-Brake.  This will simply engage the brake if you come within the max braking distance of the planet targeted with Alt+1 and Alt+2, and disengage it once it's gotten as close to an orbit as it can just by braking.  
-Alt+4 to engage Autopilot for interplanetary travel, if you are in space and have a planet targeted with Alt+1/Alt+2.  Ensure you have a clear line of sight to the target.  This will align to the target, realign slightly to point 200km to the side of the target, accelerate, cut engines when at max, start braking when appropriate, and hopefully achieve a stable orbit around the target.
+**Alt+1** and **Alt+2** (Option1 and Option2) **to scroll between target planets for the Interplanetary Helper**.  This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
+
+**Alt+3** to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with Alt+1 and Alt+2, and disengage it once it's gotten as close to an orbit as it can just by braking.  
+**Alt+4** to engage **Autopilot** for interplanetary travel, if you are in space and have a planet targeted with Alt+1/Alt+2.  Ensure you have a clear line of sight to the target.  This will align to the target, realign slightly to point 200km to the side of the target, accelerate, cut engines when at max, start braking when appropriate, and hopefully achieve a stable orbit around the target.
 
 ## Customization
 The following LUA parameters were added
