@@ -29,7 +29,7 @@ It cannot detect if there is a planet in the way.  It'll just go for it.
 
 ## Turn & Burn is extremely untested, use with supervision
 
-## Autopilot is relatively untested, use with supervision
+## Autopilot is mostly tested, but you should use with supervision; in current state I can't guarantee it will achieve a stable orbit
 
 ## Controls
 **Alt+1** and **Alt+2** (Option1 and Option2) **to scroll between target planets for Autopilot and display**.  This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
