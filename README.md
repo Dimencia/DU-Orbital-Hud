@@ -43,6 +43,8 @@ It cannot detect if there is a planet in the way.  It'll just go for it.
 
 **Alt+5** to toggle **Turn & Burn Mode**, which changes all your braking readouts to assume you will be turning and burning.  Be sure to set *warmup* in the Parameters if you use this; the default warmup is assumed to be 32s.  Autopilot will also turn and burn for you (Auto-Braking will not).  Note that Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
 
+**Alt+6** to toggle **Fuel Widgets On and Off** - Results in a cleaner hud if you dont need fuel status
+
 ## Customization
 The following LUA parameters were added
 
