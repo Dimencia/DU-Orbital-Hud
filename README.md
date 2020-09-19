@@ -8,14 +8,14 @@ Works with Command Seat and Hover Seat, not Cockpit
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
 
 # Usage
-Click on **D_flying_construct_MIN_HUD.conf** or FULL_HUD above.  MIN_HUD just gets rid of the extra UI clutter near the cursor on the Rezoix hud, the widgets are the same between them.  On the top right, right click the 'RAW' button and click Save Link As...
+Click on **D_flying_construct_FULL_HUD.conf** or FULL_HUD above.  On the top right, right click the 'RAW' button and click Save Link As...
 
 Save the file to *%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom*, the filename does not matter (as long as it's still .conf)
 
 
 In-game, right click your seat and go to *Advanced -> Update custom autoconf list*
 
-Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct with HUD*
+Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct with HUD Archaegeo V1*
 
 This should set everything up and you're good to go
 
