@@ -8,7 +8,7 @@ Works with Command Seat and Hover Seat, not Cockpit
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
 
 # Usage
-Click on **D_flying_construct_FULL_HUD.conf** or FULL_HUD above.  On the top right, right click the 'RAW' button and click Save Link As...
+Click on **D_flying_construct_MIN_HUD.conf** or **Archaego_HUD** above.  Archaego HUD has a lot of extra HUD features, such as altitude and speed meters.  On the top right, right click the 'RAW' button and click Save Link As...
 
 Save the file to *%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom*, the filename does not matter (as long as it's still .conf)
 
