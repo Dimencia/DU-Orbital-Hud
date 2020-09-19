@@ -8,14 +8,14 @@ Works with Command Seat and Hover Seat, not Cockpit
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
 
 # Usage
-Click on **D_flying_construct_MIN_HUD.conf** or FULL_HUD above.  MIN_HUD just gets rid of the extra UI clutter near the cursor on the Rezoix hud, the widgets are the same between them.  On the top right, right click the 'RAW' button and click Save Link As...
+Click on **D_flying_construct_FULL_HUD.conf** or FULL_HUD above.  On the top right, right click the 'RAW' button and click Save Link As...
 
 Save the file to *%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom*, the filename does not matter (as long as it's still .conf)
 
 
 In-game, right click your seat and go to *Advanced -> Update custom autoconf list*
 
-Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct with HUD*
+Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct with HUD Archaegeo V1*
 
 This should set everything up and you're good to go
 
@@ -42,6 +42,8 @@ It cannot detect if there is a planet in the way.  It'll just go for it.
 **Alt+4** to engage **Autopilot** for interplanetary travel, if you are in space and have a planet targeted with Alt+1/Alt+2.  Ensure you have a clear line of sight to the target.  This will align to the target, realign slightly to point 200km to the side of the target, accelerate, cut engines when at max, start braking when appropriate, and hopefully achieve a stable orbit around the target.
 
 **Alt+5** to toggle **Turn & Burn Mode**, which changes all your braking readouts to assume you will be turning and burning.  Be sure to set *warmup* in the Parameters if you use this; the default warmup is assumed to be 32s.  Autopilot will also turn and burn for you (Auto-Braking will not).  Note that Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
+
+**Alt+6** to toggle **Fuel Widgets On and Off** - Results in a cleaner hud if you dont need fuel status
 
 ## Customization
 The following LUA parameters were added
