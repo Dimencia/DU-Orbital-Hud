@@ -2,7 +2,7 @@
 
 ![Example](/ButtonHUD_example_1.png)
 
-Dual Universe HUD and autopilot with orbital information, braking distances, and Rezoix's pitch/roll hud with some fixes and major adjustments.
+Dual Universe HUD, custom control scheme, and autopilot with orbital information, braking distances, and Rezoix's pitch/roll hud with some fixes and major adjustments.  Includes a virtual joystick implementation that doesn't have the giant white circle around it.
 
 Option to hide the widget displaying speed, since all important information from that widget is displayed on the HUD
 
