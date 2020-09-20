@@ -12,7 +12,7 @@ If you wish to save your current config, right click your seat and Copy Lua Conf
 
 ## Version Information
 
-The newest ButtonHUD version includes Archeageo's HUD updates, as well as new capability like aligning to prograde and retrograde, a button system, and will continue to receive updates.
+The newest ButtonHUD version includes Archeageo's HUD updates, as well as new capability like aligning to prograde and retrograde, a button system, and will continue to receive updates.  The older versions are being updated only to fix bugs, and are available in the Legacy branch
 
 # Usage
 Click on **buttonHUD.conf** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  On the top right, right click the 'RAW' button and click Save Link As...
