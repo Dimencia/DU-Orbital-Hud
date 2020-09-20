@@ -50,6 +50,10 @@ While holding Shift, press **R/T** (speedup/speeddown) to cycle between autopilo
 
 Auto-Brake is not on the UI this version; it is unreliable because it is unable to align your trajectory, and tends to over-brake if it's not perfectly aligned.  Use Autopilot if you need auto-brake, so that it can align properly.  Auto-brake is still accessible on **Alt+3** if you want it.
 
+**Alt** is now a toggle for free-look.  Because of the way we had to use Keyboard mode, it can't re-center when you lock it back, but that can be desirable in some situations
+
+If you need to zoom out in 3rd person view, you must toggle free-look because the game will not recognize Shift when it's being used for the UI
+
 **Turn & Burn Mode** is still accessible with **Alt+5** (will be added to UI soon)
 
 ## Controls - MINHUD and Archeageo HUD
