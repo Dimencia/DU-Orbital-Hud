@@ -102,6 +102,8 @@ The following LUA parameters were added
 
 **Auto-Land on Gear Down** - Putting down your landing gear sets your hover height to 0, raising it sets it to max.  Entering a vehicle with gear down sets the height to 0, entering a vehicle with the gear up sets it to max
 
+**Door/Ramp Automation** - Automatically closes doors/ramps when entering, and opens them when exiting.  May require you to link these to the seat
+
 **(ButtonHUD) Buttons and custom controls** - Custom implementations of virtual joystick and mouse controls, allowing you to use virtual joystick without that disgusting giant circle on your screen.  Buttons to use many of the features.
 
 ### Credits
