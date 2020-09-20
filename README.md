@@ -25,7 +25,7 @@ In-game, right click your seat and go to *Advanced -> Update custom autoconf lis
 
 Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct - Buttons + Archeageo*
 
-By default the HUD overwrites the in game Control Schemes.  You might right click the seat and set the control scheme to Keyboard.  Then look at the seat and hit left CTRL-L to enter lua edit mode.  Click on Unit and then Tick("APTick").  The top line lets you define your control scheme as Virtual Joystick, Mouse, or Keyboard.
+By default the HUD overwrites the in game Control Schemes.  You must right click the seat and set the control scheme to Keyboard.  Then look at the seat and choose Advanced-Edit LUA Parameters.  Mouse over each for a description, but the major one is userControlScheme.  You may set it to "Virtual Joystick" (which is the default), "Mouse", or "Keyboard".
 
 This should set everything up and you're good to go
 
