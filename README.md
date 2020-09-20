@@ -11,21 +11,20 @@ Works with Command Seat and Hover Seat, not Cockpit
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
 
 ## Version Information
-MINHUD and Archeageo HUD are working versions that aren't likely to receive further improvements; everything is accessible by hotkeys.  
 
-The newest ButtonHUD version includes Archeageo's HUD, as well as new capability like aligning to prograde and retrograde, a button system, and will continue to receive updates.
+The newest ButtonHUD version includes Archeageo's HUD updates, as well as new capability like aligning to prograde and retrograde, a button system, and will continue to receive updates.
 
 # Usage
-Click on **D_flying_construct_MIN_HUD.conf** or **flying_construct_Archeago_Hud.conf** or **buttonHUD.conf** above.  Archaego HUD has a lot of extra HUD features, such as altitude and speed meters.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  On the top right, right click the 'RAW' button and click Save Link As...
+Click on **buttonHUD.conf** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  On the top right, right click the 'RAW' button and click Save Link As...
 
 Save the file to *%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom*, the filename does not matter (as long as it's still .conf)
 
 
 In-game, right click your seat and go to *Advanced -> Update custom autoconf list*  - If you get a YAML error, you did not follow the above directions corretly.
 
-Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct - Buttons + Archeageo*
+Then *Advanced -> Run Custom Autoconfigure -> ButtonsHud - Dimencia and Archaegeo*
 
-By default the HUD overwrites the in game Control Schemes.  You must right click the seat and set the control scheme to Keyboard.  Then look at the seat and choose Advanced-Edit LUA Parameters.  Mouse over each for a description, but the major one is userControlScheme.  You may set it to "Virtual Joystick" (which is the default), "Mouse", or "Keyboard".
+By default the HUD overwrites the in game flight Control Schemes.  You must right click the seat and set the control scheme to Keyboard.  Then look at the seat and choose Advanced-Edit LUA Parameters.  Mouse over each for a description, but the major one is userControlScheme.  You may set it to "Virtual Joystick" (which is the default), "Mouse", or "Keyboard".
 
 This should set everything up and you're good to go
 
