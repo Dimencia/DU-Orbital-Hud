@@ -21,9 +21,11 @@ Click on **D_flying_construct_MIN_HUD.conf** or **flying_construct_Archeago_Hud.
 Save the file to *%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom*, the filename does not matter (as long as it's still .conf)
 
 
-In-game, right click your seat and go to *Advanced -> Update custom autoconf list*
+In-game, right click your seat and go to *Advanced -> Update custom autoconf list*  - If you get a YAML error, you did not follow the above directions corretly.
 
-Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct with HUD Archaegeo V1*
+Then *Advanced -> Run Custom Autoconfigure -> D's Flying Construct - Buttons + Archeageo*
+
+By default the HUD overwrites the in game Control Schemes.  You might right click the seat and set the control scheme to Keyboard.  Then look at the seat and hit left CTRL-L to enter lua edit mode.  Click on Unit and then Tick("APTick").  The top line lets you define your control scheme as Virtual Joystick, Mouse, or Keyboard.
 
 This should set everything up and you're good to go
 
