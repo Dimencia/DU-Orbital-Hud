@@ -1,6 +1,6 @@
 ## DU-Orbital-Hud
 
-![Example](/MINHUD%20example.png)
+![Example](/ButtonHUD_example_1.png)
 
 Dual Universe HUD and autopilot with orbital information, braking distances, and Rezoix's pitch/roll hud with some fixes
 Works with Command Seat and Hover Seat, not Cockpit
@@ -41,6 +41,8 @@ It cannot detect if there is a planet in the way.  It'll just go for it.
 
 ## Controls/Info - ButtonHUD
 This HUD uses on-screen buttons, and so needs to be able to use your mouse.  The only way to keep DU from trying to use your mouse for input is to set the Control Scheme to Keyboard.  You can then right click the seat, *Advanced -> Edit LUA Parameters* and find the checkboxes to choose which control scheme you would actually like to use.
+
+![ButtonHUD Example](/ButtonHUD_example_2.png)
 
 The usual hotkeys from the MINHUD versions apply, but it should be easier to use the new button system.
 
