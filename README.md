@@ -48,13 +48,15 @@ It cannot detect if there is a planet in the way.  It'll just go for it.
 ## Customization
 The following LUA parameters were added
 
-*PrimaryR*, *PrimaryG*, *PrimaryB* - To set the primary color for the Rezoix HUD
+*PrimaryR*, *PrimaryG*, *PrimaryB* - To set the primary color for the HUD
 
 *AutopilotStrength*, *DampingMultiplier* - If you find the autopilot is aligning too slowly, you can try increasing the strength.  If it overshoots and has to realign, you can try increasing the DampingMultiplier.  Note that, when going at max speed, ships seem to turn much slower than normal as a whole, and while traveling the target will be moving constantly, so it may bounce from the target slightly even with good settings.  
 
 *alignmentTolerance* - How closely the ship must align to the target planet before it considers itself 'aligned'.  On ships with low torque, it may take a very long time to align with small values, but smaller values help ensure there is less error over the large distances it will be traveling
 
 *warmup* - How long your engines take to warmup, or T50.  Defaults to 32.  For everything but freight engines, these values for space engines are: XS 0.25, S 1, M 4, L 16, XL 32.  If you're using freight engines, you should probably check https://hq.hyperion-corporation.de/ingame-engine-library
+
+*circleRad* - to set the size of the altimeter circle in the middle of the screen, setting it to 0 will remove the circle.
 
 ### Features
 **Rezoix HUD** (i.e. pitch/roll/yaw indicators), with LUA-parameter RGB values so you can set the base color, and with fixes (yaw is displayed in space properly instead of pitch, throttle indicator is fixed, gyro no longer required) - https://github.com/Rezoix/DU-hud
