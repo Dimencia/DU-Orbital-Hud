@@ -2,7 +2,10 @@
 
 ![Example](/ButtonHUD_example_1.png)
 
-Dual Universe HUD and autopilot with orbital information, braking distances, and Rezoix's pitch/roll hud with some fixes
+Dual Universe HUD and autopilot with orbital information, braking distances, and Rezoix's pitch/roll hud with some fixes and major adjustments.
+
+Option to hide the widget displaying speed, since all important information from that widget is displayed on the HUD
+
 Works with Command Seat and Hover Seat, not Cockpit
 
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
