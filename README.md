@@ -37,6 +37,8 @@ Note that Turn & Burn Mode assumes your ship will be able to face the correct di
 
 ### When your gear is extended, your hover height is set to 0.  This helps with landings but don't attempt to put out your gear before you're hovering on the surface.  There is a warning if the gear is extended
 
+## Autopilot may be unstable for short range trips (<2SU or so), and will almost certainly send you through atmosphere if you're too close to the target
+
 # Do not engage the autopilot if you do not have clear line of sight to the target
 
 It cannot detect if there is a planet in the way.  It'll just go for it.
