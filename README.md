@@ -87,6 +87,7 @@ AutopilotTargetOrbit
 brakeToggle
 apTickRate
 freeLookToggle
+PrimaryR, PrimaryG, PrimaryB
 
 ## Customization
 The following LUA parameters were added
