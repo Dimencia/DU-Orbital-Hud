@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 2.01 - Minor fixes
+- Fixed padding problems with orbit map
+- Fixed AutoBrake to use current brake instead of max brake
+
 Version 2.0 - MAJOR change to code, please report any issues.
 - Moved all system.start() code to unit.start()
 - Made HUD update rate editable with apTickRate in Edit Lua Parameters
