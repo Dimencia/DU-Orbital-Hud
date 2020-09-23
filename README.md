@@ -84,6 +84,9 @@ This feature will also load your values if you update the HUD autoconfigure to a
 ## Current Savable Variables
 userControlScheme
 AutopilotTargetOrbit
+brakeToggle
+apTickRate
+freeLookToggle
 
 ## Customization
 The following LUA parameters were added
