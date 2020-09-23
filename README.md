@@ -77,10 +77,13 @@ If you need to zoom out in 3rd person view, you must toggle free-look because th
 
 **Alt+6** to toggle **Unit and Fuel Widgets On and Off** - Results in a cleaner hud if you dont need fuel status
 
-**Alt+7** to **Save some variables in a databank** - To use:  Attach a databank to your ship in any locations.  Install the HUD autoconfigure like normal.  Change any variables able to be saved in Edit LUA Paremeters. Get in seat.  Hit ALT-7 to save.  These will now autoload anytime you get in seat.  To overwrite you must hit alt-7 to wipe the databank, then get out, change the values, get back in, and alt-7 to save the new values.  This will also load your values if you update the HUD autoconfigure to a new release or if you need to rerun it due to changes on your ship.
+**Alt+7** to **Save variables in a databank** - To use:  Attach a databank to your ship in any location.  Install the HUD autoconfigure like normal.  Change any variables able to be saved (shown below) using Edit LUA Paremeters. Get in seat.  Hit ALT-7 to save.  These will now autoload anytime you get in seat.  To overwrite you must hit alt-7 to wipe the databank, then get out, change the values, get back in, and alt-7 to save the new values.  
+
+This feature will also load your values if you update the HUD autoconfigure to a new release or if you need to rerun it due to changes on your ship unless the list of saved variables has changed.
 
 ## Current Savable Variables
 userControlScheme
+AutopilotTargetOrbit
 
 ## Customization
 The following LUA parameters were added
