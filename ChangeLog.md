@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 2.02 - Player Feedback
+- Added ability for messages to pop up on screen for limited time to provide user feedback.
+
 Version 2.01 - Minor fixes
 - Fixed padding problems with orbit map
 - Fixed AutoBrake to use current brake instead of max brake
