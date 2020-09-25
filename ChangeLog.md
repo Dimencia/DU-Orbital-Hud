@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top\
 
+Version 2.05 - Remote Controller
+- Updated HUD to recognize when a Remote Controller is used and move information out of the way
+
 Version 2.04 - Altimeter
 - Updated altimeter to not be so spastic by changing its scale.
 
