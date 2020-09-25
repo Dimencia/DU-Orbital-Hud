@@ -1,4 +1,15 @@
-## ChangeLog - Most recent changes at the top\
+## ChangeLog - Most recent changes at the top
+
+Version 3.0 - Follow her to school one day!
+- Added autofollow when on foot if using remote unit
+- Added ability to hide hud and still have all other features available. LALT-3
+- Moved AutoBrake to LAlt-9
+- LALT-6 now shows or hides all normal widgets (not radar, weapons, or periscope)
+- Added all variables shown in Advanced-Edit LUA Parameters to save values (25 now)
+
+Version 2.07 - Hide Hude
+- Added ability to not show (or calculate) hud but still use autopilot
+- Added autoRoll and showHud to saved variables.
 
 Version 2.06 - Follow Mode
 - Added follow mode to allow a remote controller to call their ship to them

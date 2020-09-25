@@ -69,17 +69,19 @@ If you need to zoom out in 3rd person view, you must toggle free-look because th
 ## Controls - MINHUD and Archeageo HUD
 **Alt+1** and **Alt+2** (Option1 and Option2) **to scroll between target planets for Autopilot and display**.  This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
 
-**Alt+3** to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with Alt+1 and Alt+2, and disengage it once it's gotten as close to an orbit as it can just by braking.  This is an alternative to auto-pilot if you don't want to give the autopilot control over where your ship is facing or thrusters
+**Alt+3 ** toggles the **HUD** off or back On.  Orbital display will still show if hud is off.
 
 **Alt+4** to engage **Autopilot** for interplanetary travel, if you are in space and have a planet targeted with Alt+1/Alt+2.  Ensure you have a clear line of sight to the target.  This will align to the target, realign slightly to point 200km to the side of the target, accelerate, cut engines when at max, start braking when appropriate, and hopefully achieve a stable orbit around the target.
 
 **Alt+5** to toggle **Turn & Burn Mode**, which changes all your braking readouts to assume you will be turning and burning.  Be sure to set *warmup* in the Parameters if you use this; the default warmup is assumed to be 32s.  Autopilot will also turn and burn for you (Auto-Braking will not).  Note that Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
 
-**Alt+6** to toggle **Unit and Fuel Widgets On and Off** - Results in a cleaner hud if you dont need fuel status
+**Alt+6** to toggle all **Normal Widgets**, does not include weapons, radar, or periscorpe
 
 **Alt+7** to **Save variables in a databank** - To use:  Attach a databank to your ship in any location.  Rerun the HUD Autoconfig. Change any variables able to be saved (shown below) using Edit LUA Paremeters. Get in seat.  Hit ALT-7 to save.  These will now autoload anytime you get in seat.  To overwrite you must hit alt-7 to wipe the databank, then get out, rerun Autoconfig, then change the values with Edit LUA Parameters, get back in, and alt-7 to save the new values.  
 
-**Alt+7** will toggle **Follow Mode** with a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.
+**Alt+8** will toggle **Follow Mode** with a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.
+
+**Alt+9** to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with Alt+1 and Alt+2, and disengage it once it's gotten as close to an orbit as it can just by braking.  This is an alternative to auto-pilot if you don't want to give the autopilot control over where your ship is facing or thrusters
 
 This feature will also load your values if you update the HUD autoconfigure to a new release or if you need to rerun it due to changes on your ship unless the list of saved variables has changed.
 
