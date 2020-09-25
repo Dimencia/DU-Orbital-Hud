@@ -1,8 +1,10 @@
 ## ChangeLog - Most recent changes at the top\
 
+Version 2.04 - Altimeter
+- Updated altimeter to not be so spastic by changing its scale.
+
 Version 2.03 - Save work
 - Updated saveable variables and ones that show in Edit LUA Parameters.  You will need to hit alt-7 to delete current and restave them
-
 
 Version 2.02 - Player Feedback
 - Added ability for messages to pop up on screen for limited time to provide user feedback.
