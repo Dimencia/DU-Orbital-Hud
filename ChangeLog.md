@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top\
 
+Version 2.06 - Follow Mode
+- Added follow mode to allow a remote controller to call their ship to them
+
 Version 2.05 - Remote Controller
 - Updated HUD to recognize when a Remote Controller is used and move information out of the way
 
