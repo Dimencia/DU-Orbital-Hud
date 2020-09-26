@@ -14,7 +14,7 @@ If you wish to save your current config, right click your seat and Copy Lua Conf
 
 ## Version Information
 
-The newest ButtonHUD version includes Archeageo's HUD updates, as well as new capability like aligning to prograde and retrograde, autopilot, autofollow, and more.
+Check the changelog file for information about the most recent changes.  This is updated very frequently.
 
 # Usage
 Click on **buttonHUD.conf** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  On the top right, right click the 'RAW' button and click Save Link As...
@@ -30,6 +30,8 @@ By default the HUD overwrites the in game flight Control Schemes.  You must righ
 
 This should set everything up and you're good to go
 
+You may manually connect doors or forcefields to the seat and it will remember them each time you configure it, and automatically open them when exiting the seat and close them when entering.  If the ship contains a databank, it will be connected to the seat for use with storing variables (but it will never truly clear a databank, so you can use the databank for other things as well)
+
 # Warnings
 
 Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
@@ -38,18 +40,18 @@ Turn & Burn Mode assumes your ship will be able to face the correct direction to
 
 ## Autopilot may be unstable for short range trips (<2SU or so), and will almost certainly send you through atmosphere if you're too close to the target
 
-# Do not engage the autopilot if you do not have clear line of sight to the target
+## Do not engage the autopilot if you do not have clear line of sight to the target
 
 It cannot detect if there is a planet in the way.  It'll just go for it.
 
 # Auto-Landing should be used with supervision.  It cannot detect mountains or cliffs in the way, and if you try to auto-takeoff from the thades scar, don't blame me
 
-## Controls/Info - ButtonHUD
+## Button Info
 This HUD uses on-screen buttons, and so needs to be able to use your mouse.  The only way to keep DU from trying to use your mouse for input is to set the Control Scheme to Keyboard.  You can then right click the seat, *Advanced -> Edit LUA Parameters* and find the checkboxes to choose which control scheme you would actually like to use.
 
 ![ButtonHUD Example](/ButtonHUD_example_2.png)
 
-The usual hotkeys from the MINHUD versions apply, but it should be easier to use the new button system.
+The usual hotkeys apply, but it should be easier to use the new button system.  We will be converting this to work with screens and a Remote Controller once the screen flicker bug is fixed.  For now, many options are missing from the buttons since Remote Controllers must use the hotkeys
 
 Hold **Shift** to show the UI overlay with buttons.  Mouse over a button and let go of Shift to select it.  
 
@@ -73,31 +75,23 @@ If you need to zoom out in 3rd person view, you must toggle free-look because th
 **Alt+5** to toggle **Turn & Burn Mode**, which changes all your braking readouts to assume you will be turning and burning.  Be sure to set *warmup* in the Parameters if you use this; the default warmup is assumed to be 32s.  Autopilot will also turn and burn for you (Auto-Braking will not).  Note that Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
 
 **Alt+6** to toggle **Altitude Hold**.  If used while flying (with gear up), this will attempt to hold at the altitude you turned it on at.  
-**Alt+6** while landed (with gear down) to turn on **Auto Takeoff** - this is simply Altitude Hold that sets you to a paramater-defined distance above your starting position (default 1km)
+**Alt+6** while landed (with gear down) to turn on **Auto Takeoff** - this is simply Altitude Hold that sets you to a paramater-defined distance above your starting position (default 1km).  You must control your own thrust and release the brake to takeoff.
 **Gear** while in Altitude Hold mode will turn on **Auto Landing**.  This is very slow in an attempt to be safe; it pitches down at 5 degrees, cuts throttle, and waits until your vertical boosters or hover engines power on before pitching up and hitting the brake.  This will not trigger if it does not auto-detect a hover engine or vertical booster
+**Alt+C,Alt+Space** while in Altitude Hold to change the Holding Altitude (these hotkeys will not affect your hovers/vboosters while in Altitude Hold)
 
-**Alt+7** to **Save variables in a databank** - To use:  Attach a databank to your ship in any location.  Rerun the HUD Autoconfig. Change any variables able to be saved (shown below) using Edit LUA Paremeters. Get in seat.  Hit ALT-7 to save.  These will now autoload anytime you get in seat.  To overwrite you must hit alt-7 to wipe the databank, then get out, rerun Autoconfig, then change the values with Edit LUA Parameters, get back in, and alt-7 to save the new values.  
+**Alt+7** to **Save/clear variables in a databank** - To use:  Attach a databank to your ship in any location.  Rerun the HUD Autoconfig. Change any variables using Edit LUA Paremeters. Get in seat.  Hit ALT-7 to save.  These will now autoload anytime you get in seat.  To overwrite you must hit alt-7 to wipe the databank, then get out, rerun Autoconfig, then change the values with Edit LUA Parameters, get back in, and alt-7 to save the new values.  
 
 **Alt+8** will toggle **Follow Mode** with a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.
 
 **Alt+9** to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with Alt+1 and Alt+2, and disengage it once it's gotten as close to an orbit as it can just by braking.  This is an alternative to auto-pilot if you don't want to give the autopilot control over where your ship is facing or thrusters
 
-This feature will also load your values if you update the HUD autoconfigure to a new release or if you need to rerun it due to changes on your ship unless the list of saved variables has changed.
 
-## Current Savable Variables
-userControlScheme
-AutopilotTargetOrbit
-brakeToggle
-apTickRate
-turnAssist
-warmup
-MaxGameVelocity
-freeLookToggle
-PrimaryR, PrimaryG, PrimaryB
-DeadZone
-circleRad
-MouseXSensitivity
-MouseYSensitivity
+## Persistence
+
+As mentioned briefly above, your custom variables are saved between reloading configurations if you attach a databank to the ship (and use Alt+7 to save them).  However, all variables in the program are saved in the databank when you exit the seat.  This means it will be exactly as you left it - if you were landed when you got out, it won't jump off the ground when you get it.  
+
+This also means that when using autopilot, you can relatively easily move between a seat and Remote Controller; it will be down for a short time while you swap, but everything is saved and it will pick up where it left off.
+
 
 ## Customization
 The following LUA parameters were added
@@ -106,7 +100,9 @@ The following LUA parameters were added
 
 *warmup* - How long your engines take to warmup, or T50.  Defaults to 32.  For everything but freight engines, these values for space engines are: XS 0.25, S 1, M 4, L 16, XL 32.  If you're using freight engines, you should probably check https://hq.hyperion-corporation.de/ingame-engine-library
 
-*circleRad* - to set the size of the altimeter circle in the middle of the screen, setting it to 0 will remove the circle.
+*userControlScheme* - This is how you define what control scheme you'd like to use - Keyboard, Mouse, or Virtual Joystick.  Hover your mouse over the name in the Parameter editor to see the exactly values you can enter.  Note that your in-game control scheme must be set to keyboard so that the buttons can be used, which is why you must set it here instead.
+
+And many more for customization - Right click the seat and go to *Advanced -> Edit Lua Parameters* to see them all
 
 ### Features
 **Rezoix HUD** (i.e. pitch/roll/yaw indicators), with LUA-parameter RGB values so you can set the base color, and with fixes (yaw is displayed in space properly instead of pitch, throttle indicator is fixed, gyro no longer required) - https://github.com/Rezoix/DU-hud
@@ -128,9 +124,11 @@ The following LUA parameters were added
 
 **Auto-Land on Gear Down** - Putting down your landing gear sets your hover height to 0, raising it sets it to max.  Entering a vehicle with gear down sets the height to 0, entering a vehicle with the gear up sets it to max
 
-**Door/Ramp Automation** - Automatically closes doors/ramps when entering, and opens them when exiting.  Requires you to link these to the seat.  Supports only one of each - the slots must be named, respectively, 'door' and 'ramp'
+**Door/Ramp Automation** - Automatically closes doors/ramps when entering, and opens them when exiting.  Requires you to link these to the seat once, and it will remember and relink them each time you configure it afterward.  No renaming required.
 
 **(ButtonHUD) Buttons and custom controls** - Custom implementations of virtual joystick and mouse controls, allowing you to use virtual joystick without that disgusting giant circle on your screen.  Buttons to use many of the features.
+
+**Atmospheric Package** - Auto-Takeoff, Auto-Land, Altitude Hold, and for Remote Controllers, Follow Mode
 
 ### Credits
 
