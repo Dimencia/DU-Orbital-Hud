@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.7 - Radar updates
+- Modified hud to hide space radar in atmo and atmo radar in space.
+
 Version 3.61 - Fix for braking values disappearing
 
 Version 3.6 - Optimisation
