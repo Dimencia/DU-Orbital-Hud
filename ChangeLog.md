@@ -1,5 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.61 - Fix for braking values disappearing
+
 Version 3.6 - Optimisation
 - Resolved framerate issues entirely (excluding the tab-click-slideshow bug)
 - Created persistent state; ship remembers how you left it when you exit and re-enter, or swap to a remote controller
