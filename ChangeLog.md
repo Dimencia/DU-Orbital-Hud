@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.5 - Atmospheric Autopilot
+- Added Altitude Hold, Auto Takeoff, Auto Landing modes
+- Adjusted databank to no longer have to clear the entire bank
+- Adjusted LAlt-3 to toggle between HUD and normal widgets on one key
+
 Version 3.0 - Follow her to school one day!
 - Added autofollow when on foot if using remote unit
 - Added ability to hide hud and still have all other features available. LALT-3
