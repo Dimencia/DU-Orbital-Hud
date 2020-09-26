@@ -1,7 +1,6 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 3.7 - Radar
-- Detect radars and display radar panel only if in atmosphere if atmo radar or only if out of atmosphere if space radar
+Version 3.61 - Fix for braking values disappearing
 
 Version 3.6 - Optimisation
 - Resolved framerate issues entirely (excluding the tab-click-slideshow bug)
