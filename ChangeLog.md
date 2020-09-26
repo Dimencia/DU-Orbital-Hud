@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.75 - Fixes and requests
+- Allowed altimeter to show negative values (make your submarine, but i think you'll blow up)
+- Fixed altimeter to be same size as pitch bar (was blocking altitude and atmosphere)
+
 Version 3.7 - Radar updates
 - Modified hud to hide space radar in atmo and atmo radar in space.
 
