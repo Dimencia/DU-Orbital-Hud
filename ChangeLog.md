@@ -1,5 +1,14 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.6 - Optimisation
+- Resolved framerate issues entirely (excluding the tab-click-slideshow bug)
+- Created persistent state; ship remembers how you left it when you exit and re-enter, or swap to a remote controller
+- Resolved many problems with autotakeoff: You now control your speed and when to takeoff, and the ascent is much smoother
+- Increased descent rate on autolanding to -10degrees
+- Removed minor lines on meters (for FPS reasons), other minor HUD tweaks such as fonts
+- Ability to adjust Hold Altitude with Alt+C and Alt+Space while in Altitude Hold mode
+- Auto-landing will now cancel if you hit the brake while it's running, as will all Altitude Hold modes
+
 Version 3.5 - Atmospheric Autopilot
 - Added Altitude Hold, Auto Takeoff, Auto Landing modes
 - Adjusted databank to no longer have to clear the entire bank
