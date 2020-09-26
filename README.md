@@ -31,11 +31,8 @@ By default the HUD overwrites the in game flight Control Schemes.  You must righ
 This should set everything up and you're good to go
 
 # Warnings
-If you are in atmosphere, the Max Brake Distance listed on the Interplanetary widget will be inaccurate, since it will be using your atmospheric brakes to calculate.  Once you enter space, it should be accurate.
 
-The autopilot is relatively untested at this stage.  Do not rely on it if you go AFK, and let me know of any issues you encounter with it.
-
-Note that Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
+Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
 
 ### When your gear is extended, your hover height is set to 0.  This helps with landings but don't attempt to put out your gear before you're hovering on the surface.  There is a warning if the gear is extended
 
@@ -45,7 +42,7 @@ Note that Turn & Burn Mode assumes your ship will be able to face the correct di
 
 It cannot detect if there is a planet in the way.  It'll just go for it.
 
-## Autopilot is mostly tested, but you should use with supervision; in current state I can't guarantee it will achieve a stable orbit
+# Auto-Landing should be used with supervision.  It cannot detect mountins or cliffs in the way, and if you try to auto-takeoff from the thades scar, don't blame me
 
 ## Controls/Info - ButtonHUD
 This HUD uses on-screen buttons, and so needs to be able to use your mouse.  The only way to keep DU from trying to use your mouse for input is to set the Control Scheme to Keyboard.  You can then right click the seat, *Advanced -> Edit LUA Parameters* and find the checkboxes to choose which control scheme you would actually like to use.
