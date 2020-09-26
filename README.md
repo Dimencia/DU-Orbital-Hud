@@ -12,6 +12,11 @@ Works with Command Seat and Hover Seat, not Cockpit
 
 If you wish to save your current config, right click your seat and Copy Lua Configuration to Clipboard, and save it somewhere
 
+### Donations are accepted!  We have a Donation Station in Sanctuary Market 3 and more to come, or you can always contact us and do a VR trade.  
+Basically I keep running into problems where I can't afford the cool stuff I want to play with next because I spent all my time writing stuff.  You saw what happened when I finally got a remote controller.  So, a few people were asking, and I figured why not offer.  And of course, Arche gets a cut too.
+
+Just make sure that for any Donation Station you see, that the owner is Dimencia or Archaegeo.  I fully expect to see fake ones out there.
+
 ## Version Information
 
 Check the changelog file for information about the most recent changes.  This is updated very frequently.
