@@ -42,7 +42,7 @@ Turn & Burn Mode assumes your ship will be able to face the correct direction to
 
 It cannot detect if there is a planet in the way.  It'll just go for it.
 
-# Auto-Landing should be used with supervision.  It cannot detect mountins or cliffs in the way, and if you try to auto-takeoff from the thades scar, don't blame me
+# Auto-Landing should be used with supervision.  It cannot detect mountains or cliffs in the way, and if you try to auto-takeoff from the thades scar, don't blame me
 
 ## Controls/Info - ButtonHUD
 This HUD uses on-screen buttons, and so needs to be able to use your mouse.  The only way to keep DU from trying to use your mouse for input is to set the Control Scheme to Keyboard.  You can then right click the seat, *Advanced -> Edit LUA Parameters* and find the checkboxes to choose which control scheme you would actually like to use.
