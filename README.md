@@ -22,14 +22,16 @@ Just make sure that for any Donation Station you see, that the owner is Dimencia
 Check the changelog file for information about the most recent changes.  This is updated very frequently.
 
 # Usage
+
 Click on **buttonHUD.conf** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  On the top right, right click the 'RAW' button and click Save Link As...
 
 Save the file to *%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom*, the filename does not matter (as long as it's still .conf)
 
-
 In-game, right click your seat and go to *Advanced -> Update custom autoconf list*  - If you get a YAML error, you did not follow the above directions corretly.
 
 Then *Advanced -> Run Custom Autoconfigure -> ButtonsHud - Dimencia and Archaegeo*
+
+### Once installed on your vehicle, right click the seat, choose Advanced, choose Edit LUA Parameters, and mouse over each parameter to customize your experience.  THe most important is userControlScheme which mimics normal Keyboard, Mouse, or Virtual Joystick control
 
 By default the HUD overwrites the in game flight Control Schemes.  You must right click the seat and set the control scheme to Keyboard.  Then look at the seat and choose Advanced-Edit LUA Parameters.  Mouse over each for a description, but the major one is userControlScheme.  You may set it to "Virtual Joystick" (which is the default), "Mouse", or "Keyboard".
 
