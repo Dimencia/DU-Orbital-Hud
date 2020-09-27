@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.76 - Fixes and cleanups
+- Fixed radar to only turn on if it senses someone
+
 Version 3.75 - Fixes and requests
 - Allowed altimeter to show negative values (make your submarine, but i think you'll blow up)
 - Fixed altimeter to be same size as pitch bar (was blocking altitude and atmosphere)
