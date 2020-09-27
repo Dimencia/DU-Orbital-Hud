@@ -3,6 +3,7 @@
 Version 3.77 - TurnBurn and Brake bugfixes
 - Fixed a problem where brake toggle wasn't being reliable
 - Fixed TurnBurn calculations (hopefully)
+- Removed buttons from Remote Controller again because they're just, not good like that.  Investigating other options.
 
 Version 3.76 - Fixes and cleanups
 - Fixed radar to only turn on if it senses someone
