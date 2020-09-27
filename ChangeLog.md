@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.81 - Fixed BrakeToggle() error
+- Was unrelated to brake, assigning a nil value to targetGroundAltitude
+
 Version 3.80 - Cleanup
 - Moved collectgarbage to end of unit.start
 - Consolidated widgets into ToggleWidgets (still alt-3 to show/hide hud/widgets)
