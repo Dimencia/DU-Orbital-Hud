@@ -1,5 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.83 - Fixed altitude not showing when in space.
+
 Version 3.82 - 
 - Adjusted so keyboards no longer have their view locked when pressing alt
 - Fixed a potential issue that might have caused autopilot to abort before achieving orbit
