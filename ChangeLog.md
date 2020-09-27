@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.79 - What do you think
+- Fixed an issue when brakeToggle was off
+- Changed brake button on HUD to be a Brake Toggle On/Off button so you can change this on the fly
+
 Version 3.78 - More fixes
 - Fixed issues with the new buttons (that were unintentionally released early because other bugs were found)
 - Added parameter to set your target hover height when retracting landing gear
