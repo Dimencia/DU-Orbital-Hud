@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.80 - Cleanup
+- Moved collectgarbage to end of unit.start
+- Consolidated widgets into ToggleWidgets (still alt-3 to show/hide hud/widgets)
+
 Version 3.799 - Minor Tweaks
 - Tried changing a few miscellaneous things to try to find and address some users having script errors
 - Fixed an issue with remembering variables during autopilot
