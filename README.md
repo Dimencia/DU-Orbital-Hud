@@ -31,7 +31,7 @@ In-game, right click your seat and go to *Advanced -> Update custom autoconf lis
 
 Then *Advanced -> Run Custom Autoconfigure -> ButtonsHud - Dimencia and Archaegeo*
 
-### Once installed on your vehicle, right click the seat, choose Advanced, choose Edit LUA Parameters, and mouse over each parameter to customize your experience.  THe most important is userControlScheme which mimics normal Keyboard, Mouse, or Virtual Joystick control
+### Once installed on your vehicle, right click the seat, choose Advanced, choose Edit LUA Parameters, and mouse over each parameter to customize your experience.  The most important is userControlScheme which mimics normal Keyboard, Mouse, or Virtual Joystick control.  If you have a databank on your vehicle, ALT-7 will let you save your preferences (see below)
 
 By default the HUD overwrites the in game flight Control Schemes.  You must right click the seat and set the control scheme to Keyboard.  Then look at the seat and choose Advanced-Edit LUA Parameters.  Mouse over each for a description, but the major one is userControlScheme.  You may set it to "Virtual Joystick" (which is the default), "Mouse", or "Keyboard".
 
