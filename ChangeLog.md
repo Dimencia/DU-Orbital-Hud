@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.82 - 
+- Adjusted so keyboards no longer have their view locked when pressing alt
+- Fixed a potential issue that might have caused autopilot to abort before achieving orbit
+
 Version 3.81 - Fixed BrakeToggle() error
 - Was unrelated to brake, assigning a nil value to targetGroundAltitude
 
