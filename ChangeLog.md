@@ -1,5 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.78 - More fixes
+- Fixed issues with the new buttons (that were unintentionally released early because other bugs were found)
+- Added parameter to set your target hover height when retracting landing gear
+- Added parameter to set your target throttle amount when engaging interplanetary autopilot
+- Adjusted Autopilot behavior to no longer lock the throttle; it will set it once for each stage, and you can then change it as desired
+
 Version 3.77 - TurnBurn and Brake bugfixes
 - Fixed a problem where brake toggle wasn't being reliable
 - Fixed TurnBurn calculations (hopefully)
