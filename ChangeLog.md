@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.799 - Minor Tweaks
+- Tried changing a few miscellaneous things to try to find and address some users having script errors
+- Fixed an issue with remembering variables during autopilot
+
 Version 3.79 - What do you think
 - Fixed an issue when brakeToggle was off
 - Changed brake button on HUD to be a Brake Toggle On/Off button so you can change this on the fly
