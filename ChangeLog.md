@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.85
+- Added support for rocketfuel tanks
+- Fuel Tank Name blinks if < 5% fuel or less than 2 min burn time left
+
 Version 3.84
 - Adjusted so keyboards have viewlock again so they can see the buttons.  Woops.
 
