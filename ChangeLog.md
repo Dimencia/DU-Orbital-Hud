@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.84
+- Adjusted so keyboards have viewlock again so they can see the buttons.  Woops.
+
 Version 3.83 - Fixed altitude not showing when in space.
 
 Version 3.82 - 
