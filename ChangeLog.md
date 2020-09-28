@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.87
+- Renamed fuel tanks will display their name on the fuel status (up to 12 characters)
+
 Version 3.86
 - Added initial pass on rate of change of altitude
 - Fixed locations of tank information
