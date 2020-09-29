@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.95 - I love merges
+- Readded more things that got lost in the merge
+- Fixed altitude
+- Adjusted rate to be negative when toward the planet
+
 Version 3.94 - Minor fixes
 - Remerged some things that got lost from 3.93
 - Adjusted vspeed to be in km/h like the rest of the readouts
