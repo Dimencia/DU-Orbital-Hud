@@ -4,6 +4,8 @@
 
 We have tons of code snippets, help channels, a github feed, and we focus on everything LUA and open source.  It's also a centralized place to get tech support https://discord.gg/sRaqzmS
 
+We've also just added a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
+
 ![Example](/ButtonHUD_example_1.png)
 
 https://www.twitch.tv/videos/748340916 - Demonstration of Use and Features
