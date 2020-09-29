@@ -1,5 +1,5 @@
 ## ChangeLog - Most recent changes at the top
-Version 3.92 - I honestly don't remember anymore
+Version 3.93 - I honestly don't remember anymore
 - Adjusted changing of altitude-hold (With Alt+C/Space while in Alt Hold or Takeoff) to be exponential to more easily altitude-hold to space
 - Better smoothing for altitude hold
 - Increased update rate of vertical speed and adjusted to use vector math
@@ -7,7 +7,7 @@ Version 3.92 - I honestly don't remember anymore
 - Lots of fixes for some of the buttons not enabling/disabling related programs
 - IDK a lot of stuff I've been holding on to for a while
 
-Version 3.91
+Version 3.92
 - Radar periscope only opens when locked target
 - Added toggle that supports having hud and widgets open at same time
 
