@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.91
+- Added constant damage check.  Shows Structural Integrity (percentage of total of max hit points of all elements versus current hit points) and the number of disabled or damaged elements.
+- Added Radar: No Contacts message or total contacts shown under minimap above fuel status.
+
 Version 3.90
 - Initial Damage reporting in place, currently does a check of all elements hp's when you get in seat and reports as a percent
 
