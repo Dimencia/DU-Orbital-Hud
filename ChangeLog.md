@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.88
+- Moved fuel tank info under minimap
+
 Version 3.87
 - Renamed fuel tanks will display their name on the fuel status (up to 12 characters)
 
