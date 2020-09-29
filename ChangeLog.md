@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.90
+- Initial Damage reporting in place, currently does a check of all elements hp's when you get in seat and reports as a percent
+
 Version 3.88
 - Moved fuel tank info under minimap
 
