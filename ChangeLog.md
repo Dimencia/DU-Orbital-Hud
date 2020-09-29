@@ -1,4 +1,11 @@
 ## ChangeLog - Most recent changes at the top
+Version 3.92 - I honestly don't remember anymore
+- Adjusted changing of altitude-hold (With Alt+C/Space while in Alt Hold or Takeoff) to be exponential to more easily altitude-hold to space
+- Better smoothing for altitude hold
+- Increased update rate of vertical speed and adjusted to use vector math
+- Added galaxy map to Remote Controller buttons screen
+- Lots of fixes for some of the buttons not enabling/disabling related programs
+- IDK a lot of stuff I've been holding on to for a while
 
 Version 3.91
 - Added constant damage check.  Shows Structural Integrity (percentage of total of max hit points of all elements versus current hit points) and the number of disabled or damaged elements.
