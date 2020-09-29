@@ -1,6 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
 Version 3.91
+- Radar periscope only opens when locked target
+- Added toggle that supports having hud and widgets open at same time
+
+Version 3.91
 - Added constant damage check.  Shows Structural Integrity (percentage of total of max hit points of all elements versus current hit points) and the number of disabled or damaged elements.
 - Added Radar: No Contacts message or total contacts shown under minimap above fuel status.
 
