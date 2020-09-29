@@ -1,4 +1,10 @@
 ## ChangeLog - Most recent changes at the top
+
+Version 3.94 - Minor fixes
+- Remerged some things that got lost from 3.93
+- Adjusted vspeed to be in km/h like the rest of the readouts
+- Radar checks moved to a less demanding timer
+
 Version 3.93 - I honestly don't remember anymore
 - Adjusted changing of altitude-hold (With Alt+C/Space while in Alt Hold or Takeoff) to be exponential to more easily altitude-hold to space
 - Better smoothing for altitude hold
