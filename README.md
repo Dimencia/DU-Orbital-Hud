@@ -1,5 +1,7 @@
 ## DU-Orbital-Hud
 
+# We now have a discord!  We have tons of code snippets, help channels, and focus on everything LUA and open source, and this is a centralized place to get tech support https://discord.gg/sRaqzmS
+
 ![Example](/ButtonHUD_example_1.png)
 
 https://www.twitch.tv/videos/748340916 - Demonstration of Use and Features
