@@ -2,7 +2,7 @@
 
 # We now have a discord!  
 
-We have tons of code snippets, help channels, and focus on everything LUA and open source, and this is a centralized place to get tech support https://discord.gg/sRaqzmS
+We have tons of code snippets, help channels, a github feed, and we focus on everything LUA and open source.  It's also a centralized place to get tech support https://discord.gg/sRaqzmS
 
 ![Example](/ButtonHUD_example_1.png)
 
