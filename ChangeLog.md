@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.96 -
+- Changed altitude rate of change to meter vice just number
+- Moved functions to system.start() that are not affected by a reset
+
 Version 3.95 - I love merges
 - Readded more things that got lost in the merge
 - Fixed altitude
