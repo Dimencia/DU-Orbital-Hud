@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.97 -
+- Moved functions back to unit.start
+
 Version 3.96 -
 - Changed altitude rate of change to meter vice just number
 - Moved functions to system.start() that are not affected by a reset
