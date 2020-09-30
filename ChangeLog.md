@@ -1,5 +1,31 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 3.95 - I love merges
+- Readded more things that got lost in the merge
+- Fixed altitude
+- Adjusted rate to be negative when toward the planet
+
+Version 3.94 - Minor fixes
+- Remerged some things that got lost from 3.93
+- Adjusted vspeed to be in km/h like the rest of the readouts
+- Radar checks moved to a less demanding timer
+
+Version 3.93 - I honestly don't remember anymore
+- Adjusted changing of altitude-hold (With Alt+C/Space while in Alt Hold or Takeoff) to be exponential to more easily altitude-hold to space
+- Better smoothing for altitude hold
+- Increased update rate of vertical speed and adjusted to use vector math
+- Added galaxy map to Remote Controller buttons screen
+- Lots of fixes for some of the buttons not enabling/disabling related programs
+- IDK a lot of stuff I've been holding on to for a while
+
+Version 3.92
+- Radar periscope only opens when locked target
+- Added toggle that supports having hud and widgets open at same time
+
+Version 3.91
+- Added constant damage check.  Shows Structural Integrity (percentage of total of max hit points of all elements versus current hit points) and the number of disabled or damaged elements.
+- Added Radar: No Contacts message or total contacts shown under minimap above fuel status.
+
 Version 3.90
 - Initial Damage reporting in place, currently does a check of all elements hp's when you get in seat and reports as a percent
 
