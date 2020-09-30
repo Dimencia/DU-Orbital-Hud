@@ -6,6 +6,8 @@ We have tons of code snippets, help channels, a github feed, and we focus on eve
 
 We've also just added a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
 
+### IMPORTANT - DU Hud is very configurable for the end user.  After following below usage instructions, be sure to do the step that says right click seat, choose advanced and Edit LUA Parameters.  All of these have mouse over explanations and allow tailoring of the HUD and the flight systems.
+
 ![Example](/ButtonHUD_example_1.png)
 
 https://www.twitch.tv/videos/748340916 - Demonstration of Use and Features
