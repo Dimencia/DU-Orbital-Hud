@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.02
+- Cleaned up comment lines to reduce code size.
+
 Version 4.01
 - Fixed time remaining when using multiple tanks.
 - Fixed script limit issue where other players couldn't use the seat (and you had to reload it every time you relog)
