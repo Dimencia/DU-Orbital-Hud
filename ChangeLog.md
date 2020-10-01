@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.01
+Fixed time remaining when using multiple tanks.
+
 Version 4.0 - More slots please  
 (NOTE: This change means the default vanilla fuel widgets will no longer be shown unless you manually link fuel tanks to control chair/remote)
 - Removed automatic slotting of all fuel tanks, freeing up slots for other items. Fuel percentages and time remaining are still shown.  The value for 100% will be the larger of vanilla volume or your current fuel volume when you get in the seat. 
