@@ -5,6 +5,8 @@ Version 4.0 - More slots please
 - Removed automatic slotting of all fuel tanks, freeing up slots for other items. Fuel percentages and time remaining are still shown.  The value for 100% will be the larger of vanilla volume or your current fuel volume when you get in the seat. 
 - Added fuelTankOptimization = 0 For accurate fuel levels, set this to the fuel tank optimization level * 0.05 (so level 1 = 0.05, level 5 = 0.25) of the PERSON WHO PLACED the tank. This will be 0 for most people for now.
 
+- Minor bugfix for when that DU bug starts your ship spinning, the ship should stop when you get out now
+
 Version 3.97 -
 - Moved functions back to unit.start
 
