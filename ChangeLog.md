@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.03 More cleanups
+- Cleaned  up code
+- Removed vertical speed change if altitude is gone (200km)
+- Cleaned up time displays and fuel location to account for planet name when in space.
+
 Version 4.02
 - Cleaned up comment lines to reduce code size.
 
