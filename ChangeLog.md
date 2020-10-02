@@ -1,9 +1,5 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.05 - Atmo Flight Assist
-- Adjusted Cruise to engage after AutoTakeoff transitions to Altitude Hold
-- Added AtmoFlightAssist (experimental), off by default.  An alternate control scheme where in atmo, trying to yaw will instead make you do a roll turn, as well as slight correction toward the velocity vector
-
 Version 4.04 - Cruise Control with Altitude Hold
 - Modified alt-6 to turn on cruise control and altitude hold at same time.  Cruise speed set to current speed, altitude to current altitude.
 - Use ALT-C and ALT-SPACE to change set altitude height.
