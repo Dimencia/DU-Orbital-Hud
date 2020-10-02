@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.04 - Cruise Control with Altitude Hold
+- Modified alt-6 to turn on cruise control and altitude hold at same time.  Cruise speed set to current speed, altitude to current altitude.
+- Use ALT-C and ALT-SPACE to change set altitude height.
+- Hitting G while in altitude hold will start an autolanding like normal, but will also cancel cruise control for you.
+
 Version 4.03 More cleanups
 - Cleaned  up code
 - Removed vertical speed change if altitude is gone (200km)
