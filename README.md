@@ -141,6 +141,8 @@ And many more for customization - Right click the seat and go to *Advanced -> Ed
 
 **Door/Ramp Automation** - Automatically closes doors/ramps when entering, and opens them when exiting.  Requires you to link these to the seat once, and it will remember and relink them each time you configure it afterward.  No renaming required.
 
+**Gyro Indicator/Toggle** - Gyro can now be toggled with ALT+G (AGG keybind, won't work if you have a AGG as well).  There is an onscreen text indicator to show you when the gyro is on.
+
 **(ButtonHUD) Buttons and custom controls** - Custom implementations of virtual joystick and mouse controls, allowing you to use virtual joystick without that disgusting giant circle on your screen.  Buttons to use many of the features.
 
 **Atmospheric Package** - Auto-Takeoff, Auto-Land, Altitude Hold, and for Remote Controllers, Follow Mode
