@@ -13,7 +13,7 @@ This is a general-purpose HUD for Dual Universe.  It includes a wide array of fe
 * Free-look mode
 * Save parameters between HUD version updates
 
-> NOTE: Currently the HUD only works with the Command Seat and the Hover Seat, as the Cockpit Controller uses a much more restricted display setup that is not compatible with HUD-type displays
+> NOTE: Currently the HUD only works with the Command Seat, the Hover Seat, and Remote Control as the Cockpit Controller uses a much more restricted display setup that is not compatible with HUD-type displays
 
 ## Examples and Tutorials
 
