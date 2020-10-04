@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.1 
+- Major change in how html text is formatted, should result in improved performance but report any bugs.
+
 Version 4.065
 - Bug fixes.
 
