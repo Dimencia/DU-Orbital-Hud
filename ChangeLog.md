@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.125
+- Added to user variables: brightHud = false --export: Enable to prevent hud dimming when in freelook.
+
 Version 4.12
 - Optimizations and fix save feature
 
