@@ -80,33 +80,32 @@ If you need to zoom out in 3rd person view, you must toggle free-look because th
 
 **Turn & Burn Mode** is still accessible with **Alt+5** (will be added to UI soon)
 
-## Controls - MINHUD and Archeageo HUD
-**Alt+1** and **Alt+2** (Option1 and Option2) **to scroll between target planets for Autopilot and display**.  This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
+## Controls - Features and Controls explanation
+**Radar** indicates below minimap number of targets or if it is jammed (atmo in space or space in atmo).  The radar widget only pops up if targets are detected.  The periscope widget only pops up if you click a target and successfully identify it.  All widgets close automagically.
 
-**Alt+3 ** toggles the **HUD** and other widgets off/on.  Orbital display and autopilot information will still show if hud is off.
+**Alt+1** and **Alt+2** (Option1 and Option2) **to scroll between target planets for Autopilot and display**.  This also works using SHIFT-R and SHIFT-T to scroll. This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)
 
-**Alt+4** to engage **Autopilot** for interplanetary travel, if you are in space and have a planet targeted with Alt+1/Alt+2.  Ensure you have a clear line of sight to the target.  This will align to the target, realign slightly to point 200km to the side of the target, accelerate, cut engines when at max, start braking when appropriate, and hopefully achieve a stable orbit around the target.
+**Alt+3 ** toggles the **HUD** and other widgets off/on.  Orbital display and autopilot information will still show if hud is off.  There is a parameter you can set to have HUD and Widgets on at same time
+
+**Alt+4** to engage **Autopilot** for interplanetary travel, if you are in space and have a planet targeted.  Ensure you have a clear line of sight to the target.  This will align to the target, realign slightly to point 200km to the side of the target, accelerate, cut engines when at max, start braking when appropriate, and hopefully achieve a stable orbit around the target.  You can set your target orbit distance in parameters, default is 100km.  Recommend do not go less then 35km.
 
 **Alt+5** to toggle **Turn & Burn Mode**, which changes all your braking readouts to assume you will be turning and burning.  Be sure to set *warmup* in the Parameters if you use this; the default warmup is assumed to be 32s.  Autopilot will also turn and burn for you (Auto-Braking will not).  Note that Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
 
-**Alt+6** to toggle **Altitude Hold**.  If used while flying (with gear up), this will attempt to hold at the altitude you turned it on at.  
+**Alt+6** to toggle **Altitude Hold**.  If used while flying (with gear up), this will attempt to hold at the altitude you turned it on at and put you in cruise control at current speed.  You can modify target height with LALT+C (down) and LALT+spacebar (up).  Cruise speed is modifiied like normal.  Hitting ALT-6 again or tapping brake will take stop Alt-Hold mode but leave you in cruise control.
 **Alt+6** while landed (with gear down) to turn on **Auto Takeoff** - this is simply Altitude Hold that sets you to a paramater-defined distance above your starting position (default 1km).  You must control your own thrust and release the brake to takeoff.
-**Gear** while in Altitude Hold mode will turn on **Auto Landing**.  This is very slow in an attempt to be safe; it pitches down at 5 degrees, cuts throttle, and waits until your vertical boosters or hover engines power on before pitching up and hitting the brake.  This will not trigger if it does not auto-detect a hover engine or vertical booster
-**Alt+C,Alt+Space** while in Altitude Hold to change the Holding Altitude (these hotkeys will not affect your hovers/vboosters while in Altitude Hold)
+**Gear** while ign Altitude Hold mode will turn on **Auto Landing**.  This is very slow in an attempt to be safe; it pitches down at 10 degrees, cuts throttle, and waits until your vertical boosters or hover engines power on before pitching up and hitting the brake.  This will not trigger if it does not auto-detect a hover engine or vertical booster.  Use with caution with massive ships.
 
-**Alt+7** to **Save/clear variables in a databank** - To use:  Attach a databank to your ship in any location.  Rerun the HUD Autoconfig. Change any variables using Edit LUA Paremeters. Get in seat.  Hit ALT-7 to save.  These will now autoload anytime you get in seat.  To overwrite you must hit alt-7 to wipe the databank, then get out, rerun Autoconfig, then change the values with Edit LUA Parameters, get back in, and alt-7 to save the new values.  
+**Alt+7** to **Save/clear variables in a databank** - To use:  Attach a databank to your ship in any location.  Rerun the HUD Autoconfig. Change any variables using Edit LUA Paremeters. Get in seat.  Hit ALT-7 to save.  These will now autoload anytime you get in seat.  To change: Hit alt-7 to wipe the databank, get out of seat, rerun Autoconfig, then change the values with Edit LUA Parameters, get back in seat, and alt-7 to save the new values.  Values saved on a remote work for a seat on same ship and vice versa.  This feature also saves current ship status to enable smoother operation if you get up while flying.
 
-**Alt+8** will toggle **Follow Mode** with a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.
+**Alt+8** will toggle **Follow Mode** when using a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.  It will not go below ground unless you dig out a big enough hole that it would naturally go down while hovering.
 
-**Alt+9** to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with Alt+1 and Alt+2, and disengage it once it's gotten as close to an orbit as it can just by braking.  This is an alternative to auto-pilot if you don't want to give the autopilot control over where your ship is facing or thrusters
-
+**Alt+9** to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with Alt+1 and Alt+2, and disengage it once it's gotten as close to an orbit as it can just by braking.  This is an alternative to auto-pilot if you don't want to give the autopilot control over where your ship is facing or thrusters. 
 
 ## Persistence
 
 As mentioned briefly above, your custom variables are saved between reloading configurations if you attach a databank to the ship (and use Alt+7 to save them).  However, all variables in the program are saved in the databank when you exit the seat.  This means it will be exactly as you left it - if you were landed when you got out, it won't jump off the ground when you get it.  
 
 This also means that when using autopilot, you can relatively easily move between a seat and Remote Controller; it will be down for a short time while you swap, but everything is saved and it will pick up where it left off.
-
 
 ## Customization
 The following LUA parameters were added
@@ -117,21 +116,22 @@ The following LUA parameters were added
 
 *userControlScheme* - This is how you define what control scheme you'd like to use - Keyboard, Mouse, or Virtual Joystick.  Hover your mouse over the name in the Parameter editor to see the exactly values you can enter.  Note that your in-game control scheme must be set to keyboard so that the buttons can be used, which is why you must set it here instead.
 
-And many more for customization - Right click the seat and go to *Advanced -> Edit Lua Parameters* to see them all
+And many more for customization - Right click the seat and go to *Advanced -> Edit Lua Parameters* to see them all.  Mouse over a name to see its purpose and potential settings.
 
 ### Features
 **Rezoix HUD** (i.e. pitch/roll/yaw indicators), with LUA-parameter RGB values so you can set the base color, and with fixes (yaw is displayed in space properly instead of pitch, throttle indicator is fixed, gyro no longer required) - https://github.com/Rezoix/DU-hud
 
 **Orbital Information widget** - Shows apoapsis, periapsis, apogee, perigee, eccentricity for the nearest planet, using these libraries: https://gitlab.com/JayleBreak/dualuniverse/-/tree/master/DUflightfiles/autoconf/custom
 
-**Brake Indicator/Toggle** - Brake is now a toggle, and is on by default when entering the seat.  There is an onscreen text indicator to show you when the brake is on
+**Brake Indicator/Toggle** - Brake is now a toggle, and is on by default when entering the seat.  There is an onscreen text indicator to show you when the brake is on.  You can set brake to work like default with an Edit LUA Parameter setting.
 
-**Interplanetary Helper** - Use Alt+1 and Alt+2 to cycle through target planets.  Shows distance, travel time (including acceleration, travel, and braking - absolute total), brake time (current and max).  Note that currently, Brake Time is inaccurate if you're inside atmosphere.  Once you're in space, it will properly read the space brakes and give the correct values
+**Interplanetary Helper** - Use Alt+1 and Alt+2 or SHIFT-R/SHIFT-T to cycle through target planets.  Shows distance, travel time (including acceleration, travel, and braking - absolute total), brake time (current and max).  Note that currently, Brake Time is inaccurate if you're inside atmosphere.  Once you're in space, it will properly read the space brakes and give the correct values
 
-**Auto-Brake** - Use Alt+3 when you have a target selected with the Interplanetary Helper, and it will toggle Auto-Brake.  The script will automatically engage the brake when within the max braking distance for that planet.  This does not guarantee that you will not hit the planet - even with Auto-Brake, do not aim directly at the planet.  It targets an end speed of 0, though you will generally have a much higher end speed, so has some leeway.  It will continue braking until stable orbit is achieved, if possible from the trajectory.
+**Auto-Brake** - Use Alt+9 when you have a target selected with the Interplanetary Helper, and it will toggle Auto-Brake.  The script will automatically engage the brake when within the max braking distance for that planet.  This does not guarantee that you will not hit the planet - even with Auto-Brake, do not aim directly at the planet.  It targets an end speed of 0, though you will generally have a much higher end speed, so has some leeway.  It will continue braking until stable orbit is achieved, if possible from the trajectory.
 
 **AutoPilot** - Use Alt+4 when you have a target selected with the Interplanetary Helper, and you are in space with clear line of sight to the target.  The script will align to the optimal vector to place you in a 1SU orbit from the target, accelerate, cut engines when appropriate, and brake until orbit is achieved.  
-**NOTE** As of right now, this will almost definitely get you to the safe zone of the planet without smashing into it, but will likely not achieve a stable orbit.  You must be present at the end of the trip 
+
+**NOTE** As of right now, this will almost definitely get you to the safe zone of the planet without smashing into it.  It should achieve a stable orbit, but being there at the end of the trip is recommended. 
 
 **Turn & Burn** - Use Alt+5 to toggle Turn & Burn mode, which changes all your readouts to assume you will turn and burn when braking, and sets autopilot to turn and burn for you.  
 
@@ -144,6 +144,8 @@ And many more for customization - Right click the seat and go to *Advanced -> Ed
 **(ButtonHUD) Buttons and custom controls** - Custom implementations of virtual joystick and mouse controls, allowing you to use virtual joystick without that disgusting giant circle on your screen.  Buttons to use many of the features.
 
 **Atmospheric Package** - Auto-Takeoff, Auto-Land, Altitude Hold, and for Remote Controllers, Follow Mode
+
+**Fuel Tanks** - These are no longer automatically slotted to seat.  You still get fuel readouts under the minimap.  If you want the standard fuel widget, you will need to link the fuel tank(s) to the seat one time and then run the autoconfig.
 
 ### Credits
 
