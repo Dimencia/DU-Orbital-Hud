@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.12
+- Optimizations and fix save feature
+
 Version 4.11
 - Optimaztions with function localizations
 
