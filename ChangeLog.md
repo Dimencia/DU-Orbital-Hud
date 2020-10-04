@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.065
+- Bug fixes.
+
 Version 4.06
 - added player variables speedChangeLarge and speedChangeSmall so you can control the rate of throttle change.  Large happens when you tap speed up or down, small happens when you hold speed up or down.
 - doors and ramps will not auto open when exiting seat/remote while in space 
