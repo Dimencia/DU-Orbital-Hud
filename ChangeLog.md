@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.142
+- More optimization refactoring from Chronos.
+
 Version 4.141
 - Fix for structural damage showing 99% when no voxels damaged.  Damage report only appears if any damage.
 
