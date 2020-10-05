@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.13
+- Added maxBrake to odometer
+- Added maxThrust to odometer
+- Modified mass to use function call, no need for extraMass anymore.
+
 Version 4.126
 - localized unit.getAtmosphereDensity
 
