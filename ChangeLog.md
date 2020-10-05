@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.144
+- Track trip time and total run time on ship.
+
 Version 4.143
 - More optimization refactoring
 - Fixed new DU bug with vertical engines firing constantly
