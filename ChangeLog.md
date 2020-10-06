@@ -3,6 +3,7 @@
 Version 4.145
 - Fixed bugs with dimming, more elements are now undimmed when in freelook, dimmed elements are dimmer, artifical horizon is not displayed in freelook
 - Fixed fuel display problem with remote control
+- Readded brighthud
 
 Version 4.144
 - Track trip time and total run time on ship.
