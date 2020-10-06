@@ -1,5 +1,24 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.146
+- Must press alt-7 2 times to wipe databank.  A wiped databank prevents saving of flight status variable.
+- Attempt to fix calculation of fuelTankOptimization when setting up fuel tanks.
+
+Version 4.145
+- Fixed bugs with dimming, more elements are now undimmed when in freelook, dimmed elements are dimmer, artifical horizon is not displayed in freelook
+- Fixed fuel display problem with remote control
+- Readded brighthud
+
+Version 4.144
+- Track trip time and total run time on ship.
+
+Version 4.143
+- More optimization refactoring
+- Fixed new DU bug with vertical engines firing constantly
+
+Version 4.142
+- More optimization refactoring from Chronos.
+
 Version 4.141
 - Fix for structural damage showing 99% when no voxels damaged.  Damage report only appears if any damage.
 
