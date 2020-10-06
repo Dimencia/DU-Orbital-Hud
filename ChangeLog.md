@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.146
+- Must press alt-7 2 times to wipe databank.  A wiped databank prevents saving of flight status variable.
+- Attempt to fix calculation of fuelTankOptimization when setting up fuel tanks.
+
 Version 4.145
 - Fixed bugs with dimming, more elements are now undimmed when in freelook, dimmed elements are dimmer, artifical horizon is not displayed in freelook
 - Fixed fuel display problem with remote control
