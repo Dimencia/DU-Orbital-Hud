@@ -125,10 +125,10 @@ If you need to zoom out in 3rd person view, you must toggle free-look because th
 ### Follow Mode
 `ALT-8` will toggle **Follow Mode** when using a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.  It will not go below ground unless you dig out a big enough hole that it would naturally go down while hovering.
 
-### Auto-Brake
-`ALT-9` to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with `ALT-1` and `ALT-2`, and disengage it once it's gotten as close to an orbit as it can just by braking.  This is an alternative to auto-pilot if you don't want to give the autopilot control over where your ship is facing or thrusters. 
+### Toggle Gyro
+`ALT-9` to engage **Toggle Gyro**.  If a gyro is installed on your ship, this will change your ships perceived orientation from Core to Gyro.  This is used to allow you to control flight based on gyro orientation and not core orientation. 
 
-Auto-Brake is not on the UI this version; it is unreliable because it is unable to align your trajectory, and tends to over-brake if it's not perfectly aligned.  Use Autopilot if you need auto-brake, so that it can align properly.  Auto-brake is still accessible on `ALT-3` if you want it.
+Auto-Brake is not on the UI this version; it is unreliable because it is unable to align your trajectory, and tends to over-brake if it's not perfectly aligned.  .
 
 ## Persistence
 
