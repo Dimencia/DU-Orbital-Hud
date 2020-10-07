@@ -1,5 +1,12 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.162
+- localized Nav.control.isRemoteControlled() function in unit.start and apTick 
+- Only show Follow Mode button if on a Remote.  Alt-8 while on seat will give message only works when on remote.
+- Hide autopilot engage button in atmo, give message if use alt-4 in atmo.
+- Hide retrograde button if in atmo
+- Shift to cruise control once reach takeoff altitude.
+
 Version 4.161
 - Updated new values to show n/a if out of gravity.
 
