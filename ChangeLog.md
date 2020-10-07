@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.16
+- Ship now shows Required forward thrust for current mass at current gravity and Max Mass for max available forward thrust in current gravity
+
 Version 4.15
 - Gyro's autoconnect again.  If you have a gyro on ship and run autoconf after it is placed, this will let you hit alt-9 the gyro will activate.  This can be used to change your controls perceived orientation from Core orientation to Gyro orientation.
 
