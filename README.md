@@ -4,6 +4,8 @@ We have tons of code snippets, help channels, a github feed, and we focus on eve
 
 We've also just added a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
 
+We're also recruting for our in-game lua-focused org (with a bit of PVP focus on the side).  Check the discord for details
+
 # Overview
 
 This is a general-purpose HUD for Dual Universe.  It includes a wide array of features including:
