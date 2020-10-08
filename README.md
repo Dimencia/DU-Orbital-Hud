@@ -1,3 +1,9 @@
+## We now have a [Discord](https://discord.gg/sRaqzmS)!  
+
+We have tons of code snippets, help channels, a github feed, and we focus on everything LUA and open source.  It's also a centralized place to get tech support: https://discord.gg/sRaqzmS
+
+We've also just added a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
+
 # Overview
 
 This is a general-purpose HUD for Dual Universe.  It includes a wide array of features including:
@@ -20,12 +26,6 @@ This is a general-purpose HUD for Dual Universe.  It includes a wide array of fe
 https://www.twitch.tv/videos/748340916 - Demonstration of Use and Features
 
 ![Example](/ButtonHUD_example_1.png)
-
-## We now have a [Discord](https://discord.gg/sRaqzmS)!  
-
-We have tons of code snippets, help channels, a github feed, and we focus on everything LUA and open source.  It's also a centralized place to get tech support: https://discord.gg/sRaqzmS
-
-We've also just added a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
 
 **Donations are accepted!**  We have a Donation Station in Sanctuary District 3 and more to come, or you can always contact us and do a VR trade.    Basically I keep running into problems where I can't afford the cool stuff I want to play with next because I spent all my time writing stuff.  You saw what happened when I finally got a remote controller.  So, a few people were asking, and I figured why not offer.  And of course, Arche gets a cut too.  **Just make sure that for any Donation Station you see, that the owner is Dimencia or Archaegeo.**  I fully expect to see fake ones out there.
 
