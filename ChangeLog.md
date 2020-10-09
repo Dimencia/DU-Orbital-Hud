@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.18
+- Added max mass on target planet to Interplanetary info.  Note:  If target planet has atmo, you must be in atmo to get an accurate reading.  The formula is MaxBrakeNewtons / PlanetGravityAtSeaLevel, shown in tons.  So if you are going to a planet with no atmosphere, you must get a reading while in no atmosphere.
+
 Version 4.174
 - Added DU version number in lower right hand corner of screen.
 
