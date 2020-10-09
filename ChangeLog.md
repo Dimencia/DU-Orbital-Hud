@@ -1,5 +1,28 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.171 
+- Added safety check to Brake landing.  If current mass * gravity at sea level > maxBrake power, it will not try an automatic Brake Landing.
+- Added user variable for loss of altitude rate, brakeLandingRate, when using brake landing. Default is 30 m/s
+
+Version 4.17 - Brake Landing
+- While flying, if you have hover or vertical boosters, and you hit G, your ship will attempt to brake land.  If you are at max load of low altitude lift, or of brakes, do not use.  This does not replace hitting G for autoland while in altitude hold.  To brake land you must cancel altitude hold first.  As with most auto features, toggle brakes to turn off.
+
+Version 4.162
+- localized Nav.control.isRemoteControlled() function in unit.start and apTick 
+- Only show Follow Mode button if on a Remote.  Alt-8 while on seat will give message only works when on remote.
+- Hide autopilot engage button in atmo, give message if use alt-4 in atmo.
+- Hide retrograde button if in atmo
+- Shift to cruise control once reach takeoff altitude.
+
+Version 4.161
+- Updated new values to show n/a if out of gravity.
+
+Version 4.16
+- Ship now shows Required forward thrust for current mass at current gravity and Max Mass for max available forward thrust in current gravity.  Note this does not consider lift, just values if you pointed 90deg up.
+
+Version 4.15
+- Gyro's autoconnect again.  If you have a gyro on ship and run autoconf after it is placed, this will let you hit alt-9 the gyro will activate.  This can be used to change your controls perceived orientation from Core orientation to Gyro orientation.
+
 Version 4.146
 - Must press alt-7 2 times to wipe databank.  A wiped databank prevents saving of flight status variable.
 - Attempt to fix calculation of fuelTankOptimization when setting up fuel tanks.

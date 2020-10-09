@@ -1,3 +1,11 @@
+## We now have a [Discord](https://discord.gg/sRaqzmS)!  
+
+We have tons of code snippets, help channels, a github feed, and we focus on everything LUA and open source.  It's also a centralized place to get tech support: https://discord.gg/sRaqzmS
+
+We've also just added a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
+
+We're also recruting for our in-game lua-focused org (with a bit of PVP focus on the side).  Check the discord for details
+
 # Overview
 
 This is a general-purpose HUD for Dual Universe.  It includes a wide array of features including:
@@ -21,12 +29,6 @@ https://www.twitch.tv/videos/748340916 - Demonstration of Use and Features
 
 ![Example](/ButtonHUD_example_1.png)
 
-## We now have a [Discord](https://discord.gg/sRaqzmS)!  
-
-We have tons of code snippets, help channels, a github feed, and we focus on everything LUA and open source.  It's also a centralized place to get tech support: https://discord.gg/sRaqzmS
-
-We've also just added a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
-
 **Donations are accepted!**  We have a Donation Station in Sanctuary District 3 and more to come, or you can always contact us and do a VR trade.    Basically I keep running into problems where I can't afford the cool stuff I want to play with next because I spent all my time writing stuff.  You saw what happened when I finally got a remote controller.  So, a few people were asking, and I figured why not offer.  And of course, Arche gets a cut too.  **Just make sure that for any Donation Station you see, that the owner is Dimencia or Archaegeo.**  I fully expect to see fake ones out there.
 
 ## Version Information
@@ -34,12 +36,12 @@ We've also just added a lua-commissions channel!  Non-scripters can post request
 Check the [changelog](./ChangeLog.md) file for information about the most recent changes.  This is updated very frequently.
 
 # Installation
-
-1. Click on **`ButtonHUD.conf`** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  On the top right, right click the `RAW` button and click `Save Link As`...
+## While a databank element is not required, it is strongly recommended.  They are cheap, or easy to make, and take up 1x1x1 cube space and fit nicely in front of seat.  Having one on your ship prior to doing the below steps will save your user preferences and some longterm variables, as well as flight status if you get up and sit back down in some situations.
+1. Click on **`ButtonHUD.conf`** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  Then on the top right, right click the `RAW` button and click `Save Link As`...
 1. Save the file to *`%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom`*, the filename does not matter (as long as it's still .conf)
 1. In-game, right click your seat and go to *Advanced -> Update custom autoconf list*  - If you get a YAML error, you did not follow the above directions corretly.
 1. Again, right click your seat and select *Advanced -> Run Custom Autoconfigure -> ButtonsHud - Dimencia and Archaegeo*
-1. IMPORTANT: Set the user control scheme to `Keyboard` (*Advanced -> Change Control Scheme -> Keyboard*). This is necessary for the HUD to work, but you can change the actual control scheme in the next step - fear not virtual joystick aces!
+1. IMPORTANT: Right click the ship and set the user control scheme to `Keyboard` (*Advanced -> Change Control Scheme -> Keyboard*). This is necessary for the HUD to work, but you can change the actual control scheme in the next step - fear not virtual joystick aces!
 1. Right click the seat, choose *Advanced -> Edit LUA Parameters*.  Change the `userControlScheme` to the actual control scheme you wish to use (e.g. `Virtual Joystick`).  You may mouse over the other parameters and set them as you wish - there are many, you should familiarize yourself with them.
 1. If you have a Databank installed on your vehicle you may save your parameters using the `Option 7` key (normally mapped to `ALT-7`).  Saved parameters will be restored any time you upgrade the HUD to a new version.
 
@@ -125,10 +127,10 @@ If you need to zoom out in 3rd person view, you must toggle free-look because th
 ### Follow Mode
 `ALT-8` will toggle **Follow Mode** when using a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.  It will not go below ground unless you dig out a big enough hole that it would naturally go down while hovering.
 
-### Auto-Brake
-`ALT-9` to engage **Auto-Brake**.  This will simply engage the brake if you come within the max braking distance of the planet targeted with `ALT-1` and `ALT-2`, and disengage it once it's gotten as close to an orbit as it can just by braking.  This is an alternative to auto-pilot if you don't want to give the autopilot control over where your ship is facing or thrusters. 
+### Toggle Gyro
+`ALT-9` to engage **Toggle Gyro**.  If a gyro is installed on your ship, this will change your ships perceived orientation from Core to Gyro.  This is used to allow you to control flight based on gyro orientation and not core orientation. 
 
-Auto-Brake is not on the UI this version; it is unreliable because it is unable to align your trajectory, and tends to over-brake if it's not perfectly aligned.  Use Autopilot if you need auto-brake, so that it can align properly.  Auto-brake is still accessible on `ALT-3` if you want it.
+Auto-Brake is not on the UI this version; it is unreliable because it is unable to align your trajectory, and tends to over-brake if it's not perfectly aligned.  .
 
 ## Persistence
 
