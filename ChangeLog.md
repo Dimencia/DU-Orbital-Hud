@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.174
+- Added DU version number in lower right hand corner of screen.
+
 Version 4.173
 - added displayOrbit user variable for those who do not want the KSP style orbit in upper corner.  Default true (to show)
 
