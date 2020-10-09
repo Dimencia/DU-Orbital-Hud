@@ -1,5 +1,15 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.174
+- Added DU version number in lower right hand corner of screen.
+
+Version 4.173
+- added displayOrbit user variable for those who do not want the KSP style orbit in upper corner.  Default true (to show)
+
+Version 4.172
+- Save autoroll preference when using Brake Landing
+- Fix shifting to Cruise Control on autotakeoff.
+
 Version 4.171 
 - Added safety check to Brake landing.  If current mass * gravity at sea level > maxBrake power, it will not try an automatic Brake Landing.
 - Added user variable for loss of altitude rate, brakeLandingRate, when using brake landing. Default is 30 m/s
