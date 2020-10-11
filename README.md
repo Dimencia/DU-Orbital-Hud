@@ -21,7 +21,7 @@ This is a general-purpose HUD for Dual Universe.  It includes a wide array of fe
 * Free-look mode
 * Save parameters between HUD version updates
 
-> NOTE: Currently the HUD only works with the Command Seat, the Hover Seat, and Remote Control as the Cockpit Controller uses a much more restricted display setup that is not compatible with HUD-type displays
+> NOTE: The HUD works with all control units, but a Cockpit must use the ProgrammingBoardHUDSupport file on a programming board in order to work
 
 ## Examples and Tutorials
 
@@ -37,6 +37,7 @@ Check the [changelog](./ChangeLog.md) file for information about the most recent
 
 # Installation
 ## While a databank element is not required, it is strongly recommended.  They are cheap, or easy to make, and take up 1x1x1 cube space and fit nicely in front of seat.  Having one on your ship prior to doing the below steps will save your user preferences and some longterm variables, as well as flight status if you get up and sit back down in some situations.
+### If you have a cockpit, you must install the Programming Board HUD Support, described below
 1. Click on **`ButtonHUD.conf`** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  Then on the top right, right click the `RAW` button and click `Save Link As`...
 1. Save the file to *`%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom`*, the filename does not matter (as long as it's still .conf)
 1. In-game, right click your seat and go to *Advanced -> Update custom autoconf list*  - If you get a YAML error, you did not follow the above directions corretly.
@@ -46,6 +47,17 @@ Check the [changelog](./ChangeLog.md) file for information about the most recent
 1. If you have a Databank installed on your vehicle you may save your parameters using the `Option 7` key (normally mapped to `ALT-7`).  Saved parameters will be restored any time you upgrade the HUD to a new version.
 
 At this point you should be ready to fly!
+
+## Optional - ProgrammingBoard HUD Support
+You may attach a Programming Board to a ship with a databank and use it to allow your passengers to view autopilot information, or use it for Autopilot in a Cockpit (required for Cockpit)
+This also serves as a solution to the glitch where framerates become very low if pressing Tab and clicking anything - you can disable/re-enable the programming board to reset the framerate without leaving the seat
+1. Ensure you have a databank and Programming Board on your ship
+1. If you've used the same databank with very old versions of the Autopilot, you may need to pick up and place it again to ensure it is cleared
+1. Link the databank to the Programming Board
+1. Open **`ProgrammingBoardHUDSupport.json`** above.  Copy the entire contents (easiest if you click RAW in the top right)
+1. In-game, right click the programming board and go to *Advanced -> Paste Lua Configuration From Clipboard*
+
+That's it, activate the Programming Board to see the HUD.  This HUD will only update when in a seat containing autopilot.  The HUD will update at a very slow rate for passengers and other players due to server issues, but should be sufficient to give data and they can easily turn it off
 
 > NOTE: You may manually connect doors or forcefields to the seat and it will remember them each time you configure it, and automatically open them when exiting the seat and close them when entering.  When connecting doors/forcefields, ensure they are shut when linking to seat first tiem.  If the ship contains a databank, it will be connected to the seat for use with storing variables (but it will never truly clear a databank, so you can use the databank for other things as well).  If the seat has a connect button, it will be pressed when exiting the seat.  Fuel tanks are not automatically slotted but you still get fuel status. They can be manually slotted if desired.
 
@@ -61,7 +73,7 @@ At this point you should be ready to fly!
 
 * AUTOPILOT: **Do not engage the autopilot if you do not have clear line of sight to the target!**  It cannot detect if there is a planet in the way.  It'll just go for it.
 
-* AUTO-LAND: Auto-Landing should be used with supervision.  It cannot detect mountains or cliffs in the way, and if you try to auto-takeoff from the thades scar, don't blame me
+* AUTO-LAND: Auto-Landing should be used with supervision.  Autolanding utilizes your brakes and hovers to bring you to a safe landing.  It will not let you engage it if you are over mass for your brakes.
 
 # Usage
 

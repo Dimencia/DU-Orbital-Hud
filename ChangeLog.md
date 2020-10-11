@@ -1,5 +1,13 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.5 - Cockpit Support!
+- Added cockpit support for this hud using a programming board.  Also allows passengers to see hud data by using the programming board. See Readme for how to use.
+- Modified all automated landings to use brake landing.  This is much safer than the previous autoland, but use under supervision.  Hit G to initiate landing any time.
+
+Version 4.2
+- Refactored display to more pure CSS for smaller filesize and more efficient frames
+- Show Orbit display only if speeds are within max speed and if periapsis and apoapsis exist.
+
 Version 4.181
 - Fixed script error
 - Fixed a minor inaccuracy in brake time calculation
