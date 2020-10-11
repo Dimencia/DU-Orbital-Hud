@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.22
+- Added MaxPitch as user variable, default value 20 degrees.  Sets max pitch autopilot will use during takeoff and altitude changes while in altitude hold.
+- Fixed text display on Orbit panel
+
 Version 4.21 
 - Updated non-widget fuel tank display to use slotted tank values (more accurate) for slotted tanks.
 - Updated G key to always brake land if gear is up and within capacity of brakes.  Otherwise gear down and manual landing required.
