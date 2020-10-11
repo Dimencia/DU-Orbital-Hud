@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.21 
+- Updated non-widget fuel tank display to use slotted tank values (more accurate) for slotted tanks.
+- Updated G key to always brake land if gear is up and within capacity of brakes.  Otherwise gear down and manual landing required.
+
 Version 4.2
 - Refactored display to more pure CSS for smaller filesize and more efficient frames
 - Show Orbit display only if speeds are within max speed and if periapsis and apoapsis exist.
