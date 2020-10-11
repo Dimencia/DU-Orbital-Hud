@@ -53,6 +53,8 @@ At this point you should be ready to fly!
 
 > DISCLAIMER: We do not accept any responsibility for incorrect use of the autopilot, which may result in fiery reentry, mountain impacts or undesired entrance into PvP if used carelessly.  Read and heed the warnings below!
 
+* AUTO-REENTRY: The default altitude is not suitable for Thades or other planets with strange altitudes; you must use alt+Space or alt+C to adjust it to an appropriate level.  Do not use auto-reentry into planets you haven't visited before or don't know the surface level of.  Do not attempt to use this on planets without atmosphere
+
 * TURN & BURN: Turn & Burn Mode assumes your ship will be able to face the correct direction to burn before you must begin braking, and should be used with caution for short trips
 
 * LANDING GEAR: When your gear is extended, your hover height is set to 0.  This helps with landings but don't attempt to put out your gear before you're hovering on the surface.  There is a warning if the gear is extended
