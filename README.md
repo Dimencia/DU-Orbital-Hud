@@ -47,7 +47,7 @@ Check the [changelog](./ChangeLog.md) file for information about the most recent
 
 At this point you should be ready to fly!
 
-> NOTE: You may manually connect doors or forcefields to the seat and it will remember them each time you configure it, and automatically open them when exiting the seat and close them when entering.  When connecting doors/forcefields, ensure they are shut when linking to seat first tiem.  If the ship contains a databank, it will be connected to the seat for use with storing variables (but it will never truly clear a databank, so you can use the databank for other things as well).  If the seat has a connect button, it will be pressed when exiting the seat.  Fuel tanks are not automatically slotted but you still get fuel status. They can be manually slotted if desired.
+> NOTE: You may manually connect doors or forcefields to the seat and it will remember them each time you configure it, and automatically open them when exiting the seat and close them when entering.  When connecting doors/forcefields, ensure they are shut when linking to seat first tiem.  If the ship contains a databank, it will be connected to the seat for use with storing variables (but it will never truly clear a databank, so you can use the databank for other things as well).  If the seat has a connect button, it will be pressed when exiting the seat.  Fuel tanks are not automatically slotted but you still get fuel status. They can be manually slotted if desired for more accurate readings and non-hud fuel widget.
 
 # Warnings
 
