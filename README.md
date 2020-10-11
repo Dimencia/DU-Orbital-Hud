@@ -37,7 +37,7 @@ Check the [changelog](./ChangeLog.md) file for information about the most recent
 
 # Installation
 ## While a databank element is not required, it is strongly recommended.  They are cheap, or easy to make, and take up 1x1x1 cube space and fit nicely in front of seat.  Having one on your ship prior to doing the below steps will save your user preferences and some longterm variables, as well as flight status if you get up and sit back down in some situations.
-### If you have a cockpit, you must install the Programming Board HUD Support, described below
+### (Everyone follows these steps, if you have a cockpit, you must additionally install the Programming Board HUD Support, as described below)
 1. Click on **`ButtonHUD.conf`** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  Then on the top right, right click the `RAW` button and click `Save Link As`...
 1. Save the file to *`%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom`*, the filename does not matter (as long as it's still .conf)
 1. In-game, right click your seat and go to *Advanced -> Update custom autoconf list*  - If you get a YAML error, you did not follow the above directions corretly.
