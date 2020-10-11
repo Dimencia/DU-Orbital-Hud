@@ -49,7 +49,8 @@ Check the [changelog](./ChangeLog.md) file for information about the most recent
 
 At this point you should be ready to fly!
 
-## Optional - ProgrammingBoard HUD Support
+## Optional - ProgrammingBoard HUD Support - Lag inducing
+### This option is known to cause more FPS problems than normal for unknown reasons.  It is on a separate branch while we investigate, but is still the only option for Cockpit users to use the HUD
 You may attach a Programming Board to a ship with a databank and use it to allow your passengers to view autopilot information, or use it for Autopilot in a Cockpit (required for Cockpit)
 This also serves as a solution to the glitch where framerates become very low if pressing Tab and clicking anything - you can disable/re-enable the programming board to reset the framerate without leaving the seat
 1. Ensure you have a databank and Programming Board on your ship
