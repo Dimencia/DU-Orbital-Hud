@@ -1,7 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.3 - Now with re-entry
+- Hitting G while over a planet will attempt to do reentry to a designated altitude hold (default 2500m) at a designated max speed (default 1050km/hr) to avoid re-entry burnup.  ReentrySpeed is user value for speed, ReentryAltitude for height.
+- interpret linebreaks for msgText
+
 Version 4.22
-- Added MaxPitch as user variable, default value 20 degrees.  Sets max pitch autopilot will use during takeoff and altitude changes while in altitude hold.
+- Added MaxPitch as user variable, default value 20 degrees.  Sets max pitch autopilot will use during takeoff and altitude changes while in altitude hold or for re-entry.
 - Fixed text display on Orbit panel
 
 Version 4.21 
