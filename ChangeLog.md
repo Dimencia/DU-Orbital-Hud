@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.31 - Bugfixes and Performance
+- On a planet with no atmo, re-rentry will no longer engage if below the designated reentry height (pressing G will enage brake-landing instead)
+- Attempt to resolve recent issues - forced garbage collection every second, moved screen drawing to Update instead of on a fixed tick
+
 Version 4.3 - Now with re-entry
 - Hitting G while over a planet will attempt to do reentry to a designated altitude hold (default 2500m) at a designated max speed (default 1050km/hr) to avoid re-entry burnup.  ReentrySpeed is user value for speed, ReentryAltitude for height.
 - interpret linebreaks for msgText
