@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.33
+- Fixed throttle arrow to always stay in range for positive and negative throttle.  Throttle color changes to red if in reverse.  Bar removed if in cruise.
+- Fixed alt key not to toggle freelook if using alt+# option.  Tapping alt will toggle freelook like normal.
+
 Version 4.32
 - Fixed new bug preventing Reentry from occurring
 
