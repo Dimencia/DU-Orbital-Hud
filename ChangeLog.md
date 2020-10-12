@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.32
+- Fixed new bug preventing Reentry from occurring
+
 Version 4.31 - Bugfixes and Performance
 - On a planet with no atmo, re-rentry will no longer engage if below the designated reentry height (pressing G will enage brake-landing instead)
 - Attempt to resolve recent issues - forced garbage collection every second, moved screen drawing to Update instead of on a fixed tick
