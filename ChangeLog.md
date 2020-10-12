@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.34
+- Moved Interplanetary Widget info to slower update (once per second) to save on performance.
+
 Version 4.33
 - Fixed throttle arrow to always stay in range for positive and negative throttle.  Throttle color changes to red if in reverse.  Bar removed if in cruise.
 - Fixed alt key not to toggle freelook if using alt+# option.  Tapping alt will toggle freelook like normal.
