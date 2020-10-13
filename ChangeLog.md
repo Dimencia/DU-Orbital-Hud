@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.37
+- Fixed damaged display to be visable and color shaded by % damage.
+
 Version 4.36
 - Pulled fuel tank fixes
 - Pulled mass calculation fixes
