@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.35
+- Initial Warpdrive support.  Warp Widget hidden by default.  Warp Hotkey (default Alt-J) will toggle the widget on if off, off if on, and initiate Warp Jump if conditions met or give message if not.  Widget will autoshow if conditions met to jump.
+
 Version 4.34
 - Moved Interplanetary Widget info to slower update (once per second) to save on performance.
 
