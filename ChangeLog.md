@@ -1,5 +1,22 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.37
+- Fixed damaged display to be visable and color shaded by % damage.
+
+Version 4.36
+- Pulled fuel tank fixes
+- Pulled mass calculation fixes
+
+Version 4.35
+- Initial Warpdrive support.  Warp Widget hidden by default.  Warp Hotkey (default Alt-J) will toggle the widget on if off, off if on, and initiate Warp Jump if conditions met or give message if not.  Widget will autoshow if conditions met to jump.
+
+Version 4.34
+- Moved Interplanetary Widget info to slower update (once per second) to save on performance.
+
+Version 4.33
+- Fixed throttle arrow to always stay in range for positive and negative throttle.  Throttle color changes to red if in reverse.  Bar removed if in cruise.
+- Fixed alt key not to toggle freelook if using alt+# option.  Tapping alt will toggle freelook like normal.
+
 Version 4.32
 - Fixed new bug preventing Reentry from occurring
 
