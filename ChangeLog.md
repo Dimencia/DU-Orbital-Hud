@@ -1,6 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.51 - Fix for display errors that might have caused control issues.
+Version 4.51 
+- Fix for display errors that might have caused control issues.
+- Coast Landing will only display if moving at high speed when using gear
 
 Version 4.5 - Autopilot to saved location in atmosphere
 - Minified conf file to avoid overflow script limit.  Added a readable version for editing/understanding.
