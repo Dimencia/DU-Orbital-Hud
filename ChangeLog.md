@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.5 - Autopilot to saved location in atmosphere
+- Minified conf file to avoid overflow script limit.  Added a readable version for editing/understanding.
+- Initial Pass: Autopilot to a presaved waypoint in atmosphere.  Use: Go to location you wish to mark.  In seat, hold shift and click Save Location.  When wishing to return to a saved point, use ALT-1/2 or SHIFT T/R till you see saved location.  If not on ground, be sure to be pointing in general direction to avoid yaw stall.  Hit Alt-4 to engage.  You may use yaw once brake landing begins to spin in place.  Saved locations may be deleted by selecting it as target and the holding shift and choosing Clear Position.  It is fairly accurate and you should arrive within 15m of marked location assuming good brakes (brake landing).  If you see Coast Landing, be prepared to take over the arrival.  If atmo radar installed, saved location will use nearest target for naming, otherwise will be named #.planet (i.e. 0.Alioth)
+
 Version 4.37
 - Fixed damaged display to be visable and color shaded by % damage.
 

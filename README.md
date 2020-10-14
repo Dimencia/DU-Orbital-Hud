@@ -11,14 +11,17 @@ We're also recruting for our in-game lua-focused org (with a bit of PVP focus on
 This is a general-purpose HUD for Dual Universe.  It includes a wide array of features including:
 
 * Heads-up display with artificial horizon, pitch, roll/yaw, altimeter, vertical speed, and more... (originally based on Rezoix's pitch/roll HUD)
-* Auto-pilot features including transit-to-orbit, inter-planetary transit routes, orbital insertion, automatic braking, and more...
-* Trip odometers
-* Fuel level displays for all types of fuel tanks
+* Auto-pilot features including transit-to-orbit, inter-planetary transit routes, orbital insertion, automatic braking, autopilot to saved location in atmosphere and more...
+* Trip odometers and information display.
+* Fuel level displays for all types of fuel tanks.  Ability to unslot fuel tanks to save slots.
 * Brake hold, altitude hold, auto-landing and takeoff functionality
+* Brake Landing if strong brakes, else Coast Landing.
+* Warp Engine widget hide if not meeting requirements to warp unless toggled on.
 * Orbital alignment and maneuver assistants
 * Radar and periscope for situational awareness
 * Ability to hide the built-in display windows to keep your flight aesthetic clean and focused
 * Free-look mode
+* User Parameters for customizing to your flight preference and ship capabilities.
 * Save parameters between HUD version updates
 
 > NOTE: The HUD works with all control units, but Cockpit support is experimental and may cause more FPS loss than normal.  Use the Cockpit branch if you wish to use this anyway
@@ -52,6 +55,8 @@ At this point you should be ready to fly!
 # Warnings
 
 > DISCLAIMER: We do not accept any responsibility for incorrect use of the autopilot, which may result in fiery reentry, mountain impacts or undesired entrance into PvP if used carelessly.  Read and heed the warnings below!
+
+* Autopilot to Saved Location:  Go to location you wish to mark.  In seat, hold shift and click Save Location.  When wishing to return to a saved point, use ALT-1/2 or SHIFT T/R till you see saved location.  If not on ground, be sure to be pointing in general direction to avoid yaw stall.  Hit Alt-4 to engage.  You may use yaw once brake landing begins to spin in place.  Saved locations may be deleted by selecting it as target and the holding shift and choosing Clear Position.  It is fairly accurate and you should arrive within 15m of marked location assuming good brakes (brake landing).  If you see Coast Landing, be prepared to take over the arrival.  If atmo radar installed, saved location will use nearest target for naming, otherwise will be named #.planet (i.e. 0.Alioth)
 
 * AUTO-REENTRY: The default altitude is not suitable for Thades or other planets with strange altitudes; you must use alt+Space or alt+C to adjust it to an appropriate level.  Do not use auto-reentry into planets you haven't visited before or don't know the surface level of.  Do not attempt to use this on planets without atmosphere
 
