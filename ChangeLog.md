@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.53
+- Fixed HUD Color preference not loading from databank properly.
+
 Version 4.52
 - Removed structural integrity - too unreliable at this time.  Elemental Intregrity remains.
 - Added current acceleration in g's.  Changed gravity reading to g. Currently these are based on 1g earth normal.
