@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.52
+- Removed structural integrity - too unreliable at this time.  Elemental Intregrity remains.
+- Added current acceleration in g's.  Changed gravity reading to g. Currently these are based on 1g earth normal.
+- Moved acceleration, gravity, and atmosphere updates to once per second.
+
 Version 4.51 
 - Fix for display errors that might have caused control issues.
 - Coast Landing will only display if moving at high speed when using gear
