@@ -12,6 +12,7 @@ This is a general-purpose HUD for Dual Universe.  It includes a wide array of fe
 
 * Heads-up display with artificial horizon, pitch, roll/yaw, altimeter, vertical speed, and more... (originally based on Rezoix's pitch/roll HUD)
 * Auto-pilot features including transit-to-orbit, inter-planetary transit routes, orbital insertion, automatic braking, autopilot to saved location in atmosphere and more...
+* Emergency Warp if target too close
 * Trip odometers and information display.
 * Fuel level displays for all types of fuel tanks.  Ability to unslot fuel tanks to save slots.
 * Brake hold, altitude hold, auto-landing and takeoff functionality
