@@ -1,5 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.56
+- Damaged components indicated by arrows while in Remote mode.  Allows you to walk around and repair being shown where next one is located.  Toggled on by Button while in remote mode (hold shift to see buttons)
+- Removed EmergencyWarp as a user variable. Now toggled by a Button.  Default is off.  If you toggle it on, then when conditions met, EmergencyWarp.  EmergencyWarpRange remains a user variable.
+- Removed BrakeToggle as a user variable.  Now toggled by a Button.  Default is Toggle Brakes.  Toggle to enable vanilla Brakes.
+- Removed DisplayOrbit as a user variable.  Now toggled by a Button.  Default is on.
+
 Version 4.555
 - Fix Cruise text to not be huge.
 
