@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.555
+- Fix Cruise text to not be huge.
+
 Version 4.55
 - Transponder IFF.  If any radar contacts have a matching transponder tag, they are listed at the top of the screen
 
