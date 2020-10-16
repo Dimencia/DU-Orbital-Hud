@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.55
+- Transponder IFF.  If any radar contacts have a matching transponder tag, they are listed at the top of the screen
+
 Version 4.54
 - Emergency Warp support. Set EmergencyWarp to true (default false).  Set EmergencyWarpRange to distance (default 320000 km, farthest default large ship lock range with large radar).  If you have a radar, and a warp engine, and if a target gets within EmergencyWarpRange and all other conditions to warp are met, EmergencyWarp to target will activate.  If it fails to activate, it will not retry.  You can hit ALT-J to stop it within 5 seconds.  NOTE: You can set EmergencyWarp to true and intentionally not put cells in its container and use it as a warning when someone gets within EmergencyWarpRange
 - Restored structural integrity (voxel damage).  HUD assumes when you sit down your voxels are at 100% and reports any damage.  Element damage report unchanged.
