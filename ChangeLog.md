@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.57
+- Glide ReEntry is on a Button now.  Default is off.  If enabled, hitting G will attempt to put you into a glide reentry to ReentryAltitude at ReentrySpeed (2500m and 1050km/hr default, user settable)
+
 Version 4.56
 - Damaged components indicated by arrows while in Remote mode.  Allows you to walk around and repair being shown where next one is located.  Toggled on by Button while in remote mode (hold shift to see buttons)
 - Removed EmergencyWarp as a user variable. Now toggled by a Button.  Default is off.  If you toggle it on, then when conditions met, EmergencyWarp.  EmergencyWarpRange remains a user variable.
