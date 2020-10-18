@@ -8,7 +8,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia.  Linked sources where appropriate, most have been modified.  HUD by Archeageo
-        versionNumber = 4.58
+        versionNumber = 4.60
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -23,6 +23,7 @@ function script.onStart()
         local isRemote = Nav.control.isRemoteControlled
 
         -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
+        newSettings = false -- export: Toggle on to save updated preferences.  Toggle off once updated preferences saved. 
         AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
         warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
         PrimaryR = 130 -- export: Primary HUD color
@@ -64,6 +65,7 @@ function script.onStart()
         ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
         ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
         EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
+        BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
 
         -- GLOBAL VARIABLES SECTION, IF NOT USED OUTSIDE UNIT.START, MAKE IT LOCAL
         markers = {}
@@ -71,6 +73,7 @@ function script.onStart()
         LastMaxBrake = 0
         EmergencyWarp = false
         ReentryMode = false
+        brakeToggle = BrakeToggleDefault
         brakeToggle = true
         displayOrbit = true
         mousePitchFactor = 1 -- Mouse control only
@@ -114,6 +117,7 @@ function script.onStart()
         gearExtended = nil
         LastEccentricity = 1
         HoldAltitudeButtonModifier = 5
+        AntiGravButtonModifier = 5
         isBoosting = false -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
         distance = 0
         brakeDistance, brakeTime = 0
@@ -131,11 +135,11 @@ function script.onStart()
         AutopilotTargetPlanet = nil
         AutopilotPlanetGravity = 0
         UnitHidden = true
-        ResetAutoVars = false
         totalDistanceTravelled = 0.0
         totalDistanceTrip = 0
         emergencyWarp = false
         notTriedEmergencyWarp = true
+        AntigravTargetAltitude = nil
         lastTravelTime = system.getTime()
         core_altitude = core.getAltitude()
         elementsID = core.getElementIdList()
@@ -147,6 +151,7 @@ function script.onStart()
         flightTime = 0
         totalFlightTime = 0
         RepairArrows = false
+        wipedDatabank = false
 
         -- updateHud() variables
         fuelTimeLeftR = {}
@@ -188,7 +193,7 @@ function script.onStart()
                              "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankOptimizationAtmo",
                              "fuelTankOptimizationSpace", "fuelTankOptimizationRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
-                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance"}
+                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "newSettings"}
         AutoVariables = {"EmergencyWarp", "hasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "AutoBrake", "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -201,7 +206,7 @@ function script.onStart()
         -- Load Saved Variables
         if dbHud then
             local hasKey = dbHud.hasKey
-            for k, v in pairs(SaveableVariables) do
+            for k, v in pairs(AutoVariables) do
                 if hasKey(v) then
                     local result = jdecode(dbHud.getStringValue(v))
                     if result ~= nil then
@@ -211,25 +216,32 @@ function script.onStart()
                     end
                 end
             end
-            for k, v in pairs(AutoVariables) do
-                if hasKey(v) then
-                    local result = jdecode(dbHud.getStringValue(v))
-                    if result ~= nil then
-                        system.print(v .. " " .. dbHud.getStringValue(v))
-                        _G[v] = result
+            if not newSettings then
+                for k, v in pairs(SaveableVariables) do
+                    if hasKey(v) then
+                        local result = jdecode(dbHud.getStringValue(v))
+                        if result ~= nil then
+                            system.print(v .. " " .. dbHud.getStringValue(v))
+                            _G[v] = result
+                            valuesAreSet = true
+                        end
                     end
                 end
             end
             if valuesAreSet then
                 msgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
-                autoRoll = autoRollPreference
+            elseif newSettings then
+                msgText =
+                    "Updated user preferences used.  Will be saved when you exit seat.  Toggle off newSettings to use saved values"
+                newSettings = false
             else
-                msgText = "No Saved Variables Found - Use Alt-7 to save your LUA parameters"
+                msgText = "No Saved Variables Found - Stand up / leave remote to save settings"
             end
         else
-            msgText = "No databank found"
+            msgText = "No databank found, install one anywhere and rerun the autoconfigure to save variables"
         end
         -- Loading saved vars is hard on it
+        autoRoll = autoRollPreference
         lastConstructMass = constructMass()
         honeyCombMass = lastConstructMass - updateMass()
         rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) ..
@@ -380,8 +392,7 @@ function script.onStart()
         end
         if hasGear then
             if gearExtended == nil then
-                gearExtended = (Nav.control.isAnyLandingGearExtended() == 1) -- make sure it's a lua boolean
-                -- make sure it's a lua boolean
+                gearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
                 if gearExtended then
                     Nav.control.extendLandingGears()
                 else
@@ -990,10 +1001,10 @@ function script.onStart()
             return pitch
         end
 
-        function saveVariables()
+        function wipeSaveVariables()
             if not dbHud then
                 msgText =
-                    "No Databank Found, unable to save. \nYou must have a Databank attached to ship prior to running the HUD autoconfigure"
+                    "No Databank Found, unable to wipe. \nYou must have a Databank attached to ship prior to running the HUD autoconfigure"
                 msgTimer = 5
             elseif valuesAreSet then
                 if doubleCheck then
@@ -1001,27 +1012,19 @@ function script.onStart()
                     for k, v in pairs(SaveableVariables) do
                         dbHud.setStringValue(v, jencode(nil))
                     end
-                    -- Not Including the auto vars
-                    -- ResetAutoVars = true
-                    -- for k,v in pairs(AutoVariables) do
-                    --    dbHud.setStringValue(v, jencode(nil))
-                    -- end
+                    for k, v in pairs(AutoVariables) do
+                        dbHud.setStringValue(v, jencode(nil))
+                    end
                     msgText =
                         "Databank wiped. Get out of the seat, set the savable variables, \nthen re-enter seat and hit ALT-7 again"
                     msgTimer = 5
                     doubleCheck = false
                     valuesAreSet = false
+                    wipedDatabank = true
                 else
                     msgText = "Press ALT-7 again to confirm wipe"
                     doubleCheck = true
                 end
-            else
-                for k, v in pairs(SaveableVariables) do
-                    dbHud.setStringValue(v, jencode(_G[v]))
-                end
-                msgText = "Saved Variables to Datacore"
-                ResetAutoVars = false
-                valuesAreSet = true
             end
         end
 
@@ -1044,6 +1047,12 @@ function script.onStart()
         end
 
         function DrawButton(newContent, toggle, hover, x, y, w, h, activeColor, inactiveColor, activeText, inactiveText)
+            if type(activeText) == "function" then
+                activeText = activeText()
+            end
+            if type(inactiveText) == "function" then
+                inactiveText = inactiveText()
+            end
             newContent[#newContent + 1] = stringf("<rect x='%f' y='%f' width='%f' height='%f' fill='", x, y, w, h)
             if toggle then
                 newContent[#newContent + 1] = stringf("%s'", activeColor)
@@ -1271,6 +1280,21 @@ function script.onStart()
             return "Disable Autopilot: " .. name
         end
 
+        function ToggleAntigrav()
+            if antigrav then
+                if antigrav.getState() == 1 then
+                    antigrav.deactivate()
+                    AntigravTargetAltitude = nil
+                else
+                    AntigravTargetAltitude = core_altitude
+                    if AntigravTargetAltitude < 1000 then
+                        AntigravTargetAltitude = 1000
+                    end
+                    antigrav.activate()
+                end
+            end
+        end
+
         -- BEGIN BUTTON DEFINITIONS
 
         -- enableName, disableName, width, height, x, y, toggleVar, toggleFunction, drawCondition
@@ -1374,21 +1398,41 @@ function script.onStart()
                     msgText = "Orbit Display Disabled"
                 end
             end)
-        coroutine.yield() -- Just to make sure
         y = y + buttonHeight + 20
-        MakeButton("Enable Repair Arrows", "Disable Repair Arrows", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
-            function()
-                return RepairArrows
-            end, function()
-                RepairArrows = not RepairArrows
-                if (RepairArrows) then
-                    msgText = "Repair Arrows Enabled"
-                else
-                    msgText = "Repair Arrows Diabled"
-                end
-            end, function()
-                return isRemote() == 1
-            end)
+        MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
+            return AntigravTargetAltitude == nil
+        end, ToggleAntigrav, function()
+            return antigrav ~= nil
+        end)
+        MakeButton("Enable Repair Arrows", "Disable Repair Arrows", buttonWidth, buttonHeight, x, y, function()
+            return RepairArrows
+        end, function()
+            RepairArrows = not RepairArrows
+            if (RepairArrows) then
+                msgText = "Repair Arrows Enabled"
+            else
+                msgText = "Repair Arrows Diabled"
+            end
+        end, function()
+            return isRemote() == 1
+        end)
+        y = y + buttonHeight + 20
+        MakeButton(function()
+            return string.format("Toggle Control Scheme - Current: %s", userControlScheme)
+        end, function()
+            return string.format("Control Scheme: %s", userControlScheme)
+        end, buttonWidth * 2, buttonHeight, x, y, function()
+            return false
+        end, function()
+            if userControlScheme == "Keyboard" then
+                userControlScheme = "Mouse"
+            elseif userControlScheme == "Mouse" then
+                userControlScheme = "Virtual Joystick"
+            else
+                userControlScheme = "Keyboard"
+            end
+        end)
+        coroutine.yield() -- Just to make sure
 
         -- HUD - https://github.com/Rezoix/DU-hud with major modifications by Archeageo
         function updateHud(newContent)
@@ -3422,12 +3466,17 @@ function script.onEnd()
             v.activate()
         end
     end
-    -- Save autovariables
+    -- Save variables
     if dbHud then
-        if not ResetAutoVars then
+        if not wipedDatabank then
             for k, v in pairs(AutoVariables) do
                 dbHud.setStringValue(v, json.encode(_G[v]))
             end
+            for k, v in pairs(SaveableVariables) do
+                dbHud.setStringValue(v, json.encode(_G[v]))
+                system.print(v .. " " .. dbHud.getStringValue(v))
+            end
+            system.print("Saved Variables to Datacore")
         end
     end
     if button then
@@ -3570,11 +3619,11 @@ function script.onTick(timerId)
                     unit.setTimer("emergencyWarpTick", 5)
                     emergencyWarp = false
                 else
-                    msgText = "Emergency Warp Condition Met - Cannot Warp, will retry in 30 seconds\n" ..
+                    msgText = "Emergency Warp Condition Met - Cannot Warp, will retry in 1 second\n" ..
                                   (json.decode(warpdrive.getData()).errorMsg)
-                    msgTick = 10
+                    msgTick = 1
                     emergencyWarp = false
-                    setTimer("thirtySecond", 30)
+                    setTimer("reEmergencyWarp", 1)
                 end
             end
             if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
@@ -3589,10 +3638,10 @@ function script.onTick(timerId)
         checkDamage(newContent)
         LastOdometerOutput = table.concat(newContent, "")
         collectgarbage("collect")
-    elseif timerId == "thirtySecond" then
+    elseif timerId == "reEmergencyWarp" then
         notTriedEmergencyWarp = true
         emergencyWarp = true
-        unit.stopTimer("thirtySecond")
+        unit.stopTimer("reEmergencyWarp")
     elseif timerId == "msgTick" then
         -- This is used to clear a message on screen after a short period of time and then stop itself
         DisplayMessage(newContent, "empty")
@@ -3630,6 +3679,19 @@ function script.onTick(timerId)
         local deltaY = system.getMouseDeltaY()
         targetGroundAltitude = Nav:getTargetGroundAltitude()
         local TrajectoryAlignmentStrength = 0.002 -- How strongly AP tries to align your velocity vector to the target when not in orbit
+        local isWarping = (velMag > 8334)
+        if not isWarping and LastIsWarping then
+            if not BrakeIsOn then
+                BrakeToggle()
+            end
+            if Autopilot then
+                AutopilotToggle()
+            end
+        end
+        LastIsWarping = isWarping
+        if antigrav and antigrav.getState() == 1 and not desiredBaseAltitude then -- initialise if needed
+            desiredBaseAltitude = antigrav.getBaseAltitude()
+        end
         if BrakeIsOn then
             brakeInput = 1
         else
@@ -4155,6 +4217,61 @@ function script.onTick(timerId)
             end
         end
         LastEccentricity = orbit.eccentricity
+        -- antigrav by zerofg
+        -- it's very rough but get the job done, AGG are weird
+        if antigrav and core_altitude < 200000 and antigrav.getState() == 1 then
+            if AntigravTargetAltitude == nil then -- no target : try to stabilize if too far from actual altitude (
+                local AGGtargetDistance = core_altitude - antigrav.getBaseAltitude()
+                if core_altitude > 800 and AGGtargetDistance < -200 then
+                    desiredBaseAltitude = math.max(core_altitude + 100, 1000)
+                elseif AGGtargetDistance > 200 then
+                    desiredBaseAltitude = core_altitude - 100
+                end
+
+            else -- I tried using a PID but didn't work that well, so I'm just regulating speed instead
+                local AGGtargetDistance = AntigravTargetAltitude - core_altitude
+                -- totaly stole the code from lisa-lionheart for vSpeed
+                local velocity = vec3(core.getWorldVelocity())
+                local up = vec3(core.getWorldVertical()) * -1
+                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+
+                -- this is about as fast as AGG can go, and is conveniently below the atmos burn speed (1044 km/h)
+                local maxVSpeed = 290
+                local minVSpeed = -290
+
+                -- when under "strong" planet influence, you can easily get below you AGG base altitude if not carefull
+                if unit.getClosestPlanetInfluence() > 0.3 then
+                    minVSpeed = -190
+                end
+
+                -- adjust max speed based on distance, but at least 10m/s
+                minVSpeed = math.min(math.max(minVSpeed, -math.abs(AGGtargetDistance) / 20.0), -10)
+                maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
+
+                if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
+                    desiredBaseAltitude = core_altitude + 100
+
+                elseif vSpd > maxVSpeed then -- not as bad as going too fast down but still need to slow down or at least stop accelerating
+                    desiredBaseAltitude = math.max(core_altitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
+
+                elseif math.abs(AGGtargetDistance) > 150 or math.abs(vSpd) > 15 then
+                    if math.abs(vSpd) > 10 then
+                        desiredBaseAltitude = core_altitude +
+                                                  math.max(math.min(AGGtargetDistance - vSpd / 10.0, 100), -100)
+                    else
+                        desiredBaseAltitude = core_altitude + math.max(math.min(AGGtargetDistance, 100), -100)
+                    end
+
+                else -- getting close to the target
+                    desiredBaseAltitude = AntigravTargetAltitude
+                    if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 30 then -- very close and not much speed let's stop there
+                        AntigravTargetAltitude = nil
+                    end
+
+                end
+            end
+        end
     end
 end
 
@@ -4335,6 +4452,11 @@ function script.onFlush()
     elseif (isboosting) then
         unit.setEngineThrust('rocket_engine', 1)
     end
+
+    -- antigrav
+    if antigrav and antigrav.getState() == 1 and desiredBaseAltitude ~= antigrav.getBaseAltitude() then
+        antigrav.setBaseAltitude(desiredBaseAltitude)
+    end
 end
 
 function script.onUpdate()
@@ -4373,8 +4495,6 @@ function script.onActionStart(action)
                 autoRoll = true
                 gearExtended = false -- Don't actually do it
                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-                -- Nav.control.extendLandingGears()
-                -- Nav.axisCommandManager:setTargetGroundAltitude(0)
             elseif ReentryMode and unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and
                 core_altitude > ReentryAltitude then
                 Reentry = true
@@ -4428,14 +4548,19 @@ function script.onActionStart(action)
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
     elseif action == "groundaltitudeup" then
         OldButtonMod = HoldAltitudeButtonModifier
-        if AltitudeHold then
+        OldAntiMod = AntiGravButtonModifier
+        if antigrav and antigrav.getState() == 1 then
+            AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+        elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionStart(1.0)
         end
     elseif action == "groundaltitudedown" then
         OldButtonMod = HoldAltitudeButtonModifier
-        if AltitudeHold then
+        if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude > 1000 then
+            AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+        elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionStart(-1.0)
@@ -4470,7 +4595,7 @@ function script.onActionStart(action)
         ToggleAltitudeHold()
         toggleView = false
     elseif action == "option7" then
-        saveVariables()
+        wipeSaveVariables()
         toggleView = false
     elseif action == "option8" then
         toggleFollowMode()
@@ -4528,7 +4653,7 @@ function script.onActionStart(action)
         end
     elseif action == "antigravity" then
         if antigrav ~= nil then
-            antigrav.toggle()
+            ToggleAntigrav()
         end
     elseif action == "warp" then
         if warpdrive ~= nil then
@@ -4582,13 +4707,19 @@ function script.onActionStop(action)
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
     elseif action == "groundaltitudeup" then
-        if AltitudeHold then
+        if antigrav and antigrav.getState() == 1 then
+            AntiGravButtonModifier = OldAntiMod
+        elseif AltitudeHold then
             HoldAltitudeButtonModifier = OldButtonMod
         end
+        toggleView = false
     elseif action == "groundaltitudedown" then
-        if AltitudeHold then
+        if antigrav and antigrav.getState() == 1 then
+            AntiGravButtonModifier = OldAntiMod
+        elseif AltitudeHold then
             HoldAltitudeButtonModifier = OldButtonMod
         end
+        toggleView = false
     elseif action == "lshift" then
         if system.isViewLocked() == 1 then
             HoldingCtrl = false
@@ -4627,14 +4758,20 @@ end
 
 function script.onActionLoop(action)
     if action == "groundaltitudeup" then
-        if AltitudeHold then
+        if antigrav and antigrav.getState() == 1 then
+            AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+            AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+        elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
             HoldAltitudeButtonModifier = HoldAltitudeButtonModifier * 1.05
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionLoop(1.0)
         end
     elseif action == "groundaltitudedown" then
-        if AltitudeHold then
+        if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude > 1000 then
+            AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+            AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+        elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier
             HoldAltitudeButtonModifier = HoldAltitudeButtonModifier * 1.05
         else
