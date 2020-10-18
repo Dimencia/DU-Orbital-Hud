@@ -7,7 +7,7 @@ function script.onStart()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
             {1000, 5000, 10000, 20000, 30000})
 
-        -- Written by Dimencia.  Linked sources where appropriate, most have been modified.  HUD by Archeageo
+        -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
         VERSION_NUMBER = 4.60
         -- function localizations
         local mfloor = math.floor
