@@ -1,5 +1,22 @@
 # How to edit the HUD code
 
+## Prerequisites for local development
+
+If you are on Windows, you will need WSL2 installed:
+1. Install WSL2 with Ubuntu (v20 is fine): https://docs.microsoft.com/en-us/windows/wsl/install-win10
+
+Everything from here after assumes you are running in the Linux environment
+1. Install lua: `sudo apt install lua5.3`
+1. Install NPM (Node.js): `sudo apt install npm`
+1. Update your local packages in the root of the git repo: `npm install`
+1. Run VSCode: `code .`
+1. Install the Lua Extension in VSCode
+
+Then, when you are ready to create the minified version of the configuration, just do: `CTRL`-`SHIFT`-`B` and select `wrap`.
+`ButtonHUD.conf` will be updated with the minified version, which you can then deploy as usual.
+
+## Creating the wrapped (deployable) `ButtonHUD.conf`
+
 The HUD autoconf is generated from `ButtonHUD.lua`, which is the master implementation.  Note that this is organized
 according to how `wrap.lua` expects, which is documented [here](https://board.dualthegame.com/index.php?/topic/20161-lua-tool-script-packagerconfigurator-wraplua/).
 
