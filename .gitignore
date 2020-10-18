@@ -1,2 +1,2 @@
-./ButtonHUD.min.lua
-./node-modules
+ButtonHUD.min.lua
+node_modules/**
