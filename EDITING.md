@@ -5,10 +5,24 @@
 If you are on Windows, you will need WSL2 installed:
 1. Install WSL2 with Ubuntu (v20 is fine): https://docs.microsoft.com/en-us/windows/wsl/install-win10
 1. Install VSCode with the Remote Development Pack: https://code.visualstudio.com/docs/remote/wsl
+1. Close and reopen your WSL window if you have one open
 
 Everything from here after assumes you are running in the Linux environment
+1. Update your package list: `sudo apt update`
 1. Install lua: `sudo apt install lua5.3`
 1. Install NPM (Node.js): `sudo apt install npm`
+1. Create an SSH key for GitHub: `ssh-keygen -t rsa -b 4096 -C "<your email>" -f ~/.ssh/<your_name>_rsa`
+1. Update your SSH config file to use the key:
+```
+cat > ~/.ssh/config <<EOF
+Host *
+    Hostname github.com
+    User git
+    IdentityFile ~/.ssh/<your_name>_rsa
+EOF
+```
+1. Add the SSH Key to GitHub (see https://devconnected.com/how-to-setup-ssh-keys-on-github/ if you don't know how to do this)
+1. Clone the repo: `git clone git@github.com:Dimencia/DU-Orbital-Hud.git`
 1. Update your local packages in the root of the git repo: `npm install`
 1. Run VSCode: `code .`
 1. Install the Lua Extension in VSCode
