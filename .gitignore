@@ -1,2 +1,5 @@
 ButtonHUD.min.lua
+ButtonHUD.wrapped.conf
+ButtonHUD.exports
+ButtonHUD.extracted.lua
 node_modules/**
