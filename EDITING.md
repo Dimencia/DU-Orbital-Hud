@@ -13,27 +13,35 @@ Everything from here after assumes you are running in the Linux environment
 1. Install NPM (Node.js): `sudo apt install npm`
 1. Create an SSH key for GitHub: `ssh-keygen -t rsa -b 4096 -C "<your email>" -f ~/.ssh/<your_name>_rsa`
 1. Update your SSH config file to use the key when talking to GitHub:
-```
-cat >> ~/.ssh/config <<EOF
-Host github.com
-    User git
-    IdentityFile ~/.ssh/<your_name>_rsa
-EOF
-```
+    ```
+    cat >> ~/.ssh/config <<EOF
+    Host github.com
+        User git
+        IdentityFile ~/.ssh/<your_name>_rsa
+    EOF
+    ```
 1. Add the SSH Key to GitHub (see https://devconnected.com/how-to-setup-ssh-keys-on-github/#Add_SSH_key_to_your_GitHub_Account if you don't know how to do this)
 1. Clone the repo: `git clone git@github.com:Dimencia/DU-Orbital-Hud.git`
 1. `cd DU-Orbital-Hud`
 1. Set your git name and email for commits:
-```
-git config --add user.name "<your name>"
-git config --add user.email "<your email>"
-```
+    ```
+    git config --add user.name "<your name>"
+    git config --add user.email "<your email>"
+    ```
 1. Update your local packages in the root of the git repo: `npm install`
 1. Run VSCode: `code .`
-1. Install the `Lua` and `Lua Helper` extensions in VSCode
+1. Install the `Lua` v0.21.3 or later and `Lua Helper` v0.1.31 or later extensions in VSCode
+1. You may want to change your deployment location so that the deployment function can automatically copy the .conf file to Dual Universe for testing.
+    1. In VSCode, hit `CTRL`-`SHIFT`-`P`, and select Preferences: Open Settings (JSON)
+    1. Add lines similar to what is in `.vscode/settings.json` for the file locations.  In particular, be sure the installation drive (`e` in this example) is correct:
+    ```
+    "du.autoconfdir": "/mnt/e/ProgramData/Dual Universe/Game/data/lua/autoconf/custom",
+    "du.testconffilename": "ButtonHUD.test.conf"
+    ```
 
-Then, when you are ready to create the minified version of the configuration, just do: `CTRL`-`SHIFT`-`B` and select `wrap`.
-`ButtonHUD.conf` will be updated with the minified version, which you can then deploy as usual.
+Then, when you are ready to create the minified version of the configuration, just do: `CTRL`-`SHIFT`-`B` and select `Wrap and Deploy`.
+`ButtonHUD.conf` will be updated with the minified version, anf then deployed automatically to your Dual Universe autoconf directory, assuming
+you have correctly configured it above.
 
 ## Creating the wrapped (deployable) `ButtonHUD.conf`
 

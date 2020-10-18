@@ -4,28 +4,34 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "deploy",
+            "label": "Wrap and Deploy",
             "type": "shell",
             "group": "build",
-            "command": "copy",
+            "command": "cp",
+            "dependsOn": [
+                "Wrap (minified)"
+            ],
             "args": [
-                "${workspaceFolderBasename}/ButtonHUD.conf",
-                "E:/ProgramData/Dual Universe/Game/data/lua/autoconf/custom"
-            ] 
+                "ButtonHUD.conf",
+                "${config:du.autoconfdir}/${config:du.testconffilename}"
+            ],
+            "problemMatcher": []
         },
         {
-            "label": "wrap",
+            "label": "Wrap (minified)",
             "type": "shell",
             "group": "build",
             "command": "./wrap.sh",
-            "args": [ "true" ]
+            "args": [ "true" ],
+            "problemMatcher": []
         },
         {
-            "label": "wrap (no minify)",
+            "label": "Wrap (readable)",
             "type": "shell",
             "group": "build",
             "command": "./wrap.sh",
-            "args": [ "false" ]
+            "args": [ "false" ],
+            "problemMatcher": []
         },
     ]
 }
