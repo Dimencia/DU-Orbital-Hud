@@ -4,6 +4,7 @@
 
 If you are on Windows, you will need WSL2 installed:
 1. Install WSL2 with Ubuntu (v20 is fine): https://docs.microsoft.com/en-us/windows/wsl/install-win10
+1. Install VSCode with the Remote Development Pack: https://code.visualstudio.com/docs/remote/wsl
 
 Everything from here after assumes you are running in the Linux environment
 1. Install lua: `sudo apt install lua5.3`
