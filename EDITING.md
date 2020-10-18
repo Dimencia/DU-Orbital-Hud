@@ -22,12 +22,12 @@ Host *
 EOF
 ```
 1. Add the SSH Key to GitHub (see https://devconnected.com/how-to-setup-ssh-keys-on-github/#Add_SSH_key_to_your_GitHub_Account if you don't know how to do this)
+1. Clone the repo: `git clone git@github.com:Dimencia/DU-Orbital-Hud.git`
 1. Set your git name and email for commits:
 ```
 git config --add user.name=<your name>
 git config --add user.email=<your email>
 ```
-1. Clone the repo: `git clone git@github.com:Dimencia/DU-Orbital-Hud.git`
 1. Update your local packages in the root of the git repo: `npm install`
 1. Run VSCode: `code .`
 1. Install the `Lua` and `Lua Helper` extensions in VSCode
