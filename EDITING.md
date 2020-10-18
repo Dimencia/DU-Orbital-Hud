@@ -25,7 +25,7 @@ EOF
 1. Clone the repo: `git clone git@github.com:Dimencia/DU-Orbital-Hud.git`
 1. Update your local packages in the root of the git repo: `npm install`
 1. Run VSCode: `code .`
-1. Install the Lua Extension in VSCode
+1. Install the `Lua` and `Lua Helper` extensions in VSCode
 
 Then, when you are ready to create the minified version of the configuration, just do: `CTRL`-`SHIFT`-`B` and select `wrap`.
 `ButtonHUD.conf` will be updated with the minified version, which you can then deploy as usual.
