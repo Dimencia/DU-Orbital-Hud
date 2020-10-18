@@ -14,7 +14,7 @@ Everything from here after assumes you are running in the Linux environment
 1. Create an SSH key for GitHub: `ssh-keygen -t rsa -b 4096 -C "<your email>" -f ~/.ssh/<your_name>_rsa`
 1. Update your SSH config file to use the key:
 ```
-cat > ~/.ssh/config <<EOF
+cat >> ~/foo <<EOF
 Host *
     Hostname github.com
     User git
