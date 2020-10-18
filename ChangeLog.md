@@ -1,5 +1,13 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.60 (NOT YET IMPLEMENTED)
+- Added AGG support, turned off for now till tested.
+- Updated Save mechanics.  Please READ the SAVE section of the README
+- Changed emergency warp retry to every second if enabled
+- fixed autoroll setting issue
+- Brake Toggle or Default mode user variable restored to remember setting
+- Testing braking after emergency warp and re-engage of autopilot
+
 Version 4.58
 - Change Emergency Warp to retry every 30 seconds if enabled.
 

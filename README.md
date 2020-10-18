@@ -6,6 +6,9 @@ We've also just added a lua-commissions channel!  Non-scripters can post request
 
 We're also recruting for our in-game lua-focused org (with a bit of PVP focus on the side).  Check the discord for details
 
+## SAVE UPDATE
+> We have changed how saving settings works.  Put a databank on your ship and run (rerun) the autoconf.  Then right click seat, Advanced->Edit Lua Parameters.  Set your parameters.  Saving now occurs when you exit the seat/remote.  Loading occurs when you sit down in the chair.  If you need to override what is on the databank with new changes, toggle on the newSettings parameter in Edit Lua Parameters.  Then when you sit down, it will use the parameters shown in Edit Lua Parameters.  Alt-7 is only used to WIPE all parameters/flight status variables.
+
 # Overview
 
 This is a general-purpose HUD for Dual Universe.  It includes a wide array of features including:
@@ -26,6 +29,7 @@ This is a general-purpose HUD for Dual Universe.  It includes a wide array of fe
 * Save parameters between HUD version updates
 
 > NOTE: The HUD works with all control units, but Cockpit support is experimental and may cause more FPS loss than normal.  Use the Cockpit branch if you wish to use this anyway
+
 
 ## Examples and Tutorials
 
@@ -130,7 +134,7 @@ If you need to zoom out in 3rd person view, you must toggle free-look because th
 `G` (Gear) is a very loaded key.  While in atmosphere it will attempt to Brake Land if your brakes are strong enough (stop you and float to ground).  If not it will attempt to coast land (angle down till slow enough and within hover/vbooster height then land).  If in space it will initiate re-entry to a specific altitude (2500m by default) at a specific re-entry speed (1050km/hr default).  You may modify the target values via Edit LUA Parameters, or use alt-C and alt-spacebar to lower and raise target height, and mousewheel to change target cruise speed.
 
 ### Save/Clear Variables in Databank
-`ALT-7` to **Save/clear variables in a databank** - To use:  Attach a databank to your ship in any location.  Rerun the HUD Autoconfig. Change any variables using Edit LUA Paremeters. Get in seat.  Hit ALT-7 to save.  These will now autoload anytime you get in seat.  To change: Hit alt-7 to wipe the databank, get out of seat, rerun Autoconfig, then change the values with Edit LUA Parameters, get back in seat, and alt-7 to save the new values.  Values saved on a remote work for a seat on same ship and vice versa.  This feature also saves current ship status to enable smoother operation if you get up while flying.
+`ALT-7` to **Wipe variables in a databank, you must press it a second time to confirm** - Hitting ALT-7 2x will wipe all data except saved locations from databank.  To wipe saved locations you must select them as a target and then use Clear button shown while holding shift.  Or you can pick up the databank, remove dynamic properties, and then put it back down, this clears everything from it.
 
 ### Follow Mode
 `ALT-8` will toggle **Follow Mode** when using a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.  It will not go below ground unless you dig out a big enough hole that it would naturally go down while hovering.
