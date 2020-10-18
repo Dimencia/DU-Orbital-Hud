@@ -20,17 +20,27 @@
         {
             "label": "Wrap (minified)",
             "type": "shell",
-            "group": "build",
+            "group": "build",            
             "command": "./wrap.sh",
-            "args": [ "true" ],
-            "problemMatcher": []
+            "args": [
+                "true"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
+            "problemMatcher": [],
         },
         {
             "label": "Wrap (readable)",
             "type": "shell",
             "group": "build",
             "command": "./wrap.sh",
-            "args": [ "false" ],
+            "args": [
+                "false"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/scripts"
+            },
             "problemMatcher": []
         },
     ]

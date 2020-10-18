@@ -4276,8 +4276,6 @@ function script.onTick(timerId)
 end
 
 function script.onFlush()
-    -- constants: use 'myvar = defaultValue --export: description' to expose the variable in context menu
-
     local torqueFactor = 2 -- Force factor applied to reach rotationSpeed<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
 
     -- validate params
