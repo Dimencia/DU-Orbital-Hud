@@ -1,0 +1,88 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "deploy",
+            "type": "shell",
+            "group": "build",
+            "command": "copy",
+            "args": [
+                "${workspaceFolderBasename}/ButtonHUD.conf",
+                "E:/ProgramData/Dual Universe/Game/data/lua/autoconf/custom"
+            ] 
+        },
+        {
+            "label": "minify",
+            "type": "shell",
+            "group": "build",
+            "command": "luamin",
+            "args": [
+                "--file", "ButtonHUD.lua",
+                ">", "ButtonHUD.min.lua"
+            ],            
+        },
+        {
+            "label": "wrap",
+            "type": "shell",
+            "group": "build",
+            "command": "lua",
+            "dependsOn": [
+                "minify"
+            ],
+            "args": [
+                "wrap.lua",
+                "--handle-errors",
+                "--output", "yaml",
+                "--name", "ButtonsHud - Dimencia and Archaegeo v4.58 (Minified)",
+                "ButtonHUD.min.lua",
+                "ButtonHUD.wrapped.conf",
+                "--slots", 
+                "core:class=CoreUnit",
+                "radar:class=RadarPVPUnit,select=manual",
+                "antigrav:class=AntiGravityGeneratorUnit",
+                "warpdrive:class=WarpDriveUnit",
+                "gyro:class=GyroUnit",
+                "weapon:class=WeaponUnit,select=manual",
+                "dbHud:class=databank",            
+                "vBooster:class=VerticalBooster",
+                "hover:class=Hovercraft",
+                "door:class=DoorUnit,select=manual",
+                "forcefield:class=ForceFieldUnit,select=manual",
+                "atmofueltank:class=AtmoFuelContainer,select=manual",
+                "spacefueltank:class=SpaceFuelContainer,select=manual",
+                "rocketfueltank:class=RocketFuelContainer,select=manual",
+            ]
+        },
+        {
+            "label": "wrap - no minify",
+            "type": "shell",
+            "group": "build",
+            "command": "lua",
+            "args": [
+                "wrap.lua",
+                "--handle-errors",
+                "--output", "yaml",
+                "--name", "ButtonsHud - Dimencia and Archaegeo v4.58 (Minified)",
+                "ButtonHUD.lua",
+                "ButtonHUD.wrapped.conf",
+                "--slots", 
+                "core:class=CoreUnit",
+                "radar:class=RadarPVPUnit,select=manual",
+                "antigrav:class=AntiGravityGeneratorUnit",
+                "warpdrive:class=WarpDriveUnit",
+                "gyro:class=GyroUnit",
+                "weapon:class=WeaponUnit,select=manual",
+                "dbHud:class=databank",            
+                "vBooster:class=VerticalBooster",
+                "hover:class=Hovercraft",
+                "door:class=DoorUnit,select=manual",
+                "forcefield:class=ForceFieldUnit,select=manual",
+                "atmofueltank:class=AtmoFuelContainer,select=manual",
+                "spacefueltank:class=SpaceFuelContainer,select=manual",
+                "rocketfueltank:class=RocketFuelContainer,select=manual",
+            ]
+        }
+    ]
+}
