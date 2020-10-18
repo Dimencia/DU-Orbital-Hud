@@ -1,10 +1,8 @@
 script = {}
 
 function script.onStart()
-    system.print("onStart() called")
     SetupComplete = false
     beginSetup = coroutine.create(function()
-        system.print("beginSetup() called")
         Nav = Navigator.new(system, core, unit)
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
             {1000, 5000, 10000, 20000, 30000})
@@ -164,7 +162,6 @@ function script.onStart()
         honeyCombMass = 0
         upAmount = 0
 
-        system.print("Local variables...")
         -- LOCAL VARIABLES, USERS DO NOT CHANGE
         local Buttons = {}
         local AutopilotStrength = 1 -- How strongly autopilot tries to point at a target
@@ -200,7 +197,6 @@ function script.onStart()
                          "AutopilotTargetIndex", "gearExtended", "targetGroundAltitude", "totalDistanceTravelled",
                          "totalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake"}
 
-        system.print("Condition checks...")
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
         if dbHud then
@@ -244,9 +240,7 @@ function script.onStart()
         titlecolR = rgb
         titlecol = rgb
         titlecolS = rgb
-        system.print("Yield...")
         coroutine.yield() -- Give it some time to breathe before we do the rest
-        system.print("Resume...Init Tanks and Elements")
         for k in pairs(elementsID) do
             local name = eleType(elementsID[k])
             if (name == "landing gear") then
@@ -338,7 +332,6 @@ function script.onStart()
             end
         end
 
-        system.print("Checking gyro and radar...")
         if gyro ~= nil then
             GyroIsOn = gyro.getState() == 1
         end
@@ -359,7 +352,6 @@ function script.onStart()
             end
         end
         -- Close door and retract ramp if available
-        system.print("Close door, retract ramp...")
         if door then
             for _, v in pairs(door) do
                 v.deactivate()
@@ -370,15 +362,12 @@ function script.onStart()
                 v.deactivate()
             end
         end
-        system.print("Show antigrav...")
         -- _autoconf.displayCategoryPanel(weapon, weapon_size, L_TEXT("ui_lua_widget_weapon", "Weapons"), "weapon", true)
         _autoconf.displayCategoryPanel(weapon, weapon_size, "Weapons", "weapon", true)
-        system.print("Check antigrav...")
         if antigrav ~= nil then
             antigrav.show()
         end
 
-        system.print("Unfreeze remote...")
         -- unfreeze the player if he is remote controlling the construct
 
         if isRemote() == 1 and RemoteFreeze then
@@ -386,7 +375,6 @@ function script.onStart()
         else
             system.freeze(0)
         end
-        system.print("Calibrate altitude...")
         if targetGroundAltitude ~= nil then
             Nav.axisCommandManager:setTargetGroundAltitude(targetGroundAltitude)
         end
@@ -421,8 +409,6 @@ function script.onStart()
         end
 
         unit.hide()
-
-        system.print("Defining functions...")
 
         -- BEGIN FUNCTION DEFINITIONS
 
@@ -3409,7 +3395,6 @@ function script.onStart()
 
         -- That was a lot of work with dirty strings and json.  Clean up
         collectgarbage("collect")
-        system.print("Setting up apTick timer")
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("oneSecond", 1)
     end)
@@ -4706,6 +4691,5 @@ function updateMass()
 end
 -- END system.start
 
-system.print("Starting the HUD...")
 script.onStart()
 
