@@ -14,14 +14,14 @@ Everything from here after assumes you are running in the Linux environment
 1. Create an SSH key for GitHub: `ssh-keygen -t rsa -b 4096 -C "<your email>" -f ~/.ssh/<your_name>_rsa`
 1. Update your SSH config file to use the key:
 ```
-cat >> ~/foo <<EOF
+cat >> ~/.ssh/config <<EOF
 Host *
     Hostname github.com
     User git
     IdentityFile ~/.ssh/<your_name>_rsa
 EOF
 ```
-1. Add the SSH Key to GitHub (see https://devconnected.com/how-to-setup-ssh-keys-on-github/ if you don't know how to do this)
+1. Add the SSH Key to GitHub (see https://devconnected.com/how-to-setup-ssh-keys-on-github/#Add_SSH_key_to_your_GitHub_Account if you don't know how to do this)
 1. Set your git name and email for commits:
 ```
 git config --add user.name=<your name>
