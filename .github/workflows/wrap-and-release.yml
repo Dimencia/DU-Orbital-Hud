@@ -1,0 +1,11 @@
+name: Wrap and Release
+on:
+  push:
+    paths:
+      - '*'
+jobs:
+  check-bats-version:
+    container: lua:latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: ls -la
