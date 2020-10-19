@@ -1,5 +1,14 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.60
+
+- Added AGG support.  Engage AGG > 1000m with ALT-G or Button.  Use alt-c and alt-space to change AGG target height.  NOTE:  turning on brake does not cancel agg for obvious reasons.  You must toggle it off to cancel.
+- Updated Save mechanics. Please READ the SAVE section of the README
+- Changed emergency warp retry to every second if enabled
+- fixed autoroll setting issue
+- Brake Toggle or Default mode user variable restored to remember setting
+- Testing braking after emergency warp and re-engage of autopilo
+
 Version 4.58
 - Change Emergency Warp to retry every 30 seconds if enabled.
 
