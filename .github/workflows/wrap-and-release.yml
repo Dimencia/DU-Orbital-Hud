@@ -1,0 +1,44 @@
+name: Wrap and Release
+on:
+  push:
+    branches: master
+jobs:
+  wrap-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Detect Version Number
+        if: github.ref == 'refs/heads/master'  # ONLY ON MASTER
+        run: |
+          ./scripts/version-number-from-src.sh
+          echo "VERSION_NUMBER=$( ./scripts/version-number-from-src.sh )" >> $GITHUB_ENV
+
+      - name: Create Release Notes
+        if: github.ref == 'refs/heads/master'  # ONLY ON MASTER
+        run: |
+          cat ./scripts/ReleaseNotesTemplate.md > ReleaseNotes.md
+          ./scripts/latest-changes.sh >> ReleaseNotes.md
+
+      - name: Create Release
+        if: github.ref == 'refs/heads/master'  # ONLY ON MASTER
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ env.VERSION_NUMBER }}
+          release_name: Release v${{ env.VERSION_NUMBER }}
+          body_path: ReleaseNotes.md
+
+      - name: Upload Autoconf as Release Asset
+        if: github.ref == 'refs/heads/master'  # ONLY ON MASTER
+        id: upload-autoconf
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above
+          asset_path: ./ButtonHUD.conf
+          asset_name: ButtonHUD.conf
+          asset_content_type: text/yaml
