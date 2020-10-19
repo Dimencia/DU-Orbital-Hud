@@ -2,8 +2,11 @@ ButtonHUD.min.lua
 ButtonHUD.wrapped.conf
 ButtonHUD.exports
 ButtonHUD.extracted.lua
+ButtonHUD.conf
+ButtonHUD.conf.version
 scripts/node_modules/**
 scripts/work/**
 src/du
 src/du/**
 log.txt
+work/**
