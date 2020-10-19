@@ -23,7 +23,7 @@ function script.onStart()
         local isRemote = Nav.control.isRemoteControlled
 
         -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
-        newSettings = false -- export: Toggle on to save updated preferences.  Toggle off once updated preferences saved. 
+        useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
         AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
         warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
         PrimaryR = 130 -- export: Primary HUD color
@@ -193,7 +193,7 @@ function script.onStart()
                              "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankOptimizationAtmo",
                              "fuelTankOptimizationSpace", "fuelTankOptimizationRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
-                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "newSettings"}
+                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "useTheseSettings"}
         AutoVariables = {"EmergencyWarp", "hasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "AutoBrake", "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -206,17 +206,7 @@ function script.onStart()
         -- Load Saved Variables
         if dbHud then
             local hasKey = dbHud.hasKey
-            for k, v in pairs(AutoVariables) do
-                if hasKey(v) then
-                    local result = jdecode(dbHud.getStringValue(v))
-                    if result ~= nil then
-                        system.print(v .. " " .. dbHud.getStringValue(v))
-                        _G[v] = result
-                        valuesAreSet = true
-                    end
-                end
-            end
-            if not newSettings then
+            if not useTheseSettings then
                 for k, v in pairs(SaveableVariables) do
                     if hasKey(v) then
                         local result = jdecode(dbHud.getStringValue(v))
@@ -228,12 +218,22 @@ function script.onStart()
                     end
                 end
             end
+            for k, v in pairs(AutoVariables) do
+                if hasKey(v) then
+                    local result = jdecode(dbHud.getStringValue(v))
+                    if result ~= nil then
+                        system.print(v .. " " .. dbHud.getStringValue(v))
+                        _G[v] = result
+                        valuesAreSet = true
+                    end
+                end
+            end
             if valuesAreSet then
                 msgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
-            elseif newSettings then
+            elseif useTheseSettings then
                 msgText =
                     "Updated user preferences used.  Will be saved when you exit seat.  Toggle off newSettings to use saved values"
-                newSettings = false
+                    useTheseSettings = false
             else
                 msgText = "No Saved Variables Found - Stand up / leave remote to save settings"
             end
@@ -377,7 +377,9 @@ function script.onStart()
         -- _autoconf.displayCategoryPanel(weapon, weapon_size, L_TEXT("ui_lua_widget_weapon", "Weapons"), "weapon", true)
         _autoconf.displayCategoryPanel(weapon, weapon_size, "Weapons", "weapon", true)
         if antigrav ~= nil then
-            antigrav.show()
+            if(antigrav.getState() == 1) then
+                antigrav.show()
+            end
         end
 
         -- unfreeze the player if he is remote controlling the construct
@@ -1016,7 +1018,7 @@ function script.onStart()
                         dbHud.setStringValue(v, jencode(nil))
                     end
                     msgText =
-                        "Databank wiped. Get out of the seat, set the savable variables, \nthen re-enter seat and hit ALT-7 again"
+                        "Databank wiped. New variables will save after re-enter seat and exit"
                     msgTimer = 5
                     doubleCheck = false
                     valuesAreSet = false
@@ -1285,12 +1287,14 @@ function script.onStart()
                 if antigrav.getState() == 1 then
                     antigrav.deactivate()
                     AntigravTargetAltitude = nil
+                    antigrav.hide()
                 else
                     AntigravTargetAltitude = core_altitude
                     if AntigravTargetAltitude < 1000 then
                         AntigravTargetAltitude = 1000
                     end
                     antigrav.activate()
+                    antigrav.show()
                 end
             end
         end
@@ -1924,7 +1928,10 @@ function script.onStart()
                                                   warningX, hoverY,
                                                   getDistanceDisplayString(Nav:getTargetGroundAltitude()))
             end
-            if AutoBrake and AutopilotTargetPlanetName ~= "None" then
+            if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
+                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Target AGG Altitude: %s</text>]],
+                    warningX, apY, getDistanceDisplayString2(AntigravTargetAltitude))
+            elseif AutoBrake and AutopilotTargetPlanetName ~= "None" then
                 if brakeInput == 0 then
                     newContent[#newContent + 1] = stringf(
                                                       [[<text class="warn" x="%d" y="%d">Auto-Braking when within %s of %s</text>]],
@@ -3444,7 +3451,7 @@ function script.onStart()
     end)
 end
 
-function script.onEnd()
+function script.onStop()
     _autoconf.hideCategoryPanels()
     if antigrav ~= nil then
         antigrav.hide()
@@ -3474,7 +3481,6 @@ function script.onEnd()
             end
             for k, v in pairs(SaveableVariables) do
                 dbHud.setStringValue(v, json.encode(_G[v]))
-                system.print(v .. " " .. dbHud.getStringValue(v))
             end
             system.print("Saved Variables to Datacore")
         end
@@ -4548,7 +4554,11 @@ function script.onActionStart(action)
         OldButtonMod = HoldAltitudeButtonModifier
         OldAntiMod = AntiGravButtonModifier
         if antigrav and antigrav.getState() == 1 then
-            AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+            if AntigravTargetAltitude ~= nil  then
+                AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+            else
+                AntigravTargetAltitude = desiredBaseAltitude + 100
+            end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
         else
@@ -4556,8 +4566,13 @@ function script.onActionStart(action)
         end
     elseif action == "groundaltitudedown" then
         OldButtonMod = HoldAltitudeButtonModifier
-        if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude > 1000 then
-            AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+        if antigrav and antigrav.getState() == 1 then
+            if AntigravTargetAltitude ~= nil and AntigravTargetAltitude > 1000 then
+                AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+                if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+            else
+                AntigravTargetAltitude = desiredBaseAltitude
+            end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier
         else
@@ -4757,8 +4772,12 @@ end
 function script.onActionLoop(action)
     if action == "groundaltitudeup" then
         if antigrav and antigrav.getState() == 1 then
-            AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
-            AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+            if AntigravTargetAltitude ~= nil then 
+                AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+                AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+            else
+                AntigravTargetAltitude = desiredBaseAltitude + 100
+            end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
             HoldAltitudeButtonModifier = HoldAltitudeButtonModifier * 1.05
@@ -4766,9 +4785,14 @@ function script.onActionLoop(action)
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionLoop(1.0)
         end
     elseif action == "groundaltitudedown" then
-        if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude > 1000 then
-            AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
-            AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+        if antigrav and antigrav.getState() == 1 then
+            if AntigravTargetAltitude ~= nil and AntigravTargetAltitude > 1000 then
+                AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+                AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+                if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+            else
+                AntigravTargetAltitude = desiredBaseAltitude - 100
+            end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier
             HoldAltitudeButtonModifier = HoldAltitudeButtonModifier * 1.05

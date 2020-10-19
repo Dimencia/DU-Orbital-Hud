@@ -7,7 +7,11 @@ We've also just added a lua-commissions channel!  Non-scripters can post request
 We're also recruting for our in-game lua-focused org (with a bit of PVP focus on the side).  Check the discord for details
 
 ## SAVE UPDATE
+<<<<<<< HEAD
 > We have changed how saving settings works.  Put a databank on your ship and run (rerun) the autoconf.  Then right click seat, Advanced->Edit Lua Parameters.  Set your parameters.  Saving now occurs when you exit the seat/remote.  Loading occurs when you sit down in the chair.  If you need to override what is on the databank with new changes, toggle on the newSettings parameter in Edit Lua Parameters.  Then when you sit down, it will use the parameters shown in Edit Lua Parameters.  Alt-7 is only used to WIPE all parameters/flight status variables.
+=======
+> We have changed how saving settings works.  Put a databank on your ship and run (rerun) the autoconf.  Then right click seat, Advanced->Edit Lua Parameters.  Set your parameters.  Saving now occurs when you exit the seat/remote.  Loading occurs when you sit down in the chair.  If you need to override what is on the databank with new changes, toggle on the useTheseSettings parameter in Edit Lua Parameters.  Then when you sit down, it will use the parameters shown in Edit Lua Parameters.  It will still save them when you stand up, but will continue to use the Edit Lua Parameters until you turn off useTheseSettings. Alt-7 is only used to WIPE all parameters/flight status variables.
+>>>>>>> Minify of Code, AGG addition, Save Changes
 
 # Overview
 
@@ -133,8 +137,13 @@ If you need to zoom out in 3rd person view, you must toggle free-look because th
 `ALT-6` while landed (with gear down) to turn on **Auto Takeoff** - this is simply Altitude Hold that sets you to a paramater-defined distance above your starting position (default 1km).  You must control your own thrust and release the brake to takeoff.
 `G` (Gear) is a very loaded key.  While in atmosphere it will attempt to Brake Land if your brakes are strong enough (stop you and float to ground).  If not it will attempt to coast land (angle down till slow enough and within hover/vbooster height then land).  If in space it will initiate re-entry to a specific altitude (2500m by default) at a specific re-entry speed (1050km/hr default).  You may modify the target values via Edit LUA Parameters, or use alt-C and alt-spacebar to lower and raise target height, and mousewheel to change target cruise speed.
 
+<<<<<<< HEAD
 ### Save/Clear Variables in Databank
 `ALT-7` to **Wipe variables in a databank, you must press it a second time to confirm** - Hitting ALT-7 2x will wipe all data except saved locations from databank.  To wipe saved locations you must select them as a target and then use Clear button shown while holding shift.  Or you can pick up the databank, remove dynamic properties, and then put it back down, this clears everything from it.
+=======
+### Wipe Variables in Databank
+`ALT-7` to **Wipe variables in a databank** - This will ask you to press it again to confirm, and then wipe all data on databank except for saved locations.
+>>>>>>> Minify of Code, AGG addition, Save Changes
 
 ### Follow Mode
 `ALT-8` will toggle **Follow Mode** when using a **Remote Controller**.  This makes your craft lift off and try to follow you wherever you go.  It will not go below ground unless you dig out a big enough hole that it would naturally go down while hovering.
