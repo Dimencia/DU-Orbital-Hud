@@ -5,6 +5,7 @@ on:
       - '*'
 jobs:
   check-bats-version:
+    runs-on: ubuntu-latest
     container: lua:latest
     steps:
       - uses: actions/checkout@v2
