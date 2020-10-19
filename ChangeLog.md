@@ -1,5 +1,14 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.61 - HUD Redesign - Update the hud to be more minimalist yet still provide all the information, shooting for a more KSP Navball
+- Moved placement of data to support new AH view
+- Replaced altimeter tape with rolling number altimeter
+- Replaced roll tape with rolling ticks on artificial horizon
+- Replaced pitch tape with pitch lines on artificial horizon
+- Moved fuel tank information from right side to left to avoid widget overwrite.
+- Fixed Orbit being displayed when stationary (plantets dont rotate here)
+- Fix AGG script error when setting value lower via holding alt-c
+
 Version 4.60
 
 - Added AGG support.  Engage AGG > 1000m with ALT-G or Button.  Use alt-c and alt-space to change AGG target height.  NOTE:  turning on brake does not cancel agg for obvious reasons.  You must toggle it off to cancel.

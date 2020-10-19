@@ -8,7 +8,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.60
+        VERSION_NUMBER = 4.61
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -37,7 +37,7 @@ function script.onStart()
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         MouseYSensitivity = 0.003 -- export:1 For virtual joystick only
         MouseXSensitivity = 0.003 -- export: For virtual joystick only
-        circleRad = 99 -- export: The size of the artifical horizon circle, set to 0 to remove.
+        circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
         autoRollPreference = false -- export: [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
         hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
@@ -1490,9 +1490,9 @@ function script.onStart()
                 updateTanks = true
             end
 
-            DrawTank(newContent, updateTanks, 1700, "Atmospheric ", "ATMO", atmoTanks, fuelTimeLeft, fuelPercent)
-            DrawTank(newContent, updateTanks, 1800, "Space fuel t", "SPACE", spaceTanks, fuelTimeLeftS, fuelPercentS)
-            DrawTank(newContent, updateTanks, 1600, "Rocket fuel ", "ROCKET", rocketTanks, fuelTimeLeftR, fuelPercentR)
+            DrawTank(newContent, updateTanks, 100, "Atmospheric ", "ATMO", atmoTanks, fuelTimeLeft, fuelPercent)
+            DrawTank(newContent, updateTanks, 200, "Space fuel t", "SPACE", spaceTanks, fuelTimeLeftS, fuelPercentS)
+            DrawTank(newContent, updateTanks, 300, "Rocket fuel ", "ROCKET", rocketTanks, fuelTimeLeftR, fuelPercentR)
 
             if updateTanks then
                 updateTanks = false
@@ -1505,12 +1505,18 @@ function script.onStart()
             DrawVerticalSpeed(newContent, altitude, atmos) -- Weird this is draw during remote control...?
 
             if isRemote() == 0 then
-                DrawPitchDisplay(newContent, pitch)
                 -- Don't even draw this in freelook
-                if not IsInFreeLook() then
-                    DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos)
+                if unit.getClosestPlanetInfluence() > 0 then
+                    if not IsInFreeLook() then
+                        DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos)
+                        --DrawPrograde(newContent, originalPitch, originalRoll, atmos, velocity, speed, 960, 540)
+                    end
+                    DrawPitchDisplay(newContent, originalPitch)
+                    DrawRollDisplay(newContent, originalRoll, "ROLL")
+                else
+                    DrawPitchDisplay(newContent, pitch)
+                    DrawRollDisplay(newContent, roll, bottomText)
                 end
-                DrawRollDisplay(newContent, roll, bottomText)
                 DrawAltitudeDisplay(newContent, altitude, atmos)
             end
             DrawThrottle(newContent, flightStyle, throt, flightValue)
@@ -1594,25 +1600,18 @@ function script.onStart()
         end
 
         function DrawSpeed(newContent, spd)
-            local ys1 = 375
-            local ys2 = 390
-            local xg = 1200
-            local yg1 = 710
-            local yg2 = 720
+            local ys1 = 550
+            local ys2 = 560
             newContent[#newContent + 1] = [[<g class="pdim txt txtend">]]
             if isRemote() == 1 then
                 ys1 = 60
                 ys2 = 75
-                xg = 1120
-                yg1 = 55
-                yg2 = 65
             end
             newContent[#newContent + 1] = stringf([[
-                <g class="pbright txtmid">
-                    <text x="960" y="%d">SPEED</text>
-                    <text class="txtbig" x="960" y="%d">%d km/h</text>
+                <g class="pbright txtstart">
+                    <text class="txtbig" x="718" y="%d">%d km/h</text>
                 </g>
-            </g>]], ys1, ys2, mfloor(spd))
+            </g>]], ys2, mfloor(spd))
         end
 
         function DrawOdometer(newContent, totalDistanceTrip, totalDistanceTravelled, flightStyle, flightTime)
@@ -1661,7 +1660,7 @@ function script.onStart()
                     <text class="txtstart" x="970" y="20">Mass: %.2f Tons</text>
                     <text class="txtend" x="1240" y="10">Max Brake: %.2f kN</text>
                     <text class="txtend" x="1240" y="30">Max Thrust: %.2f kN</text>
-                    <text class="txtbig txtmid" x="960" y="360">%s</text>
+                    <text class="txtbig txtmid" x="960" y="130">%s</text>
                 ]], totalDistanceTrip, (totalDistanceTravelled / 1000), FormatTimeString(flightTime),
                                                   FormatTimeString(totalFlightTime), (totalMass / 1000),
                                                   (LastMaxBrake / 1000), (maxThrust / 1000), flightStyle)
@@ -1685,8 +1684,8 @@ function script.onStart()
 
         function DrawThrottle(newContent, flightStyle, throt, flightValue)
 
-            local y1 = 665
-            local y2 = 675
+            local y1 = 690
+            local y2 = 700
             if isRemote() == 1 then
                 y1 = 55
                 y2 = 65
@@ -1704,9 +1703,9 @@ function script.onStart()
                     throtclass = "red"
                 end
                 newContent[#newContent + 1] = stringf([[<g class="%s">
-                    <path class="linethick" d="M 792 550 L 785 550 L 785 650 L 792 650"/>
+                    <path class="linethick" d="M 792 575 L 785 575 L 785 675 L 792 675"/>
                     <g transform="translate(0 %d)">
-                        <polygon points="798,650 810,647 810,653"/>
+                        <polygon points="798,675 810,672 810,678"/>
                     </g>]], throtclass, (1 - math.abs(throt)))
             end
             newContent[#newContent + 1] = stringf([[
@@ -1757,7 +1756,7 @@ function script.onStart()
             local baseY = 540
             local tickerPath = [[<path class="dim line" d="]]
             newContent[#newContent + 1] = [[<g class="dim txttick">]]
-            for i = mfloor(pitchC - 25 - pitchC % 5 + 0.5), mfloor(pitchC + 25 + pitchC % 5 + 0.5), 5 do
+            for i = mfloor(pitchC - 15 - pitchC % 5 + 0.5), mfloor(pitchC + 15 + pitchC % 5 + 0.5), 5 do
                 if (i % 10 == 0) then
                     num = i
                     if (num > 180) then
@@ -1766,70 +1765,86 @@ function script.onStart()
                         num = 180 + (num + 180)
                     end
                     newContent[#newContent + 1] = stringf([[
-                            <text x="1195" y="%f">%d</text>]], baseY + (-i * 5 + pitch * 5 + 5), num)
+                            <text x="1000" y="%f">%d</text>]], baseY + (-i * 5 + pitch * 5 + 5), num)
                 end
                 if (i % 10 == 0) then
                     len = 30
                 elseif (i % 5 == 0) then
                     len = 20
-                else
-                    len = 7
                 end
                 local y = baseY + (-i * 5 + pitch * 5)
-                tickerPath = stringf([[%s M 1140 %f h %d]], tickerPath, y, len)
+                tickerPath = stringf([[%s M 945 %f h %d]], tickerPath, y, len)
             end
             newContent[#newContent + 1] = "</g>"
             newContent[#newContent + 1] = tickerPath
 
             newContent[#newContent + 1] = stringf([["/>
-                <polygon class="bright" points="1138,540 1120,535 1120,545"/>
-                <g class="pdim txt">
-                    <text x="1180" y="380">PITCH</text>
-                    <text x="1180" y="390">%d deg</text>
+                <g class="pdim txt txtmid">
+                    <text x="960" y="425">PITCH</text>
+                    <text x="960" y="435">%d deg</text>
                 </g>
             ]], pitchC)
         end
 
         function DrawAltitudeDisplay(newContent, altitude, atmos)
             if (altitude < 200000 and atmos == 0) or (altitude and atmos > 0) then
-                -- Many thanks to Nistus on Discord for his assistance with the altimeter.
-                local altC = mfloor((altitude) / 10)
-                local num = 0
-                local len = 0
-                local baseY = 540
-                local tickerPath = [[<path class="dim line" d="]]
-                newContent[#newContent + 1] = [[<g class="dim txttick txtend">]]
-                for i = mfloor(altC - 25 - altC % 5 + 0.5), mfloor(altC + 25 + altC % 5 + 0.5), 5 do
-                    if (i % 10 == 0) then
-                        num = i * 10
-                        newContent[#newContent + 1] = stringf([[<text x="745" y="%f">%d</text>]],
-                                                          baseY + (-i * 5 + altitude * .5 + 5), num)
-                    end
-                    len = 5
-                    if (i % 10 == 0) then
-                        len = 30
-                    elseif (i % 5 == 0) then
-                        len = 15
-                    end
-                    tickerPath = stringf([[%s M 780 %f h %d]], tickerPath, baseY + (-i * 5 + altitude * .5), -len)
-                end
-                newContent[#newContent + 1] = "</g>"
-                newContent[#newContent + 1] = tickerPath
 
-                newContent[#newContent + 1] = stringf([["/>
-                <polygon class="bright" points="782,540 800,535 800,545"/>
-                <g class="pdim txt">
-                    <text x="770" y="380">ALTITUDE</text>
-                    <text x="770" y="390">%d m</text>
-                </g>]], mfloor(altitude))
+                local rectX = 718
+                local rectY = 520
+                local rectW = 67
+                local rectH = 21
+
+                table.insert(newContent, stringf([[
+                    <g class="pdim txtbig">
+                        <rect class="line" x="%d" y="%d" width="%d" height="%d"/>        
+                        <clipPath id="alt"><rect class="line" x="%d" y="%d" width="%d" height="%d"/></clipPath>
+                        <g clip-path="url(#alt)">]], rectX, rectY, rectW, rectH, rectX + 2, rectY + 2, rectW - 4,
+                    rectH - 4))
+
+                local glyphW = 10
+                local glyphH = 15
+
+                local index = 0
+                local divisor = 1
+                local forwardFract = 0
+                while index < 6 do
+                    local digit = (altitude / divisor) % 10
+                    local intDigit = mfloor(digit)
+                    local fracDigit = mfloor((intDigit + 1) % 10)
+
+                    local fract = forwardFract
+                    if index == 0 then
+                        fract = digit - intDigit
+                    end
+
+                    local topGlyphOffset = glyphH * (fract - 1)
+                    local botGlyphOffset = topGlyphOffset + glyphH
+
+                    local x = rectX + 3 + (6 - index) * glyphW
+                    local y = rectY + 15
+                    table.insert(newContent, stringf([[
+                        <text x="%d" y="%f">%d</text>
+                        <text x="%d" y="%f">%d</text>
+                    ]], x, y + topGlyphOffset, fracDigit, x, y + botGlyphOffset, intDigit))
+                    index = index + 1
+                    divisor = divisor * 10
+                    if intDigit == 9 then
+                        forwardFract = fract
+                    else
+                        forwardFract = 0
+                    end
+                end
+                table.insert(newContent, [[</g></g>]])
             end
         end
 
         function DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos)
             -- ** CIRCLE ALTIMETER  - Base Code from Discord @Rainsome = Youtube CaptainKilmar** 
             local horizonRadius = circleRad -- Aliased global
+            local centerX = 960
+            local centerY = 540
             
-            if horizonRadius > 0 and unit.getClosestPlanetInfluence() > 0 then
+            if horizonRadius > 0 then
                 if originalPitch > 90 and atmos == 0 then
                     originalPitch = 90 - (originalPitch - 90)
                 elseif originalPitch < -90 and atmos == 0 then
@@ -1842,7 +1857,41 @@ function script.onStart()
                                                   horizonRadius, (horizonRadius - 1), (960 - horizonRadius),
                                                   (540 + horizonRadius * (originalPitch / 90)), (horizonRadius * 2),
                                                   (horizonRadius * 2), (-1 * originalRoll))
+            end
+        end
 
+        function DrawPrograde (newContent, originalPitch, originalRoll, atmos, velocity, speed, centerX, centerY)
+            if atmos == 0 and speed > 5 then
+                local horizonRadius = circleRad -- Aliased globa
+                local pitchRange = 90
+                local yawRange = 90
+                local minShownPitch = originalPitch-pitchRange
+                local maxShownPitch = originalPitch+pitchRange
+                local minShownYaw = originalRoll-yawRange
+                local maxShownYaw = originalRoll+yawRange
+                local relativePitch = getRelativePitch(velocity)
+                local relativeYaw = getRelativeYaw(velocity)
+                
+                local dx = relativePitch/pitchRange -- Values from -1 to 1 indicating offset from the center
+                local dy = relativeYaw/yawRange
+                local x = centerX + dx*horizonRadius
+                local y = centerY + dy*horizonRadius
+                    
+                if relativePitch > minShownPitch and relativePitch < maxShownPitch and relativeYaw < maxShownYaw and relativeYaw > minShownYaw then
+                    newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="3" stroke="white" stroke-width="3" fill="white" />', mfloor(x), mfloor(y))
+                    -- Draw a dot or whatever at x,y, it's inside the AH
+                else
+                    -- x,y is outside the AH.  Figure out how to draw an arrow on the edge of the circle pointing to it.
+                    -- First get the angle
+                    -- tan(ang) = o/a, tan(ang) = x/y
+                    -- atan(x/y) = ang (in radians)
+                    local angle = math.atan(dx/dy)
+                    -- Project this onto the circle
+                    local projectedX = horizonRadius*math.sin(angle) -- Needs to be converted to deg?  Probably not
+                    local projectedY = horizonRadius*math.cos(angle)
+                        newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="3" stroke="white" stroke-width="3" fill="white" />', mfloor(projectedX), mfloor(projectedY))
+                    -- projectX and projectedY should be points on the edge of the circle.  Draw something there to indicate that the marker is in that direction
+                end
             end
         end
 
@@ -1853,10 +1902,10 @@ function script.onStart()
             local num = 0
             local len = 0
             newContent[#newContent + 1] = [[<g class="txttick dim">]]
-            for i = mfloor(rollC - 30 - rollC % 5 + 0.5), mfloor(rollC + 30 + rollC % 5 + 0.5), 5 do
+            for i = mfloor(rollC - 90 - rollC % 15 + 0.5), mfloor(rollC + 90 + rollC % 15 + 0.5), 5 do
                 local rot = i - roll
-                newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,960,460)">]], rot)
-                if (i % 10 == 0) then
+                newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,960,540)">]], rot)
+                if (i % 30 == 0) then
                     sign = i / math.abs(i)
                     if i == 0 then
                         sign = 0
@@ -1866,21 +1915,20 @@ function script.onStart()
                         num = 180 + (180 - num)
                     end
                     newContent[#newContent + 1] = stringf([[
-                        <text x="960" y="760">%d</text>]], mfloor(sign * num + 0.5))
+                        <text x="960" y="670">%d</text>]], mfloor(sign * num + 0.5))
                 end
                 len = 5
-                if (i % 10 == 0) then
+                if (i % 30 == 0) then
                     len = 15
-                elseif (i % 5 == 0) then
+                elseif (i % 15 == 0) then
                     len = 10
                 end
-                newContent[#newContent + 1] = stringf([[<line x1="960" y1="730" x2="960" y2="%d"/></g>]], 730 + len)
+                newContent[#newContent + 1] = stringf([[<line x1="960" y1="640" x2="960" y2="%d"/></g>]], 640 + len)
             end
             newContent[#newContent + 1] = stringf([[</g>
-                <polygon class="bright" points="960,725 955,707 965,707"/>
                 <g class="pdim txt txtmid">
-                    <text x="960" y="688">%s</text>
-                    <text x="960" y="698">%d deg</text>
+                    <text x="960" y="690">%s</text>
+                    <text x="960" y="700">%d deg</text>
                 </g>]], bottomText, mfloor(roll))
         end
 
@@ -1983,7 +2031,7 @@ function script.onStart()
 
         function DisplayOrbit(newContent)
             if orbit ~= nil and unit.getAtmosphereDensity() < 0.2 and planet ~= nil and orbit.apoapsis ~= nil and
-                orbit.periapsis ~= nil and orbit.period ~= nil and displayOrbit then
+                orbit.periapsis ~= nil and orbit.period ~= nil and orbit.apoapsis.speed > 5 and displayOrbit then
                 -- If orbits are up, let's try drawing a mockup
                 local orbitMapX = 75
                 local orbitMapY = 0
@@ -2025,7 +2073,7 @@ function script.onStart()
                                                       orbitMapY + orbitMapSize / 2 + pad, planet.radius / scale)
                 end
 
-                if orbit.apoapsis ~= nil and orbit.apoapsis.speed < MaxGameVelocity and orbit.apoapsis.speed > 0 then
+                if orbit.apoapsis ~= nil and orbit.apoapsis.speed < MaxGameVelocity and orbit.apoapsis.speed > 1 then
                     newContent[#newContent + 1] = stringf(
                                                       [[<line class="pdim op30 linethick" x1="%f" y1="%f" x2="%f" y2="%f"/>]],
                                                       x - 35, y - 5, orbitMapX + orbitMapSize / 2 + rx + xOffset, y - 5)
@@ -2044,7 +2092,7 @@ function script.onStart()
                 y = orbitMapY + orbitMapSize / 2 + 5 + pad
                 x = orbitMapX - orbitMapX / 2 + 10 + pad
 
-                if orbit.periapsis ~= nil and orbit.periapsis.speed < MaxGameVelocity and orbit.periapsis.speed > 0 then
+                if orbit.periapsis ~= nil and orbit.periapsis.speed < MaxGameVelocity and orbit.periapsis.speed > 1 then
                     newContent[#newContent + 1] = stringf(
                                                       [[<line class="pdim op30 linethick" x1="%f" y1="%f" x2="%f" y2="%f"/>]],
                                                       x + 35, y - 5, orbitMapX + orbitMapSize / 2 - rx + xOffset, y - 5)
@@ -2064,7 +2112,7 @@ function script.onStart()
                 newContent[#newContent + 1] = stringf([[<text class="txtorbbig" x="%f" y="%d">%s</text>]],
                                                   orbitMapX + orbitMapSize / 2 + pad, 20 + pad, planet.name)
 
-                if orbit.period ~= nil and orbit.periapsis ~= nil and orbit.apoapsis ~= nil then
+                if orbit.period ~= nil and orbit.periapsis ~= nil and orbit.apoapsis ~= nil and orbit.apoapsis.speed > 1 then
                     local apsisRatio = (orbit.timeToApoapsis / orbit.period) * 2 * math.pi
                     -- x = xr * cos(t)
                     -- y = yr * sin(t)
@@ -4566,8 +4614,9 @@ function script.onActionStart(action)
         end
     elseif action == "groundaltitudedown" then
         OldButtonMod = HoldAltitudeButtonModifier
+        OldAntiMod = AntiGravButtonModifier
         if antigrav and antigrav.getState() == 1 then
-            if AntigravTargetAltitude ~= nil and AntigravTargetAltitude > 1000 then
+            if AntigravTargetAltitude ~= nil then
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
@@ -4786,7 +4835,7 @@ function script.onActionLoop(action)
         end
     elseif action == "groundaltitudedown" then
         if antigrav and antigrav.getState() == 1 then
-            if AntigravTargetAltitude ~= nil and AntigravTargetAltitude > 1000 then
+            if AntigravTargetAltitude ~= nil then
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
