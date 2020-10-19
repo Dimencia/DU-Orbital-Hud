@@ -4,3 +4,6 @@ ButtonHUD.exports
 ButtonHUD.extracted.lua
 scripts/node_modules/**
 scripts/work/**
+src/du
+src/du/**
+log.txt

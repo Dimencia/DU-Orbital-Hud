@@ -1,3 +1,20 @@
+json = require ('src.du.dkjson')
+require 'src.du.Helpers'
+require 'src.du.AxisCommand'
+require 'src.du.Navigator'
+require 'src.du.database'
+require 'src.du.cpml.sgui'
+require 'src.du.pl.init'
+require 'src.builtin.antigrav'
+require 'src.builtin.element'
+require 'src.builtin.container'
+require 'src.builtin.controlunit'
+
+-- Ideally these are "generated" from a class specification somehow - or the class specification is generated from them
+antigrav = AntiGravityGeneratorUnit
+container = Container
+unit = ControlUnit
+
 script = {}
 
 function script.onStart()
