@@ -17,11 +17,11 @@ function AntiGravityGeneratorUnit.getState()
 end
 
 -- Set the base altitude for the anti-gravity field
-function AntiGravityGeneratorUnit.setBaseAltitude(altitude) 
+function AntiGravityGeneratorUnit.setBaseAltitude(altitude)
 end
 
 -- Return the base altitude for the anti-gravity field
-function AntiGravityGeneratorUnit.getBaseAltitude() 
+function AntiGravityGeneratorUnit.getBaseAltitude()
 end
 
 return AntiGravityGeneratorUnit

@@ -27,23 +27,35 @@ require 'src.builtin.itemcontainer'
 require 'src.builtin.landinggearunit'
 require 'src.builtin.laserdetectorunit'
 require 'src.builtin.laseremitterunit'
-library = require 'src.builtin.library'
+require 'src.builtin.library'
 require 'src.builtin.lightunit'
 require 'src.builtin.manualbuttonunit'
 require 'src.builtin.manualswitchunit'
 require 'src.builtin.pressuretileunit'
 require 'src.builtin.radarunit'
+require 'src.builtin.radarpvpunit'
 require 'src.builtin.receiverunit'
 require 'src.builtin.rocketengine'
 require 'src.builtin.rocketfuelcontainer'
 require 'src.builtin.screenunit'
 require 'src.builtin.spaceengine'
 require 'src.builtin.spacefuelcontainer'
-system = require 'src.builtin.system'
+require 'src.builtin.system'
 require 'src.builtin.telemeterunit'
 require 'src.builtin.verticalbooster'
 require 'src.builtin.warpdriveunit'
+require 'src.builtin.weaponunit'
 
+databank = DataBankUnit -- Oddly this appears to be the class name used for slots...
+
+-- Commonly-defined items
+unit = ControlUnit
+library = Library
+system = System
+
+--
+-- BEGIN DU-generated Prologue
+--
 -- category panel display helpers
 _autoconf = {}
 _autoconf.panels = {}
@@ -71,6 +83,10 @@ _autoconf.hideCategoryPanels = function()
         system.destroyWidgetPanel(_autoconf.panels[i])
     end
 end
+
+-- 
+-- END DU-generated Prologue
+--
 
 -- This is a localization macro replaced by DU at script load time
 function L_TEXT(lid, default)

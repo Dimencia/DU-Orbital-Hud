@@ -8,7 +8,7 @@ mkdir -p work
 grep "\-- \?export:" $LUA_SRC | sed -e 's/^[ \t]*/        /' -e 's/-- export:/--export:/' > work/ButtonHUD.exports
 VERSION_NUMBER=`grep "VERSION_NUMBER = .*" $LUA_SRC | sed -E "s/\s*VERSION_NUMBER = (.*)/\1/"`
 
-sed "/-- \?export:/d" $LUA_SRC > work/ButtonHUD.extracted.lua
+sed "/-- \?export:/d;/require 'src.slots'/d" $LUA_SRC > work/ButtonHUD.extracted.lua
 
 # Minify the lua
 if "$1" == "true"; then
