@@ -43,6 +43,10 @@ Everything from here after assumes you are running in the Linux environment
     "du.autoconfdir": "/mnt/e/ProgramData/Dual Universe/Game/data/lua/autoconf/custom",
     "du.testconffilename": "ButtonHUD.test.conf"
     ```
+1. To get additional intellisense for built-in functions, soft-link the `src/du` directory from your Dual Universe install.  Be sure to use the correct path for your install, which is probably just two directories up from the `du.autoconfdir` setting above:
+    ```
+    ln -s /mnt/e/ProgramData/Dual\ Universe/Game/data/lua src/du
+    ```
 
 Then, when you are ready to create the minified version of the configuration, just do: `CTRL`-`SHIFT`-`B` and select `Wrap and Deploy`.
 `ButtonHUD.conf` will be updated with the minified version, and then deployed automatically to your Dual Universe autoconf directory, assuming you have correctly configured it above.
