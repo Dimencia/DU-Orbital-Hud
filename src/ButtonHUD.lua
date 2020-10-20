@@ -1,3 +1,5 @@
+require 'src.slots'
+
 script = {}
 
 function script.onStart()
@@ -377,8 +379,7 @@ function script.onStart()
                 v.deactivate()
             end
         end
-        -- _autoconf.displayCategoryPanel(weapon, weapon_size, L_TEXT("ui_lua_widget_weapon", "Weapons"), "weapon", true)
-        _autoconf.displayCategoryPanel(weapon, weapon_size, "Weapons", "weapon", true)
+        _autoconf.displayCategoryPanel(weapon, weapon_size, L_TEXT("ui_lua_widget_weapon", "Weapons"), "weapon", true)
         if antigrav ~= nil then
             if(antigrav.getState() == 1) then
                 antigrav.show()
