@@ -1,5 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.63 - Cleared a lot of unused and misnamed variables.
+
 Version 4.62 - HUD Redesign continued, KSP navball
 - The Artificial Horizon is more of a KSP Navball now.  You may put it anywhere with centerX and centerY setting (use 1920x1080, it will scale).  circleRad must either be 0 (off) or 100 right now. Resizing coming.
 - Added prograde dot to AH

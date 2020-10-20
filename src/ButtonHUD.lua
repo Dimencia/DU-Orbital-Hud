@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.62
+        VERSION_NUMBER = 4.63
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -477,7 +477,7 @@ function script.onStart()
                                  planet.name -- TODO: If radar isn't jammed, get the name of the nearest construct and tack it on here
                     
                 if radar_1 then -- Just match the first one
-                    local id, distance = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
+                    local id,_ = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
                     if id ~= nil and id ~= "" then
                         name = name .. " " .. radar_1.getConstructName(id)
                     end
@@ -740,7 +740,7 @@ function script.onStart()
             end
         end
 
-        function toggleFollowMode()
+        function ToggleFollowMode()
             if isRemote() == 1 then
                 FollowMode = not FollowMode
                 if FollowMode then
@@ -771,7 +771,7 @@ function script.onStart()
             end
         end
 
-        function AutopilotToggle()
+        function ToggleAutopilot()
             -- Toggle Autopilot, as long as the target isn't None
             if AutopilotTargetIndex > 0 and not Autopilot then
                 -- If it's a custom location... 
@@ -829,22 +829,6 @@ function script.onStart()
             end
         end
 
-        function ToggleAutoBrake()
-            if AutopilotTargetPlanetName ~= "None" and brakeInput == 0 and not AutoBrake then
-                AutoBrake = true
-                Autopilot = false
-                ProgradeIsOn = false
-                RetrogradeIsOn = false
-                FollowMode = false
-                AltitudeHold = false
-                BrakeLanding = false
-                Reentry = false
-                AutoTakeoff = false
-            else
-                AutoBrake = false
-            end
-        end
-
         function ProgradeToggle()
             -- Toggle Progrades
             ProgradeIsOn = not ProgradeIsOn
@@ -856,10 +840,6 @@ function script.onStart()
             BrakeLanding = false
             Reentry = false
             AutoTakeoff = false
-            local Progradestring = "Off"
-            if ProgradeIsOn then
-                Progradestring = "On"
-            end
         end
 
         function RetrogradeToggle()
@@ -873,10 +853,6 @@ function script.onStart()
             BrakeLanding = false
             Reentry = false
             AutoTakeoff = false
-            local Retrogradestring = "Off"
-            if RetrogradeIsOn then
-                Retrogradestring = "On"
-            end
         end
 
         function BrakeToggle()
@@ -1044,7 +1020,7 @@ function script.onStart()
         end
 
         function SetButtonContains()
-            local x = simulatedX + ResolutionWidth / 2, simulatedY + ResolutionHeight / 2
+            local x = simulatedX + ResolutionWidth / 2
             local y = simulatedY + ResolutionHeight / 2
             for _, v in pairs(Buttons) do
                 -- enableName, disableName, width, height, x, y, toggleVar, toggleFunction, drawCondition
@@ -1338,7 +1314,7 @@ function script.onStart()
         local apbutton = MakeButton(getAPEnableName, getAPDisableName, 600, 60, ResolutionWidth / 2 - 600 / 2,
                              ResolutionHeight / 2 - 60 / 2 - 400, function()
                 return Autopilot
-            end, AutopilotToggle)
+            end, ToggleAutopilot)
         MakeButton("Save Position", "Save Position", 200, apbutton.height, apbutton.x + apbutton.width + 30, apbutton.y,
             function()
                 return false
@@ -1455,14 +1431,10 @@ function script.onStart()
             local worldV = vec3(core.getWorldVertical())
             local constrF = vec3(core.getConstructWorldOrientationForward())
             local constrR = vec3(core.getConstructWorldOrientationRight())
-            local constrV = vec3(core.getConstructWorldOrientationUp())
             local pitch = getPitch(worldV, constrF, constrR) -- 180 - getRoll(worldV, constrR, constrF)
             local roll = getRoll(worldV, constrF, constrR) -- getRoll(worldV, constrF, constrR)
             local originalRoll = roll
             local originalPitch = pitch
-            local bottomText = "ROLL"
-            local grav = core.getWorldGravity()
-            local gravity = vec3(grav):len()
             local atmos = atmosphere()
             local throt = mfloor(unit.getThrottle())
             local spd = speed * 3.6
@@ -1610,11 +1582,9 @@ function script.onStart()
         end
 
         function DrawSpeed(newContent, spd)
-            local ys1 = 550
-            local ys2 = 560
+             local ys2 = 560
             newContent[#newContent + 1] = [[<g class="pdim txt txtend">]]
             if isRemote() == 1 then
-                ys1 = 60
                 ys2 = 75
             end
             newContent[#newContent + 1] = stringf([[
@@ -1630,7 +1600,7 @@ function script.onStart()
             local yg2 = 65
             local atmos = atmosphere()
             local gravity = core.g()
-            local massMax = 0
+            local maxMass = 0
             local reqThrust = 0
             refreshLastMaxBrake(gravity)
             maxThrust = Nav:maxForceForward()
@@ -1949,18 +1919,7 @@ function script.onStart()
             if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Target AGG Altitude: %s</text>]],
                     warningX, apY, getDistanceDisplayString2(AntigravTargetAltitude))
-            elseif AutoBrake and AutopilotTargetPlanetName ~= "None" then
-                if brakeInput == 0 then
-                    newContent[#newContent + 1] = stringf(
-                                                      [[<text class="warn" x="%d" y="%d">Auto-Braking when within %s of %s</text>]],
-                                                      warningX, apY, getDistanceDisplayString(maxBrakeDistance),
-                                                      AutopilotTargetPlanet.name)
-                else
-                    newContent[#newContent + 1] = stringf(
-                                                      [[<text class="warn" x="%d" y="%d">Auto-Braking until eccentricity: %f begins to increase</text>]],
-                                                      warningX, apY, round(orbit.eccentricity, 2))
-                end
-            elseif Autopilot and AutopilotTargetPlanetName ~= "None" then
+            elseif Autopilot and AutopilotTargetName ~= "None" then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Autopilot %s</text>]],
                                                   warningX, apY, AutopilotStatus)
             elseif FollowMode then
@@ -3346,11 +3305,11 @@ function script.onStart()
             else
                 brakeDistance, brakeTime = GetAutopilotTBBrakeDistanceAndTime(MaxGameVelocity)
             end
-            local curBrakeDistance, curBrakeTime
+            local _, curBrakeTime
             if not TurnBurn then
-                curBrakeDistance, curBrakeTime = GetAutopilotBrakeDistanceAndTime(vec3(velocity):len())
+                _, curBrakeTime = GetAutopilotBrakeDistanceAndTime(vec3(velocity):len())
             else
-                curBrakeDistance, curBrakeTime = GetAutopilotTBBrakeDistanceAndTime(vec3(velocity):len())
+                _, curBrakeTime = GetAutopilotTBBrakeDistanceAndTime(vec3(velocity):len())
             end
             local cruiseDistance = 0
             local cruiseTime = 0
@@ -3647,7 +3606,7 @@ function script.onTick(timerId)
                                   (json.decode(warpdrive.getData()).errorMsg)
                     msgTick = 1
                     emergencyWarp = false
-                    setTimer("reEmergencyWarp", 1)
+                    unit.setTimer("reEmergencyWarp", 1)
                 end
             end
             if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
@@ -3668,6 +3627,7 @@ function script.onTick(timerId)
         unit.stopTimer("reEmergencyWarp")
     elseif timerId == "msgTick" then
         -- This is used to clear a message on screen after a short period of time and then stop itself
+        local newContent = {}
         DisplayMessage(newContent, "empty")
         msgText = "empty"
         unit.stopTimer("msgTick")
@@ -3709,7 +3669,7 @@ function script.onTick(timerId)
                 BrakeToggle()
             end
             if Autopilot then
-                AutopilotToggle()
+                ToggleAutopilot()
             end
         end
         LastIsWarping = isWarping
@@ -3880,7 +3840,7 @@ function script.onTick(timerId)
             DidLogOutput = true
         end
 
-        if AutoBrake and AutopilotTargetPlanetName ~= "None" and
+        if AutoBrake and AutopilotTargetName ~= "None" and
             (vec3(core.getConstructWorldPos()) - vec3(AutopilotTargetPlanet.center)):len() <= brakeDistance then
             brakeInput = 1
             if planet.name == AutopilotTargetPlanet.name and orbit.apoapsis ~= nil and orbit.eccentricity < 1 then
@@ -3992,14 +3952,9 @@ function script.onTick(timerId)
 
                 if orbit.periapsis ~= nil and orbit.eccentricity < 1 then
                     AutopilotStatus = "Circularizing"
-                    -- Keep going until the apoapsis and periapsis start getting further apart
-                    -- Rather than: orbit.periapsis ~= nil and orbit.periapsis.altitude < ((vec3(planet.center) - vec3(core.getConstructWorldPos())):len() - planet.radius)-1000
-                    -- local apsDiff = math.abs(orbit.apoapsis.altitude - orbit.periapsis.altitude)
-                    -- if LastApsDiff ~= -1 and apsDiff > LastApsDiff then 
                     if orbit.eccentricity > LastEccentricity or
                         (orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude <
                             AutopilotTargetOrbit) then
-                        -- LastApsDiff = -1
                         BrakeIsOn = false
                         AutopilotBraking = false
                         Autopilot = false
@@ -4009,7 +3964,6 @@ function script.onTick(timerId)
                         brakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
                     end
-                    LastApsDiff = apsDiff
                 end
             elseif AutopilotCruising then
                 if AutopilotDistance <= brakeDistance then
@@ -4062,9 +4016,6 @@ function script.onTick(timerId)
             -- end
             local nearby = (distance < targetDistance)
             local maxSpeed = 100 -- Over 300kph max, but, it scales down as it approaches
-            if onShip then
-                maxSpeed = 300
-            end
             local targetSpeed = utils.clamp((distance - targetDistance) / 2, 10, maxSpeed)
             pitchInput2 = 0
             local aligned = (math.abs(yawInput2) < 0.1)
@@ -4136,7 +4087,6 @@ function script.onTick(timerId)
                 -- We know C, our distance to target.  We know the height we'll be above the target (should be the same as our current height)
                 -- We just don't know the last leg
                 -- a2 + b2 = c2.  c2 - b2 = a2
-                local targetAltitude = (CustomTarget.position - planet.center - planet.radius):len()
                 -- local distanceToTarget = math.sqrt(targetVec:len()^2-(HoldAltitude-targetAltitude)^2)
                 local maxBrake = json.decode(unit.getData()).maxBrake
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
@@ -4257,7 +4207,6 @@ function script.onTick(timerId)
                 -- totaly stole the code from lisa-lionheart for vSpeed
                 local velocity = vec3(core.getWorldVelocity())
                 local up = vec3(core.getWorldVertical()) * -1
-                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
 
                 -- this is about as fast as AGG can go, and is conveniently below the atmos burn speed (1044 km/h)
@@ -4617,7 +4566,7 @@ function script.onActionStart(action)
         -- if unit.getAtmosphereDensity() > 0 then 
         --    msgText "Clear atmosphere before engaging autopilot"
         -- else
-        AutopilotToggle()
+        ToggleAutopilot()
         toggleView = false
         -- end
     elseif action == "option5" then
@@ -4630,7 +4579,7 @@ function script.onActionStart(action)
         wipeSaveVariables()
         toggleView = false
     elseif action == "option8" then
-        toggleFollowMode()
+        ToggleFollowMode()
         toggleView = false
     elseif action == "option9" then
         if gyro ~= nil then
