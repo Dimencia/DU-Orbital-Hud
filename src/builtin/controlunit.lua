@@ -124,3 +124,5 @@ end
 -- Return the current throttle value
 function ControlUnit.getThrottle()
 end
+
+return ControlUnit
