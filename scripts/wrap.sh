@@ -25,3 +25,5 @@ sed '/script={}/e cat work/ButtonHUD.exports' work/ButtonHUD.wrapped.conf > $CON
 
 # Fix up minified L_TEXTs which requires a space after the comma
 sed -i -E 's/L_TEXT\(("[^"]*"),("[^"]*")\)/L_TEXT(\1, \2)/g' $CONF_DST
+
+rm work/*
