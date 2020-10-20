@@ -1569,7 +1569,7 @@ function script.onStart()
                         body {margin: 0}
                         svg {position:absolute;top:0;left:0;font-family:Montserrat;} 
                         .txt {font-size:10px;font-weight:bold;}
-                        .txttick {font-size:12px;font-weight:bold;}
+                        .txttick {font-size:11px;text-anchor:middle;fill:rgb(211,211,211);stroke:rgb(190,190,190)}
                         .txtbig {font-size:14px;font-weight:bold;}
                         .line {stroke-width:2px;fill:none}
                         .linethick {stroke-width:3px;fill:none}
@@ -1595,14 +1595,14 @@ function script.onStart()
                         .hudver {font-size:10px;font-weight:bold;fill:red;text-anchor:end;font-family:Bank}
                         .msg {font-size:40px;fill:red;text-anchor:middle;font-weight:normal}
                         .cursor {stroke:white}
-                        .ah {opacity:0.1;fill:#0083cb;stroke:black;stroke-width:2px}
-                        .ahg {opacity:0.3;fill:#6b5835}
+                        .ah {opacity:1;stroke:black;stroke-width:2px;fill:#4595d5;radial-gradient(circle at 960px 540px, #4595d5, #000)}
+                        .ahg {opacity:1;fill:#6b5835}
                     </style>
                 </head>
                 <body>
                     <svg height="100%%" width="100%%" viewBox="0 0 1920 1080">
                     ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig)
-        end
+        end -- fill:#0083cb;
 
         function HUDEpilogue(newContent)
             newContent[#newContent + 1] = "</svg>"
@@ -1759,35 +1759,112 @@ function script.onStart()
             end
         end
 
+        function getYaw(vector)
+            velocity = vec3(vector):normalize()
+            local forward = vec3(core.getConstructWorldOrientationRight())
+            local up = -vec3(core.getWorldVertical())
+
+            --atan2((Va x Vb) . Vn, Va . Vb)
+            local angle = math.atan((velocity:cross(forward)):dot(up), velocity:dot(forward))
+            angle = math.deg(angle) + 90 -- Align to north
+            if angle > 180 then
+                angle = 360 - angle
+            end
+            return angle
+        end
+
         function DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, bottomText)
+            -- Experimental stuff.
+            -- Yaw lines?
+            -- Vertical tickmarks showing yaw, where north is towards the planet's positive z pole at 0 pitch
+            local northVector = vec3({0,0,1})
+            local surfaceNorth = planet.center + planet.radius*northVector
+            local vectorToNorth = surfaceNorth-vec3(core.getConstructWorldPos())
+            -- This is stupid isn't it.  I can just use northVector
+
+            -- Not with our getYaw function we can't
+            local yaw = getYaw(vectorToNorth)
+            --system.print(yaw)
+            -- This looks good
+            -- We'll use it in our clippath
+            local range = 20
+
             -- ** CIRCLE ALTIMETER  - Base Code from Discord @Rainsome = Youtube CaptainKilmar** 
             local horizonRadius = circleRad -- Aliased global
             if horizonRadius > 0 then
+                newContent[#newContent + 1] = stringf([[<clipPath id="cutCircle"><circle r="%f" cx="%d" cy="%d"/></clipPath>]],(horizonRadius - 1), centerX, centerY)
+                --local curvePath = stringf([[<path id="curve" d="M %f %f c %f %f, %f %f, %f %f" stroke="black" fill="none" stroke-width="1"/>]], centerX - horizonRadius, centerY-10, 20, 20, horizonRadius*2-20,20, horizonRadius*2,0)
+                newContent[#newContent + 1] = stringf([[<g class="txttick" clip-path="url(#cutCircle)" transform="rotate(%f,%d,%d)">]], (-1 * originalRoll), centerX, centerY)
+                newContent[#newContent + 1] = stringf([[
+                    <circle class="ah" r="%f" cx="%d" cy="%d"/>
+                        <rect class="ahg" x="%f" y="%f" height="%f" width="%f" mask="url(#curveClipMask)"/>]],
+                                                  horizonRadius, centerX, centerY, (centerX - horizonRadius),
+                                                  (centerY + horizonRadius * (originalPitch / range))-3, (horizonRadius * 8),
+                                                  (horizonRadius * 2))
+                newContent[#newContent + 1] = stringf([[<path d="m %d,%d 35,0 15,15 15,-15 35,0" stroke-width="2" style="fill:none;stroke:#F5B800;" />]],
+                    centerX-50, centerY)
                 local pitchC = mfloor(originalPitch)
                 local len = 0
-                local tickerPath = stringf([[<path transform="rotate(%f,%d,%d)" class="dim line" d="]], (-1 * originalRoll), centerX, centerY)
-                newContent[#newContent + 1] = [[<g class="dim txttick">]]
-                for i = mfloor(pitchC - 15 - pitchC % 5 + 0.5), mfloor(pitchC + 15 + pitchC % 5 + 0.5), 5 do
+                local tickerPath = [[<path class="txttick line" d="]]
+                local yawC = mfloor(yaw)
+                local yawlen = 0
+                local yawy = (centerY + horizonRadius * (originalPitch / range))-2
+                
+                for i = mfloor(yawC - (range+10) - yawC % 5 + 0.5), mfloor(yawC + (range+10) + yawC % 5 + 0.5), 5 do
+                    local x = centerX + (-i * 5 + yaw * 5)
                     if (i % 10 == 0) then
-                        len = 30
+                        yawlen = 10
+                        local num = i
+                        if (num > 180) then
+                            num = -180 + (num-180)
+                        elseif (num < -180) then
+                            num = 180 + (num+180)
+                        end
+                        newContent[#newContent + 1] = stringf([[
+                                <text x="%f" y="%f">%d</text>]],x,yawy-12, num)
                     elseif (i % 5 == 0) then
-                        len = 20
+                        yawlen = 5
                     end
-                    local y = centerY + (-i * 5 + originalPitch * 5)
-                    if len == 30 then
-                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-15, y, len)
+                    if yawlen == 10 then
+                        tickerPath = stringf([[%s M %f %f v %d]], tickerPath, x, yawy-5, yawlen)
                     else
-                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-10, y, len)
+                        tickerPath = stringf([[%s M %f %f v %d]], tickerPath, x, yawy-2.5, yawlen)
+                    end
+
+                    if i % 30 == 0 then
+                        for i = mfloor(pitchC - (range+10) - pitchC % 5 + 0.5), mfloor(pitchC + (range+10) + pitchC % 5 + 0.5), 5 do
+                            local y = centerY + (-i * 5 + originalPitch * 5)
+                            if (i % 10 == 0) then
+                                len = 30
+                                local num = i
+                                if (num > 180) then
+                                    num = -180 + (num-180)
+                                elseif (num < -180) then
+                                    num = 180 + (num+180)
+                                end
+                                newContent[#newContent + 1] = stringf([[
+                                        <text x="%f" y="%f">%d</text>]], x + 30, y, num)
+                                newContent[#newContent + 1] = stringf([[
+                                        <text x="%f" y="%f">%d</text>]], x - 30, y, num)
+                            elseif (i % 5 == 0) then
+                                len = 20
+                            end
+                            if len == 30 then
+                                tickerPath = stringf([[%s M %f %f h %d]], tickerPath, x-15, y-3, len)
+                            else
+                                tickerPath = stringf([[%s M %f %f h %d]], tickerPath, x-10, y-3, len)
+                            end
+                        end
                     end
                 end
+                newContent[#newContent + 1] = tickerPath .. "/>"
                 newContent[#newContent + 1] = "</g>"
-                newContent[#newContent + 1] = tickerPath
                 local pitchstring = "PITCH"                
                 if bottomText == "YAW" then 
                     pitchstring = "REL PITCH"
                 end
                     -- body
-                newContent[#newContent + 1] = stringf([["/>
+                newContent[#newContent + 1] = stringf([["
                     <g class="pdim txt txtmid">
                         <text x="%d" y="%d">%s</text>
                         <text x="%d" y="%d">%d deg</text>
@@ -1798,15 +1875,6 @@ function script.onStart()
                 elseif originalPitch < -90 and atmos == 0 then
                     originalPitch = -90 - (originalPitch + 90)
                 end
-                newContent[#newContent + 1] = stringf([[<path d="m %d,%d 35,0 15,15 15,-15 35,0" stroke-width="2" style="fill:none;stroke:#F5B800;" />]],
-                    centerX-50, centerY)
-                newContent[#newContent + 1] = stringf([[
-                    <circle class="ah" r="%f" cx="%d" cy="%d"/>
-                        <clipPath id="cut"><circle r="%f" cx="%d" cy="%d"/></clipPath>
-                        <rect class="ahg" x="%f" y="%f" height="%f" width="%f" clip-path="url(#cut)" transform="rotate(%f %d %d)"/>]],
-                                                  horizonRadius, centerX, centerY, (horizonRadius - 1), centerX, centerY, (centerX - horizonRadius),
-                                                  (centerY + horizonRadius * (originalPitch / 90)), (horizonRadius * 2),
-                                                  (horizonRadius * 2), (-1 * originalRoll), centerX, centerY)
             end
         end
 
