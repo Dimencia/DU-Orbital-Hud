@@ -1544,6 +1544,8 @@ function script.onStart()
                         .txt {font-size:10px;font-weight:bold;}
                         .txttick {font-size:12px;font-weight:bold;}
                         .txtbig {font-size:14px;font-weight:bold;}
+                        .altsm {font-size:16px;font-weight:normal;}
+                        .altbig {font-size:21px;font-weight:normal;}
                         .line {stroke-width:2px;fill:none}
                         .linethick {stroke-width:3px;fill:none}
                         .warnings {font-size:26px;fill:red;text-anchor:middle;font-family:Bank}
@@ -1784,25 +1786,37 @@ function script.onStart()
         function DrawAltitudeDisplay(newContent, altitude, atmos)
             if (altitude < 200000 and atmos == 0) or (altitude and atmos > 0) then
 
-                local rectX = 718
+                local rectX = 712
                 local rectY = 520
-                local rectW = 67
-                local rectH = 21
+                local rectW = 78
+                local rectH = 19
 
                 table.insert(newContent, stringf([[
-                    <g class="pdim txtbig">
-                        <rect class="line" x="%d" y="%d" width="%d" height="%d"/>        
+                    <g class="pdim">                        
+                        <rect class="line" x="%d" y="%d" width="%d" height="%d"/> 
                         <clipPath id="alt"><rect class="line" x="%d" y="%d" width="%d" height="%d"/></clipPath>
-                        <g clip-path="url(#alt)">]], rectX, rectY, rectW, rectH, rectX + 2, rectY + 2, rectW - 4,
-                    rectH - 4))
-
-                local glyphW = 10
-                local glyphH = 15
+                        <g clip-path="url(#alt)">]], 
+                        rectX - 1, rectY - 4, rectW + 2, rectH + 6,
+                        rectX + 1, rectY - 1, rectW - 4, rectH))
 
                 local index = 0
                 local divisor = 1
                 local forwardFract = 0
                 while index < 6 do
+                    local glyphW = 11
+                    local glyphH = 16
+                    local glyphXOffset = 9
+                    local glyphYOffset = 14
+                    local class = "altsm"
+
+                    if index > 2 then
+                        glyphH = glyphH + 3
+                        glyphW = glyphW + 2
+                        glyphYOffset = glyphYOffset + 2
+                        glyphXOffset = glyphXOffset - 6
+                        class = "altbig"
+                    end
+
                     local digit = (altitude / divisor) % 10
                     local intDigit = mfloor(digit)
                     local fracDigit = mfloor((intDigit + 1) % 10)
@@ -1812,15 +1826,20 @@ function script.onStart()
                         fract = digit - intDigit
                     end
 
-                    local topGlyphOffset = glyphH * (fract - 1)
+                    local topGlyphOffset = glyphH * (fract - 1) 
                     local botGlyphOffset = topGlyphOffset + glyphH
 
-                    local x = rectX + 3 + (6 - index) * glyphW
-                    local y = rectY + 15
+                    local x = rectX + glyphXOffset + (6 - index) * glyphW
+                    local y = rectY + glyphYOffset
+                    
+                    -- <g class="%s" clip-path="url(#%s)">
                     table.insert(newContent, stringf([[
+                        <g class="%s">
                         <text x="%d" y="%f">%d</text>
                         <text x="%d" y="%f">%d</text>
-                    ]], x, y + topGlyphOffset, fracDigit, x, y + botGlyphOffset, intDigit))
+                        </g>
+                    ]], class, x, y + topGlyphOffset, fracDigit, x, y + botGlyphOffset, intDigit))
+                    
                     index = index + 1
                     divisor = divisor * 10
                     if intDigit == 9 then
