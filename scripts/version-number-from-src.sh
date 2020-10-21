@@ -6,7 +6,7 @@ set -e  # Exit on any error
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 ROOTDIR="$(dirname $DIR)"
 
-LUA_SRC=${1:-$ROOTDIR/ButtonHUD.conf}
+LUA_SRC=${1:-$ROOTDIR/src/ButtonHUD.lua}
 
 VERSION_NUMBER=`grep "VERSION_NUMBER = .*" $LUA_SRC | sed -E "s/\s*VERSION_NUMBER = (.*)/\1/"`
 if [[ "${VERSION_NUMBER}" == "" ]]; then
