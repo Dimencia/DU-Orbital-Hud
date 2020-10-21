@@ -1,9 +1,6 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.65
-- Test of automatic Release creation for update.
-
-Version 4.64
+Version 4.66
 - Changed interpretation of Autopilot Throttle rate
 - Made interplaneterary panel update itself 10 times faster
 - Added variables for user to move vSpeed Meter, and Altimter/Speed indication
