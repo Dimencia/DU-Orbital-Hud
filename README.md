@@ -45,9 +45,9 @@ Check the [changelog](./ChangeLog.md) file for information about the most recent
 
 # Installation
 ## While a databank element is not required, it is strongly recommended.  They are cheap, or easy to make, and take up 1x1x1 cube space and fit nicely in front of seat.  Having one on your ship prior to doing the below steps will save your user preferences and some longterm variables, as well as flight status if you get up and sit back down in some situations.
-1. Click on **`ButtonHUD.conf`** above.  The Button HUD is the latest and most recent version but comes with a few caveats (read below).  Then on the top right, right click the `RAW` button and click `Save Link As`...
+1. Download the latest version of [ButtonHUD.conf](https://github.com/Dimencia/DU-Orbital-Hud/releases/latest/download/ButtonHUD.conf).
 1. Save the file to *`%ProgramData%\Dual Universe\Game\data\lua\autoconf\custom`*, the filename does not matter (as long as it's still .conf)
-1. In-game, right click your seat and go to *Advanced -> Update custom autoconf list*  - If you get a YAML error, you did not follow the above directions corretly.
+1. In-game, right click your seat and go to *Advanced -> Update custom autoconf list*  - If you get a YAML error, you did not follow the above directions correctly.
 1. Again, right click your seat and select *Advanced -> Run Custom Autoconfigure -> ButtonsHud - Dimencia and Archaegeo*
 1. IMPORTANT: Right click the ship and set the user control scheme to `Keyboard` (*Advanced -> Change Control Scheme -> Keyboard*). This is necessary for the HUD to work, but you can change the actual control scheme in the next step - fear not virtual joystick aces!
 1. Right click the seat, choose *Advanced -> Edit LUA Parameters*.  Change the `userControlScheme` to the actual control scheme you wish to use (e.g. `Virtual Joystick`).  You may mouse over the other parameters and set them as you wish - there are many, you should familiarize yourself with them.
