@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.63
+        VERSION_NUMBER = 4.64
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -34,7 +34,6 @@ function script.onStart()
         userControlScheme = "Virtual Joystick" -- export: Set to "Virtual Joystick", "Mouse", or "Keyboard"
         freeLookToggle = true -- export: Set to false for default free look behavior.
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
-        MaxGameVelocity = 8333.05 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), use 6944.4444 for 25000km/hr
         AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         MouseYSensitivity = 0.003 -- export:1 For virtual joystick only
@@ -56,7 +55,8 @@ function script.onStart()
         turnAssist = true -- export: [Only in atmosphere]<br>When the pilot is rolling, the flight model will try to add yaw and pitch to make the construct turn better<br>The flight model will start by adding more yaw the more horizontal the construct is and more pitch the more vertical it is
         turnAssistFactor = 2 -- export: [Only in atmosphere]<br>This factor will increase/decrease the turnAssist effect<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
-        AutopilotInterplanetaryThrottle = 100 -- export: How much throttle, in percent, you want it to use when autopiloting to another planet
+        MaxGameVelocity = 8333.05 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
+        AutopilotInterplanetaryThrottle = 1 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
         ShiftShowsRemoteButtons = true -- export: Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
         DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
         speedChangeLarge = 5 -- export: The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change). 
@@ -70,9 +70,12 @@ function script.onStart()
         BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
         centerX = 700 --export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
         centerY = 980 --export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
+        vSpdMeterX = 1525  --export X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
+        vSpdMeterY = 250 --export Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
+        altMeterX = 712  --export X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
+        altMeterY = 520 --export Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
 
-
-        -- GLOBAL VARIABLES SECTION, IF NOT USED OUTSIDE UNIT.START, MAKE IT LOCAL
+-- GLOBAL VARIABLES SECTION, IF NOT USED OUTSIDE UNIT.START, MAKE IT LOCAL
         markers = {}
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
@@ -198,7 +201,8 @@ function script.onStart()
                              "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankOptimizationAtmo",
                              "fuelTankOptimizationSpace", "fuelTankOptimizationRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
-                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "useTheseSettings", "centerX", "centerY"}
+                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "useTheseSettings", "centerX", "centerY",
+                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY"}
         AutoVariables = {"EmergencyWarp", "hasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "AutoBrake", "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -1584,16 +1588,17 @@ function script.onStart()
         end
 
         function DrawSpeed(newContent, spd)
-             local ys2 = 560
+            local ys2 = altMeterY + 40
+            local x1 = altMeterX
             newContent[#newContent + 1] = [[<g class="pdim txt txtend">]]
             if isRemote() == 1 then
                 ys2 = 75
             end
             newContent[#newContent + 1] = stringf([[
                 <g class="pbright txtstart">
-                    <text class="txtbig" x="718" y="%d">%d km/h</text>
+                    <text class="txtbig" x="%d" y="%d">%d km/h</text>
                 </g>
-            </g>]], ys2, mfloor(spd))
+            </g>]], x1, ys2, mfloor(spd))
         end
 
         function DrawOdometer(newContent, totalDistanceTrip, totalDistanceTravelled, flightStyle, flightTime)
@@ -1713,7 +1718,7 @@ function script.onStart()
                     end
                 end
                 newContent[#newContent + 1] = stringf([[
-                    <g class="pbright txt txtvspd" transform="translate(1525 250) scale(0.6)">
+                    <g class="pbright txt txtvspd" transform="translate(%d %d) scale(0.6)">
                             <text x="31" y="-41">1000</text>
                             <text x="-10" y="-65">100</text>
                             <text x="-54" y="-45">10</text>
@@ -1728,7 +1733,7 @@ function script.onStart()
                         </g>
                         <path transform="rotate(%d)" d="m-0.094-7c-22 2.2-45 4.8-67 7 23 1.7 45 5.6 67 7 4.4-0.068 7.8-4.9 6.3-9.1-0.86-2.9-3.7-5-6.8-4.9z" />
                     </g>
-                ]], mfloor(vSpd), mfloor(angle))
+                ]], vSpdMeterX, vSpdMeterY, mfloor(vSpd), mfloor(angle))
             end
         end
 
@@ -1786,8 +1791,8 @@ function script.onStart()
         function DrawAltitudeDisplay(newContent, altitude, atmos)
             if (altitude < 200000 and atmos == 0) or (altitude and atmos > 0) then
 
-                local rectX = 712
-                local rectY = 520
+                local rectX = altMeterX
+                local rectY = altMeterY
                 local rectW = 78
                 local rectH = 19
 
@@ -2576,7 +2581,6 @@ function script.onStart()
             local BodyParameters = {}
             BodyParameters.__index = BodyParameters
             BodyParameters.__tostring = function(obj, indent)
-                local sep = indent or ''
                 local keys = {}
                 for k in pairs(obj) do
                     table.insert(keys, k)
@@ -2767,7 +2771,6 @@ function script.onStart()
             end
 
             PlanetaryReference.isMapPosition = isMapPosition
-
             function PlanetaryReference:getPlanetarySystem(overload)
                 -- if galaxyAtlas then
                 local planetarySystemId = overload
@@ -2868,7 +2871,7 @@ function script.onStart()
             end
 
             function PlanetarySystem:getPlanetarySystemId()
-                local k, v = next(self)
+                local _, v = next(self)
                 return v and v.planetarySystemId
             end
 
@@ -3085,7 +3088,6 @@ function script.onStart()
 
                 t50 = t50 or 0
                 brakeThrust = brakeThrust or 0 -- usually zero when accelerating
-                local tau0 = lorentz(initial)
                 local speedUp = initial <= final
                 local a0 = thrust * (speedUp and 1 or -1) / restMass
                 local b0 = -brakeThrust / restMass
@@ -3444,6 +3446,7 @@ function script.onStart()
         collectgarbage("collect")
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("oneSecond", 1)
+        unit.setTimer("tenthSecond", 1/10)
     end)
 end
 
@@ -3487,8 +3490,7 @@ function script.onStop()
 end
 
 function script.onTick(timerId)
-    if timerId == "oneSecond" then
-        -- Timer for evaluation every 1 second
+    if timerId == "tenthSecond" then
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -3552,6 +3554,8 @@ function script.onTick(timerId)
         else
             HideInterplanetaryPanel()
         end
+    elseif timerId == "oneSecond" then
+        -- Timer for evaluation every 1 second
         refreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
         updateDistance()
         if (radar_1 and #radar_1.getEntries() > 0) then
@@ -4701,11 +4705,11 @@ function script.onActionStop(action)
     elseif action == "up" then
         upAmount = upAmount - 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        --Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
     elseif action == "down" then
         upAmount = upAmount + 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        --Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
     elseif action == "groundaltitudeup" then
         if antigrav and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod

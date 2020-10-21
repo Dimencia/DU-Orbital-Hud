@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.64
+- Changed interpretation of Autopilot Throttle rate
+- Made interplaneterary panel update itself 10 times faster
+- Added variables for user to move vSpeed Meter, and Altimter/Speed indication
+
 Version 4.63 - Cleared a lot of unused and misnamed variables.
 
 Version 4.62 - HUD Redesign continued, KSP navball
