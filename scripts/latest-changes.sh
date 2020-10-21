@@ -11,7 +11,7 @@ while read -r VERSION; do
     echo "[$VERSION]" 1>&2
 
     VERSIONS+=("$VERSION")
-done < <(cat ${ROOTDIR}/ChangeLog.md | grep -n "^Version *[0-9]*\.[0-9]* *- *.*$")
+done < <(cat ${ROOTDIR}/ChangeLog.md | grep -n "^Version *[0-9]*\.[0-9].*$")
 
 LATEST="${VERSIONS[0]}"
 PREVIOUS="${VERSIONS[1]}"
