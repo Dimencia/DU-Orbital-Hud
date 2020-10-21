@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.68
+        VERSION_NUMBER = 4.69
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -24,164 +24,144 @@ function script.onStart()
         local constructMass = core.getConstructMass
         local isRemote = Nav.control.isRemoteControlled
 
-        -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
-        useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
-        AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
-        warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
-        PrimaryR = 130 -- export: Primary HUD color
-        PrimaryG = 224 -- export: Primary HUD color
-        PrimaryB = 255 -- export: Primary HUD color
-        userControlScheme = "Virtual Joystick" -- export: Set to "Virtual Joystick", "Mouse", or "Keyboard"
+-- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
+        local useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
         freeLookToggle = true -- export: Set to false for default free look behavior.
-        apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
-        AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
+        local BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
+        local RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
+        userControlScheme = "Virtual Joystick" -- export: Set to "Virtual Joystick", "Mouse", or "Keyboard"
+        local brightHud = false -- export: Enable to prevent hud dimming when in freelook.
+        local PrimaryR = 130 -- export: Primary HUD color
+        local PrimaryG = 224 -- export: Primary HUD color
+        local PrimaryB = 255 -- export: Primary HUD color
+        local centerX = 700 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
+        local centerY = 980 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
+        local vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
+        local vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
+        local altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
+        local altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
+        local circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
-        MouseYSensitivity = 0.003 -- export:1 For virtual joystick only
-        MouseXSensitivity = 0.003 -- export: For virtual joystick only
-        circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
-        autoRollPreference = false -- export: [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
         hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
-        fuelTankOptimizationAtmo = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        fuelTankOptimizationSpace = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        fuelTankOptimizationRocket = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
+        ShiftShowsRemoteButtons = true -- export: Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
+        speedChangeLarge = 5 -- export: The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change). 
+        speedChangeSmall = 1 -- export: the speed change that occurs while you hold speed up/down, default is 1 (5% throttle change).
+        brakeLandingRate = 30 -- export: Max loss of altitude speed in m/s when doing a brake landing, default 30.  This is to prevent "bouncing" as hover/boosters catch you.  Do not use negative number.
+        MaxPitch = 20 -- export: Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  Default is 20 deg.  You can set higher or lower depending on your ships capabilities.
+        ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
+        ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
+        EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
+        local AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
+        TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
+        MaxGameVelocity = 8333.05 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
+        AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
+        AutopilotInterplanetaryThrottle = 1.0 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
+        local warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
+        MouseYSensitivity = 0.003 --export:1 For virtual joystick only
+        MouseXSensitivity = 0.003 -- export: For virtual joystick only
+        autoRollPreference = false -- export: [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
+        turnAssist = true -- export: [Only in atmosphere]<br>When the pilot is rolling, the flight model will try to add yaw and pitch to make the construct turn better<br>The flight model will start by adding more yaw the more horizontal the construct is and more pitch the more vertical it is
+        turnAssistFactor = 2 -- export: [Only in atmosphere]<br>This factor will increase/decrease the turnAssist effect<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         pitchSpeedFactor = 0.8 -- export: For keyboard control
         yawSpeedFactor = 1 -- export: For keyboard control
         rollSpeedFactor = 1.5 -- export: This factor will increase/decrease the player input along the roll axis<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         brakeSpeedFactor = 3 -- export: When braking, this factor will increase the brake force by brakeSpeedFactor * velocity<br>Valid values: Superior or equal to 0.01
         brakeFlatFactor = 1 -- export: When braking, this factor will increase the brake force by a flat brakeFlatFactor * velocity direction><br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         autoRollFactor = 2 -- export: [Only in atmosphere]<br>When autoRoll is engaged, this factor will increase to strength of the roll back to 0<br>Valid values: Superior or equal to 0.01
-        turnAssist = true -- export: [Only in atmosphere]<br>When the pilot is rolling, the flight model will try to add yaw and pitch to make the construct turn better<br>The flight model will start by adding more yaw the more horizontal the construct is and more pitch the more vertical it is
-        turnAssistFactor = 2 -- export: [Only in atmosphere]<br>This factor will increase/decrease the turnAssist effect<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
-        TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
-        MaxGameVelocity = 8333.05 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
-        AutopilotInterplanetaryThrottle = 1 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
-        ShiftShowsRemoteButtons = true -- export: Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
-        DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
-        speedChangeLarge = 5 -- export: The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change). 
-        speedChangeSmall = 1 -- export: the speed change that occurs while you hold speed up/down, default is 1 (5% throttle change).
-        brightHud = false -- export: Enable to prevent hud dimming when in freelook.
-        brakeLandingRate = 30 -- export: Max loss of altitude speed in m/s when doing a brake landing, default 30.  This is to prevent "bouncing" as hover/boosters catch you.  Do not use negative number.
-        MaxPitch = 20 -- export: Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  Default is 20 deg.  You can set higher or lower depending on your ships capabilities.
-        ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
-        ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
-        EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
-        BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
-        centerX = 700 --export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
-        centerY = 980 --export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
-        vSpdMeterX = 1525  --export X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
-        vSpdMeterY = 250 --export Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
-        altMeterX = 712  --export X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
-        altMeterY = 520 --export Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
+        local DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
+        local fuelTankOptimizationAtmo = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        local fuelTankOptimizationSpace = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        local fuelTankOptimizationRocket = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        local apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
--- GLOBAL VARIABLES SECTION, IF NOT USED OUTSIDE UNIT.START, MAKE IT LOCAL
-        markers = {}
+        -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
+        toggleView = true
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
         EmergencyWarp = false
         ReentryMode = false
-        brakeToggle = BrakeToggleDefault
-        brakeToggle = true
-        displayOrbit = true
         mousePitchFactor = 1 -- Mouse control only
         mouseYawFactor = 1 -- Mouse control only
         hasGear = false
         pitchInput = 0
+        pitchInput2 = 0
+        yawInput2 = 0
         rollInput = 0
         yawInput = 0
         brakeInput = 0
-        pitchInput2 = 0
         rollInput2 = 0
-        yawInput2 = 0
-        BrakeIsOn = false
         RetrogradeIsOn = false
         ProgradeIsOn = false
         AutoBrake = false
         Reentry = false
-        Autopilot = false
         FollowMode = false
         TurnBurn = false
-        AltitudeHold = false
-        BrakeLanding = false
-        AutoTakeoff = false
-        HoldAltitude = 1000 -- In case something goes wrong, give this a decent start value
         AutopilotAccelerating = false
-        AutopilotBraking = false
-        AutopilotCruising = false
         AutopilotRealigned = false
-        VectorToTarget = false
-        AutopilotEndSpeed = 0
-        AutopilotStatus = "Aligning"
-        simulatedX = 0
-        simulatedY = 0
         HoldingCtrl = false
         PrevViewLock = 1
-        PreviousYawAmount = 0
-        PreviousPitchAmount = 0
         msgText = "empty"
-        msgTimer = 3
-        targetGroundAltitude = nil -- So it can tell if one loaded or not
-        gearExtended = nil
         LastEccentricity = 1
         HoldAltitudeButtonModifier = 5
         AntiGravButtonModifier = 5
         isBoosting = false -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-        distance = 0
         brakeDistance, brakeTime = 0
         maxBrakeDistance, maxBrakeTime = 0
-        hasGear = false
         hasDB = false
         hasSpaceRadar = false
         hasAtmoRadar = false
-        damageMessage = ""
-        radarMessage = ""
-        LastOdometerOutput = ""
-        peris = 0
         AutopilotTargetIndex = 0
         AutopilotTargetName = "None"
         AutopilotTargetPlanet = nil
-        AutopilotPlanetGravity = 0
-        UnitHidden = true
         totalDistanceTravelled = 0.0
         totalDistanceTrip = 0
         emergencyWarp = false
         notTriedEmergencyWarp = true
+        flightTime = 0
+        wipedDatabank = false
+        LocationIndex = 0
+        upAmount = 0
+        BrakeIsOn = false
+        Autopilot = false
+        AltitudeHold = false
+        BrakeLanding = false
+        AutoTakeoff = false
+        HoldAltitude = 1000 -- In case something goes wrong, give this a decent start value
+        AutopilotBraking = false
+        AutopilotCruising = false
+        VectorToTarget = false    
+        simulatedX = 0
+        simulatedY = 0        
+        AutopilotStatus = "Aligning"
+        msgTimer = 3
+        targetGroundAltitude = nil -- So it can tell if one loaded or not
+        gearExtended = nil
+        distance = 0
+        radarMessage = ""
+        LastOdometerOutput = ""
+        peris = 0
         AntigravTargetAltitude = nil
-        lastTravelTime = system.getTime()
         core_altitude = core.getAltitude()
         elementsID = core.getElementIdList()
-        -- Do not save these, they contain elementID's which can change.
-        atmoTanks = {}
-        spaceTanks = {}
-        rocketTanks = {}
-        eleTotalMaxHp = 0
-        flightTime = 0
+        lastTravelTime = system.getTime()
         totalFlightTime = 0
-        RepairArrows = false
-        wipedDatabank = false
 
-        -- updateHud() variables
-        fuelTimeLeftR = {}
-        fuelPercentR = {}
-        FuelUpdateDelay = mfloor(1 / apTickRate) * 2
-        fuelTimeLeftS = {}
-        fuelPercentS = {}
-        fuelTimeLeft = {}
-        fuelPercent = {}
-        SavedLocations = {}
-        LocationIndex = 0
-        updateTanks = false
-        honeyCombMass = 0
-        upAmount = 0
-
-        -- LOCAL VARIABLES, USERS DO NOT CHANGE
+        -- Local Variables used only within onStart
+        local markers = {}
+        local displayOrbit = true
+        local AutopilotEndSpeed = 0
+        local PreviousYawAmount = 0
+        local PreviousPitchAmount = 0
+        local damageMessage = ""
+        local hasGear = false
+        local AutopilotPlanetGravity = 0
+        local UnitHidden = true
         local Buttons = {}
         local AutopilotStrength = 1 -- How strongly autopilot tries to point at a target
         local alignmentTolerance = 0.001 -- How closely it must align to a planet before accelerating to it
         local ResolutionWidth = 2560
         local ResolutionHeight = 1440
-
         local minAtlasX = nil
         local maxAtlasX = nil
         local minAtlasY = nil
@@ -190,6 +170,22 @@ function script.onStart()
         local doubleCheck = false
         local totalMass = 0
         local lastMaxBrakeAtG = nil
+        local atmoTanks = {}
+        local spaceTanks = {}
+        local rocketTanks = {}
+        local eleTotalMaxHp = 0
+        local RepairArrows = false
+        local fuelTimeLeftR = {}
+        local fuelPercentR = {}
+        local FuelUpdateDelay = mfloor(1 / apTickRate) * 2
+        local fuelTimeLeftS = {}
+        local fuelPercentS = {}
+        local fuelTimeLeft = {}
+        local fuelPercent = {}
+        local SavedLocations = {}
+        local updateTanks = false
+        local honeyCombMass = 0
+        local lastConstructMass = constructMass()
 
         -- VARIABLES TO BE SAVED GO HERE
         SaveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -201,7 +197,7 @@ function script.onStart()
                              "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankOptimizationAtmo",
                              "fuelTankOptimizationSpace", "fuelTankOptimizationRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
-                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "useTheseSettings", "centerX", "centerY",
+                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY"}
         AutoVariables = {"EmergencyWarp", "hasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "AutoBrake", "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
@@ -240,18 +236,16 @@ function script.onStart()
             if valuesAreSet then
                 msgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
             elseif useTheseSettings then
-                msgText =
-                    "Updated user preferences used.  Will be saved when you exit seat.  Toggle off newSettings to use saved values"
-                    useTheseSettings = false
+                msgText = "Updated user preferences used.  Will be saved when you exit seat.  Toggle off useTheseSettings to use saved values"
             else
                 msgText = "No Saved Variables Found - Stand up / leave remote to save settings"
             end
         else
             msgText = "No databank found, install one anywhere and rerun the autoconfigure to save variables"
         end
-        -- Loading saved vars is hard on it
+       -- Loading saved vars is hard on it
+        brakeToggle = BrakeToggleDefault
         autoRoll = autoRollPreference
-        lastConstructMass = constructMass()
         honeyCombMass = lastConstructMass - updateMass()
         rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) ..
                   [[)]]
@@ -352,7 +346,6 @@ function script.onStart()
                 end
             end
         end
-
         if gyro ~= nil then
             GyroIsOn = gyro.getState() == 1
         end
@@ -428,7 +421,6 @@ function script.onStart()
         if atmosphere() > 0 and not dbHud and (gearExtended or not hasGear) then
             BrakeIsOn = true
         end
-
         unit.hide()
 
         -- BEGIN FUNCTION DEFINITIONS
@@ -1287,6 +1279,23 @@ function script.onStart()
             end
         end
 
+        function BeginReentry()
+            if unit.getAtmosphereDensity() < 0 and unit.getClosestPlanetInfluence() > 0 and core_altitude > ReentryAltitude and not Reentry then
+                Reentry = true
+                if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
+                AltitudeHold = true
+                autoroll = true
+                BrakeIsOn = false
+                HoldAltitude = ReentryAltitude
+                msgText = "Beginning Re-entry.  Target speed: " .. ReentrySpeed .. " Target Altitude: " ..
+                            ReentryAltitude
+            else
+                msgText = "You do not meet re-entry requirements. (Must be out of atmosphere and close to a planet"
+                Rentry = false
+            end
+        end
         -- BEGIN BUTTON DEFINITIONS
 
         -- enableName, disableName, width, height, x, y, toggleVar, toggleFunction, drawCondition
@@ -1355,17 +1364,8 @@ function script.onStart()
         end, ToggleFollowMode, function()
             return isRemote() == 1
         end)
-        MakeButton("Engage Glide Reentry", "Disable Glide Reentry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
-            function()
-                return ReentryMode
-            end, function()
-                ReentryMode = not ReentryMode
-                if (ReentryMode) then
-                    msgText = "Reentry Mode Enabled. Press G when aligned with planet for reentry"
-                else
-                    msgText = "Reentry Mode Disabled.  Normal Landing with G"
-                end
-            end)
+        MakeButton("Begin Glide Reentry", "Cancel Glide Reentry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+            function() return Reentry end, BeginReentry, function() return (core_altitude > ReentryAltitude) end )
         y = y + buttonHeight + 20
         MakeButton("Enable Emergency Warp", "Disable Emergency Warp", buttonWidth, buttonHeight, x, y, function()
             return EmergencyWarp
@@ -1490,20 +1490,17 @@ function script.onStart()
 
 
             if isRemote() == 0 then
-
                 -- Don't even draw this in freelook
-                if unit.getClosestPlanetInfluence() > 0 then
-                    if not IsInFreeLook() then
+               if not IsInFreeLook() or brightHud then
+                    if unit.getClosestPlanetInfluence() > 0then
                         DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, "ROLL")
                         DrawPrograde(newContent, originalPitch, originalRoll, atmos, velocity, speed, centerX, centerY)
-                    end
-                else
-                    if not IsInFreeLook() then
+                        DrawAltitudeDisplay(newContent, altitude, atmos)
+                    else
                         DrawArtificialHorizon(newContent, pitch, roll, atmos, centerX, centerY, "YAW")
                         DrawPrograde(newContent, originalPitch, originalRoll, atmos, velocity, speed, centerX, centerY)
                     end
                 end
-                DrawAltitudeDisplay(newContent, altitude, atmos)
             end
             DrawThrottle(newContent, flightStyle, throt, flightValue)
 
@@ -1912,6 +1909,7 @@ function script.onStart()
             local brakeY = 860
             local gearY = 900
             local hoverY = 930
+            local ewarpY = 960
             local apY = 225
             local turnBurnY = 150
             local gyroY = 960
@@ -1940,6 +1938,10 @@ function script.onStart()
                                                   warningX, hoverY,
                                                   getDistanceDisplayString(Nav:getTargetGroundAltitude()))
             end
+            if EmergencyWarp then
+                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">E-WARP ENGAGED</text>]],
+                                                  warningX, ewarpY)
+            end                
             if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Target AGG Altitude: %s</text>]],
                     warningX, apY, getDistanceDisplayString2(AntigravTargetAltitude))
@@ -3439,6 +3441,8 @@ function script.onStart()
                              max, samples))
         end
 
+    
+
         Animating = false
         Animated = false
         AddLocationsToAtlas()
@@ -4491,19 +4495,6 @@ function script.onActionStart(action)
                 autoRoll = true
                 gearExtended = false -- Don't actually do it
                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-            elseif ReentryMode and unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and
-                core_altitude > ReentryAltitude then
-                Reentry = true
-                gearExtended = false -- Don't actually do it
-                if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
-                    Nav.control.cancelCurrentControlMasterMode()
-                end
-                AltitudeHold = true
-                autoroll = true
-                BrakeIsOn = false
-                HoldAltitude = ReentryAltitude
-                msgText = "Beginning Re-entry.  Target speed: " .. ReentrySpeed .. " Target Altitude: " ..
-                              ReentryAltitude
             else
                 Nav.control.extendLandingGears()
                 Nav.axisCommandManager:setTargetGroundAltitude(0)
@@ -4803,8 +4794,6 @@ function script.onActionLoop(action)
     end
 end
 
--- BEGIN system.start
-toggleView = true
 function DisplayMessage(newContent, displayText)
     if displayText ~= "empty" then
         newContent[#newContent + 1] = [[<text class="msg" x="50%%" y="310" >]]
@@ -4834,14 +4823,14 @@ function updateDistance()
     totalFlightTime = totalFlightTime + elapsedTime
     lastTravelTime = curTime
 end
+
 function updateMass()
     local totMass = 0
     for k in pairs(elementsID) do
         totMass = totMass + core.getElementMassById(elementsID[k])
     end
     return totMass
-end
--- END system.start
+end    
 
 script.onStart()
 

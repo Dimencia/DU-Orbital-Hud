@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.69 - Cleaning up Local-Global declaration
+- Added support for BrightHUD toggle to prevent AH vanishing if toggled on
+- Modified Reentry button to engage re-entry vice needing to press G after button.\
+- Added E-Warp Engaged message to remind you if it is on
+
 Version 4.68 - Clean up release conf generation
 - Update Readme
 - Fix version to be pulled from .conf

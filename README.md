@@ -86,8 +86,7 @@ This is a quick reference for the functions.  See the detailed feature descripti
 * ALTITUDE HOLD (Option 6, `ALT-6`) - Toggle the altitude hold functionality.  Set hold height with `LALT-C` (down) and `LALT-SPACE` (up).  Disable
 * SAVE/CLEAR SETTINGS (Option 7, `ALT-7`) - Save or clear the currently saved configuration settings.
 * FOLLOW MODE (Option 8, `ALT-8`) - Engage follow mode if you are using Remote Control
-* AUTO-BRAKE (Option 9, `ALT-9`) - Attempts to bring you to a stop.
-    > WARNING - Unreliable because it is unable to align your trajectory, and tends to over-brake if it's not perfectly aligned.  Use Autopilot if you need auto-brake, so that it can align properly. 
+* ANTIGRAVITY GENERATOR - Engaged either by button or ALT-G (unless remapped).  Once engaged, hold ALT+C to lower target height or ALT+G to raise target height.
 
 ## Features and Controls explanation
 
