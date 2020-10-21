@@ -68,6 +68,7 @@ function script.onStart()
         ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
         EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
         BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
+        cruiseControlRocketSpeedFactor = 0.85 -- export: In cruise-control rockets are capped at the desired speed, this factor lowers that a bit to be more fuel efficient.
         centerX = 700 --export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
         centerY = 980 --export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
         vSpdMeterX = 1525  --export X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
@@ -4439,11 +4440,18 @@ function script.onFlush()
     -- Rockets
     Nav:setBoosterCommand('rocket_engine')
     -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-    speed = vec3(core.getVelocity()):len()
-    cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
-    if Nav.axisCommandManager:getAxisCommandType(0) == 1 and (speed * 3.6 > cc_speed) then
+    local speed = constructVelocity:len()
+    local ccSpeed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) * constants.kph2m
+    -- if we boost all the way up to the target cruise control speed with our rockets, then they'll overshoot it
+    --  and the cruise control will brake to compensate, loosing a lot of fuel efficiency.
+    -- so we only boost up to a factor (0.85) of the target speed.
+    local maxBoostSpeed = ccSpeed * cruiseControlRocketSpeedFactor
+    if Nav.axisCommandManager:getAxisCommandType(axisCommandId.longitudinal) == axisCommandType.byTargetSpeed
+            and (speed > maxBoostSpeed) then
+        -- if we're in cruise control and we're at our desired speed then disable rocket
         unit.setEngineThrust('rocket_engine', 0)
-    elseif (isboosting) then
+    elseif (isBoosting) then
+        -- enable rockets if booster is on (and previous condition was false)
         unit.setEngineThrust('rocket_engine', 1)
     end
 
@@ -4633,10 +4641,9 @@ function script.onActionStart(action)
             system.lockView(1)
         end
     elseif action == "booster" then
-        -- Nav:toggleBoosters()
         -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-        isboosting = not isboosting
-        if (isboosting) then
+        isBoosting = not isBoosting
+        if (isBoosting) then
             unit.setEngineThrust('rocket_engine', 1)
         else
             unit.setEngineThrust('rocket_engine', 0)
