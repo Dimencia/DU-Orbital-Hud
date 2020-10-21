@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.67
+        VERSION_NUMBER = 4.68
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -2773,6 +2773,8 @@ function script.onStart()
             PlanetaryReference.isMapPosition = isMapPosition
             function PlanetaryReference:getPlanetarySystem(overload)
                 -- if galaxyAtlas then
+                if i == nil then i = 0 end
+                if nv == nil then nv = 0 end
                 local planetarySystemId = overload
                 if isMapPosition(overload) then
                     planetarySystemId = overload.systemId
@@ -2958,7 +2960,7 @@ function script.onStart()
                 if b == 0 then
                     return math.abs(a) < 1e-09
                 end
-                return math.abs(a - b) < math.max(math.abs(a), math.abs(b)) * epsilon
+                return math.abs(a - b) < math.max(math.abs(a), math.abs(b)) * constants.epsilon
             end
             Kepler = {}
             Kepler.__index = Kepler
