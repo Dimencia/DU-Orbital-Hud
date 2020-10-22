@@ -1,6 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
-Vertion 4.7 - Test Push
+Vertion 4.70 - Updates
+- Fixed Interplanetary display when shifting atmo to space and custom to target
+- removed currentGroundAltitudeStabilization undefined variable
 
 Version 4.693 - Bugfix
 - Fixed Saving of Variables

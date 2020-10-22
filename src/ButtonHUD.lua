@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.693
+        VERSION_NUMBER = 4.70
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -417,6 +417,7 @@ function script.onStart()
         if atmosphere() > 0 and not dbHud and (gearExtended or not hasGear) then
             BrakeIsOn = true
         end
+        InAtmo = (atmosphere() > 0)
         unit.hide()
 
         -- BEGIN FUNCTION DEFINITIONS
@@ -3169,7 +3170,7 @@ function script.onStart()
         Kinematic = Kinematics()
         Kep = Keplers()
 
-        InAtmo = (atmosphere() > 0)
+
 
         function getDistanceDisplayString(distance)
             local su = distance > 100000
@@ -3259,15 +3260,23 @@ function script.onStart()
                         AutopilotRealigned = false
                         AutopilotStatus = "Aligning"
                         if CustomTarget ~= nil then
+                            system.print("Custom Target Found")
                             if unit.getAtmosphereDensity() == 0 and InAtmo then
-                                system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
-                                system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
-                                system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
-                                system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
-                                system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
-                            end
-                            system.addDataToWidget(widgetMaxMassText, widgetMaxMass)
-                            system.addDataToWidget(widgetTravelTimeText, widgetTravelTime)
+                                if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 0 then
+                                    system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
+                                if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 0 then
+                                    system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
+                                if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 0 then
+                                    system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
+                                if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 0 then
+                                    system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
+                                if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 0 then
+                                    system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
+                                end
+                            if system.updateData(widgetMaxMassText, widgetMaxMass) == 0 then
+                                system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
+                            if system.updateData(widgetTravelTimeText, widgetTravelTime) == 0 then
+                                system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
                         end
                         CustomTarget = nil
                         return true
@@ -3489,6 +3498,7 @@ end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
+        InAtmo = (unit.getAtmosphereDensity() > 0)
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -3528,11 +3538,16 @@ function script.onTick(timerId)
                     system.removeDataFromWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
                     InAtmo = true
                 elseif unit.getAtmosphereDensity() == 0 and InAtmo then
-                    system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
-                    system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
-                    system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
-                    system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
-                    system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
+                    if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 0 then
+                        system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
+                    if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 0 then
+                        system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
+                    if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 0 then
+                        system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
+                    if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 0 then
+                        system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
+                    if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 0 then
+                        system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
                     InAtmo = false
                 end
             else
@@ -4681,11 +4696,11 @@ function script.onActionStop(action)
     elseif action == "up" then
         upAmount = upAmount - 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
     elseif action == "down" then
         upAmount = upAmount + 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
     elseif action == "groundaltitudeup" then
         if antigrav and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
