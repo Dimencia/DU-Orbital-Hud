@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.692 - Bugfix
+- Repair arrows should now work for all size cores
+- Restored Navbal (Artifical Horizon) to center by default.  Use centerX=700 and centerY=980 for lower left placement.
+
 Version 4.691 - Bugfix
 - Fixed bug causing hovers to not fire when not using a landing mode
 - Synchronized AH to ticker
