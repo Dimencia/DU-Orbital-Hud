@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.693 - Bugfix
+- Fixed Saving of Variables
+- Removed final references to AutoBrake
+
 Version 4.692 - Bugfix
 - Repair arrows should now work for all size cores
 - Restored Navbal (Artifical Horizon) to center by default.  Use centerX=700 and centerY=980 for lower left placement.
