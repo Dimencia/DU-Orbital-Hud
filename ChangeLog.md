@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.691 - Bugfix
+- Fixed bug causing hovers to not fire when not using a landing mode
+- Synchronized AH to ticker
+
 Version 4.69 - Cleaning up Local-Global declaration
 - Added support for BrightHUD toggle to prevent AH vanishing if toggled on
 - Modified Reentry button to engage re-entry vice needing to press G after button.\
