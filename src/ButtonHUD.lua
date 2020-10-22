@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.691
+        VERSION_NUMBER = 4.692
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -24,7 +24,7 @@ function script.onStart()
         local constructMass = core.getConstructMass
         local isRemote = Nav.control.isRemoteControlled
 
--- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
+        -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
         local useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
         freeLookToggle = true -- export: Set to false for default free look behavior.
         local BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
@@ -34,8 +34,8 @@ function script.onStart()
         local PrimaryR = 130 -- export: Primary HUD color
         local PrimaryG = 224 -- export: Primary HUD color
         local PrimaryB = 255 -- export: Primary HUD color
-        local centerX = 700 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
-        local centerY = 980 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
+        local centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement.
+        local centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement. 
         local vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
         local vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
         local altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
@@ -186,6 +186,7 @@ function script.onStart()
         local updateTanks = false
         local honeyCombMass = 0
         local lastConstructMass = constructMass()
+        local coreOffset = 16
 
         -- VARIABLES TO BE SAVED GO HERE
         SaveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -249,12 +250,9 @@ function script.onStart()
         honeyCombMass = lastConstructMass - updateMass()
         rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) ..
                   [[)]]
-        rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
+        local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
-        UpdateCount = 0
-        titlecolR = rgb
-        titlecol = rgb
-        titlecolS = rgb
+        local UpdateCount = 0
         coroutine.yield() -- Give it some time to breathe before we do the rest
         for k in pairs(elementsID) do
             local name = eleType(elementsID[k])
@@ -263,7 +261,6 @@ function script.onStart()
             end
             if (name == "dynamic core") then
                 local hp = eleMaxHp(elementsID[k])
-                coreOffset = 16
                 if hp > 10000 then
                     coreOffset = 128
                 elseif hp > 1000 then
@@ -899,7 +896,6 @@ function script.onStart()
                     -- Thanks to Jerico for the help and code starter for arrow markers!
                     if RepairArrows and #markers == 0 then
                         position = vec3(core.getElementPositionById(elementsID[k]))
-                        local coreOffset = 16
                         local x = position.x - coreOffset
                         local y = position.y - coreOffset
                         local z = position.z - coreOffset

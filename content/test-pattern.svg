@@ -1,0 +1,154 @@
+<!--
+    This pattern represents several test elements for DU screens.  It is designed
+    to show the limits of pixel accuracy and mipmapping effects.
+
+    The test patterm is repeated five times with varying stroke widths:
+    0.5px, 1px, 2px, 3px, 4px.
+
+    To determine the backing texture size (and thus the maximum theoretical pixel resolution),
+    the viewBox should be adjusted until the following occurs:
+    * The color of the second test pattern's white cross hatches is actually white, while the
+      first are grey.  If the second pattern is gray, it means the viewbox resolution is higher
+      than the backing texture's resolution, and a stroke-width of 1px in viewbox coordinates
+      is less than a full pixel in texture coordinates, resulting in alpha blending to simulate
+      less than one pixel.
+    * The second white crosshatch pattern should have distinct, even gaps between the horizontal
+      and vertical lines.  If there are no gaps, the viewbox resolution is too high in that dimension.
+      If the gaps are uneven, the viewbox aspect ratio does not match the aspect ratio of the backing
+      texture.
+    * The angled lines in the upper right of the first test pattern should just touch at the corners
+      of each horizontal segment. If they do not touch, the viewbox resolution is less than the texture
+      resolution, meaning that each half pixel of that test pattern is mapping to a full pixel in the
+      backing texture, but because the viewbox resolution is lower than the texture, that full pixel is
+      further apart than a full pixel in the texture.
+    * The colored lines should be distinctly red, green and blue in the first and second test pattern,
+      but in the second test pattern they should also have no gaps, nor should they smear together to
+      form purple or orange
+    * The circles should have pixelated edges.  If the circles are smooth, the viewbox resolution is lower
+      than the backing texture.  If the un-filled circle has gaps, the viewbox resolution is higher than
+      the backing texture.
+-->
+<svg class="bootstrap" viewBox="0 0 1024 614.4" preserveAspectRatio="meet">
+    <rect style="stroke:green;stroke-width:1px" x="0" y="0" width="100%" height="100%" />
+    <g id="testpattern">
+    </g>
+    <g style="font-family:Monospace;font-size:12px;stroke:white;fill:white;font-weight:normal">
+        <g transform="translate(0, 100)" style="stroke-width:0.5px"  use="url(#testpattern)">
+            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+
+            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+            <line x1="5" y1="-45" x2="55" y2="-40" />
+            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+            <line x1="5" y1="-45" x2="10" y2="5" />
+
+            <circle style="stroke:none;fill:white;stroke-width:1px" cx="25" cy="-25"
+                r="10" />
+            <circle style="stroke:white;fill:none;stroke-width:1px" cx="25" cy="25"
+                r="10" />
+            
+            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+
+            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            
+            <text x="60" y="30">0.5px</text>
+        </g>
+
+        <g transform="translate(100, 100)" style="stroke-width:1px" use="url(#testpattern)">
+            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+
+            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+            <line x1="5" y1="-45" x2="55" y2="-40" />
+            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+            <line x1="5" y1="-45" x2="10" y2="5" />
+
+            <circle style="stroke:none;fill:white" cx="25" cy="-25"
+                r="10" />
+            <circle style="stroke:white;fill:none" cx="25" cy="25"
+                r="10" />
+            
+            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+
+            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <text x="60" y="30">1.0px</text>
+        </g>
+        <g transform="translate(200, 100)" style="stroke-width:2px">
+            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+
+            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+            <line x1="5" y1="-45" x2="55" y2="-40" />
+            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+            <line x1="5" y1="-45" x2="10" y2="5" />
+
+            <circle style="stroke:none;fill:white" cx="25" cy="-25"
+                r="10" />
+            <circle style="stroke:white;fill:none" cx="25" cy="25"
+                r="10" />
+            
+            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+
+            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <text x="60" y="30">2.0px</text>
+        </g>
+        <g transform="translate(300, 100)" style="stroke-width:3px">
+            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+
+            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+            <line x1="5" y1="-45" x2="55" y2="-40" />
+            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+            <line x1="5" y1="-45" x2="10" y2="5" />
+
+            <circle style="stroke:none;fill:white" cx="25" cy="-25"
+                r="10" />
+            <circle style="stroke:white;fill:none" cx="25" cy="25"
+                r="10" />
+            
+            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+
+            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <text x="60" y="30">3.0px</text>
+        </g>
+        <g transform="translate(400, 100)" style="stroke-width:4px">
+            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+
+            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+            <line x1="5" y1="-45" x2="55" y2="-40" />
+            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+            <line x1="5" y1="-45" x2="10" y2="5" />
+
+            <circle style="stroke:none;fill:white" cx="25" cy="-25"
+                r="10" />
+            <circle style="stroke:white;fill:none" cx="25" cy="25"
+                r="10" />
+            
+            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+
+            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+            <text x="60" y="30">4.0px</text>
+        </g>
+    </g>
+</svg>
