@@ -3,6 +3,7 @@
 Vertion 4.70 - Updates
 - Fixed Interplanetary display when shifting atmo to space and custom to target
 - removed currentGroundAltitudeStabilization undefined variable
+- fuelX and fuelY user positions provided, sets fuel tank text location, (default 100, 350) setting both to 0 turns off fuel tank text display. 
 
 Version 4.693 - Bugfix
 - Fixed Saving of Variables

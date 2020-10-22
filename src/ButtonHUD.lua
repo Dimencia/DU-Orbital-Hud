@@ -40,6 +40,8 @@ function script.onStart()
         vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
         altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
         altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
+        fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side
+        fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side
         circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
@@ -1082,8 +1084,8 @@ function script.onStart()
             local slottedTankType = ""
             local slottedTanks = 0
 
-            local y1 = 350
-            local y2 = 360
+            local y1 = fuelY
+            local y2 = fuelY+10
             if isRemote() == 1 then
                 y1 = y1 - 50
                 y2 = y2 - 50
@@ -1465,10 +1467,11 @@ function script.onStart()
             if (UpdateCount % FuelUpdateDelay == 0) then
                 updateTanks = true
             end
-
-            DrawTank(newContent, updateTanks, 100, "Atmospheric ", "ATMO", atmoTanks, fuelTimeLeft, fuelPercent)
-            DrawTank(newContent, updateTanks, 200, "Space fuel t", "SPACE", spaceTanks, fuelTimeLeftS, fuelPercentS)
-            DrawTank(newContent, updateTanks, 300, "Rocket fuel ", "ROCKET", rocketTanks, fuelTimeLeftR, fuelPercentR)
+            if (fuelX ~= 0 and fuelY ~= 0) then
+                DrawTank(newContent, updateTanks, fuelX, "Atmospheric ", "ATMO", atmoTanks, fuelTimeLeft, fuelPercent)
+                DrawTank(newContent, updateTanks, fuelX+100, "Space fuel t", "SPACE", spaceTanks, fuelTimeLeftS, fuelPercentS)
+                DrawTank(newContent, updateTanks, fuelX+200, "Rocket fuel ", "ROCKET", rocketTanks, fuelTimeLeftR, fuelPercentR)
+            end
 
             if updateTanks then
                 updateTanks = false
