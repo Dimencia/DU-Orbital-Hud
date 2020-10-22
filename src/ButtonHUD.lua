@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.69
+        VERSION_NUMBER = 4.691
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -1492,7 +1492,7 @@ function script.onStart()
             if isRemote() == 0 then
                 -- Don't even draw this in freelook
                if not IsInFreeLook() or brightHud then
-                    if unit.getClosestPlanetInfluence() > 0then
+                    if unit.getClosestPlanetInfluence() > 0 then
                         DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, "ROLL")
                         DrawPrograde(newContent, originalPitch, originalRoll, atmos, velocity, speed, centerX, centerY)
                         DrawAltitudeDisplay(newContent, altitude, atmos)
@@ -1741,8 +1741,9 @@ function script.onStart()
                 local pitchC = mfloor(originalPitch)
                 local len = 0
                 local tickerPath = stringf([[<path transform="rotate(%f,%d,%d)" class="dim line" d="]], (-1 * originalRoll), centerX, centerY)
-                newContent[#newContent + 1] = [[<g class="dim txttick">]]
-                for i = mfloor(pitchC - 15 - pitchC % 5 + 0.5), mfloor(pitchC + 15 + pitchC % 5 + 0.5), 5 do
+                newContent[#newContent + 1] = stringf([[<clipPath id="cut"><circle r="%f" cx="%d" cy="%d"/></clipPath>]],(horizonRadius - 1), centerX, centerY)
+                newContent[#newContent + 1] = [[<g class="dim txttick" clip-path="url(#cut)">]]
+                for i = mfloor(pitchC - 30 - pitchC % 5 + 0.5), mfloor(pitchC + 30 + pitchC % 5 + 0.5), 5 do
                     if (i % 10 == 0) then
                         len = 30
                     elseif (i % 5 == 0) then
@@ -1755,19 +1756,11 @@ function script.onStart()
                         tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-10, y, len)
                     end
                 end
-                newContent[#newContent + 1] = "</g>"
-                newContent[#newContent + 1] = tickerPath
+                newContent[#newContent + 1] = tickerPath .. [["/>]]
                 local pitchstring = "PITCH"                
                 if bottomText == "YAW" then 
                     pitchstring = "REL PITCH"
                 end
-                    -- body
-                newContent[#newContent + 1] = stringf([["/>
-                    <g class="pdim txt txtmid">
-                        <text x="%d" y="%d">%s</text>
-                        <text x="%d" y="%d">%d deg</text>
-                    </g>
-                ]], centerX, centerY-circleRad-20, pitchstring, centerX, centerY-circleRad-10, pitchC)
                 if originalPitch > 90 and atmos == 0 then
                     originalPitch = 90 - (originalPitch - 90)
                 elseif originalPitch < -90 and atmos == 0 then
@@ -1777,11 +1770,19 @@ function script.onStart()
                     centerX-50, centerY)
                 newContent[#newContent + 1] = stringf([[
                     <circle class="ah" r="%f" cx="%d" cy="%d"/>
-                        <clipPath id="cut"><circle r="%f" cx="%d" cy="%d"/></clipPath>
-                        <rect class="ahg" x="%f" y="%f" height="%f" width="%f" clip-path="url(#cut)" transform="rotate(%f %d %d)"/>]],
-                                                  horizonRadius, centerX, centerY, (horizonRadius - 1), centerX, centerY, (centerX - horizonRadius),
-                                                  (centerY + horizonRadius * (originalPitch / 90)), (horizonRadius * 2),
+                        
+                        <rect class="ahg" x="%f" y="%f" height="%f" width="%f" transform="rotate(%f %d %d)"/>]],
+                                                  horizonRadius, centerX, centerY, (centerX - horizonRadius),
+                                                  (centerY + horizonRadius * (originalPitch / 20)), (horizonRadius * 9), -- Cover 180 degrees
                                                   (horizonRadius * 2), (-1 * originalRoll), centerX, centerY)
+                newContent[#newContent + 1] = "</g>"
+                -- body
+                newContent[#newContent + 1] = stringf([["
+                <g class="pdim txt txtmid">
+                    <text x="%d" y="%d">%s</text>
+                    <text x="%d" y="%d">%d deg</text>
+                </g>
+                ]], centerX, centerY-circleRad-20, pitchstring, centerX, centerY-circleRad-10, pitchC)
             end
         end
 
