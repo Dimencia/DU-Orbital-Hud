@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.692
+        VERSION_NUMBER = 4.693
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -25,22 +25,22 @@ function script.onStart()
         local isRemote = Nav.control.isRemoteControlled
 
         -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
-        local useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
+        useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
         freeLookToggle = true -- export: Set to false for default free look behavior.
-        local BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
-        local RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
+        BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
+        RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
         userControlScheme = "Virtual Joystick" -- export: Set to "Virtual Joystick", "Mouse", or "Keyboard"
-        local brightHud = false -- export: Enable to prevent hud dimming when in freelook.
-        local PrimaryR = 130 -- export: Primary HUD color
-        local PrimaryG = 224 -- export: Primary HUD color
-        local PrimaryB = 255 -- export: Primary HUD color
-        local centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement.
-        local centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement. 
-        local vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
-        local vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
-        local altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
-        local altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
-        local circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
+        brightHud = false -- export: Enable to prevent hud dimming when in freelook.
+        PrimaryR = 130 -- export: Primary HUD color
+        PrimaryG = 224 -- export: Primary HUD color
+        PrimaryB = 255 -- export: Primary HUD color
+        centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement.
+        centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement. 
+        vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
+        vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
+        altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
+        altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
+        circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
         hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
@@ -52,12 +52,12 @@ function script.onStart()
         ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
         ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
         EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
-        local AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
+        AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
         MaxGameVelocity = 8333.05 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
         AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
         AutopilotInterplanetaryThrottle = 1.0 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
-        local warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
+        warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
         MouseYSensitivity = 0.003 --export:1 For virtual joystick only
         MouseXSensitivity = 0.003 -- export: For virtual joystick only
         autoRollPreference = false -- export: [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
@@ -69,11 +69,11 @@ function script.onStart()
         brakeSpeedFactor = 3 -- export: When braking, this factor will increase the brake force by brakeSpeedFactor * velocity<br>Valid values: Superior or equal to 0.01
         brakeFlatFactor = 1 -- export: When braking, this factor will increase the brake force by a flat brakeFlatFactor * velocity direction><br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         autoRollFactor = 2 -- export: [Only in atmosphere]<br>When autoRoll is engaged, this factor will increase to strength of the roll back to 0<br>Valid values: Superior or equal to 0.01
-        local DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
-        local fuelTankOptimizationAtmo = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        local fuelTankOptimizationSpace = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        local fuelTankOptimizationRocket = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        local apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
+        DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
+        fuelTankOptimizationAtmo = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        fuelTankOptimizationSpace = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        fuelTankOptimizationRocket = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
         toggleView = true
@@ -93,7 +93,6 @@ function script.onStart()
         rollInput2 = 0
         RetrogradeIsOn = false
         ProgradeIsOn = false
-        AutoBrake = false
         Reentry = false
         FollowMode = false
         TurnBurn = false
@@ -149,13 +148,13 @@ function script.onStart()
 
         -- Local Variables used only within onStart
         local markers = {}
-        local displayOrbit = true
-        local AutopilotEndSpeed = 0
+        displayOrbit = true
+        AutopilotEndSpeed = 0
         local PreviousYawAmount = 0
         local PreviousPitchAmount = 0
         local damageMessage = ""
-        local hasGear = false
-        local AutopilotPlanetGravity = 0
+        hasGear = false
+        AutopilotPlanetGravity = 0
         local UnitHidden = true
         local Buttons = {}
         local AutopilotStrength = 1 -- How strongly autopilot tries to point at a target
@@ -182,11 +181,12 @@ function script.onStart()
         local fuelPercentS = {}
         local fuelTimeLeft = {}
         local fuelPercent = {}
-        local SavedLocations = {}
+        SavedLocations = {}
         local updateTanks = false
         local honeyCombMass = 0
         local lastConstructMass = constructMass()
         local coreOffset = 16
+        local UpdateCount = 0
 
         -- VARIABLES TO BE SAVED GO HERE
         SaveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -201,7 +201,7 @@ function script.onStart()
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY"}
         AutoVariables = {"EmergencyWarp", "hasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
-                         "AutoBrake", "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
+                         "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
@@ -252,7 +252,6 @@ function script.onStart()
                   [[)]]
         local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
-        local UpdateCount = 0
         coroutine.yield() -- Give it some time to breathe before we do the rest
         for k in pairs(elementsID) do
             local name = eleType(elementsID[k])
@@ -701,7 +700,6 @@ function script.onStart()
         function ToggleAltitudeHold()
             AltitudeHold = not AltitudeHold
             if AltitudeHold then
-                AutoBrake = false
                 Autopilot = false
                 ProgradeIsOn = false
                 RetrogradeIsOn = false
@@ -740,7 +738,6 @@ function script.onStart()
                     Autopilot = false
                     RetrogradeIsOn = false
                     ProgradeIsOn = false
-                    AutoBrake = false
                     AltitudeHold = false
                     Reentry = false
                     BrakeLanding = false
@@ -828,7 +825,6 @@ function script.onStart()
             RetrogradeIsOn = false -- Don't let both be on
             Autopilot = false
             AltitudeHold = false
-            AutoBrake = false
             FollowMode = false
             BrakeLanding = false
             Reentry = false
@@ -841,7 +837,6 @@ function script.onStart()
             ProgradeIsOn = false -- Don't let both be on
             Autopilot = false
             AltitudeHold = false
-            AutoBrake = false
             FollowMode = false
             BrakeLanding = false
             Reentry = false
@@ -3866,16 +3861,7 @@ function script.onTick(timerId)
             DidLogOutput = true
         end
 
-        if AutoBrake and AutopilotTargetName ~= "None" and
-            (vec3(core.getConstructWorldPos()) - vec3(AutopilotTargetPlanet.center)):len() <= brakeDistance then
-            brakeInput = 1
-            if planet.name == AutopilotTargetPlanet.name and orbit.apoapsis ~= nil and orbit.eccentricity < 1 then
-                -- We're increasing eccentricity by braking, time to stop
-                brakeInput = 0
-                AutoBrake = false
-            end
-        end
-        if ProgradeIsOn then
+       if ProgradeIsOn then
             if velMag > MinAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
                 AlignToWorldVector(vec3(velocity))
             end
