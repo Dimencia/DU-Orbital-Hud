@@ -79,7 +79,7 @@
             <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
             <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
             <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <text x="60" y="30">0.5px</text>
+            <text x="60" y="30">1.0px</text>
         </g>
         <g transform="translate(200, 100)" style="stroke-width:2px">
             <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
@@ -102,7 +102,7 @@
             <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
             <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
             <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <text x="60" y="30">0.5px</text>
+            <text x="60" y="30">2.0px</text>
         </g>
         <g transform="translate(300, 100)" style="stroke-width:3px">
             <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
@@ -125,7 +125,7 @@
             <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
             <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
             <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <text x="60" y="30">0.5px</text>
+            <text x="60" y="30">3.0px</text>
         </g>
         <g transform="translate(400, 100)" style="stroke-width:4px">
             <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
@@ -148,7 +148,7 @@
             <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
             <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
             <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <text x="60" y="30">0.5px</text>
+            <text x="60" y="30">4.0px</text>
         </g>
     </g>
 </svg>
