@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.693
+        VERSION_NUMBER = 4.70
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -40,6 +40,8 @@ function script.onStart()
         vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
         altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
         altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
+        fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side
+        fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side
         circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
@@ -79,6 +81,7 @@ function script.onStart()
         toggleView = true
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
+        lastMaxBrakeInAtmo = 0
         EmergencyWarp = false
         ReentryMode = false
         mousePitchFactor = 1 -- Mouse control only
@@ -206,7 +209,7 @@ function script.onStart()
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                          "AutopilotTargetIndex", "gearExtended", "targetGroundAltitude", "totalDistanceTravelled",
-                         "totalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake"}
+                         "totalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "lastMaxBrakeInAtmo"}
 
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
@@ -289,7 +292,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.2))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -312,7 +315,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.1))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -332,7 +335,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.2))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -417,6 +420,7 @@ function script.onStart()
         if atmosphere() > 0 and not dbHud and (gearExtended or not hasGear) then
             BrakeIsOn = true
         end
+        InAtmo = (atmosphere() > 0)
         unit.hide()
 
         -- BEGIN FUNCTION DEFINITIONS
@@ -432,6 +436,9 @@ function script.onStart()
 
                 if maxBrake ~= nil then
                     LastMaxBrake = maxBrake
+                end
+                if atmosphere() > 0 then
+                    lastMaxBrakeInAtmo = maxBrake
                 end
                 lastMaxBrakeAtG = gravity
             end
@@ -1081,8 +1088,8 @@ function script.onStart()
             local slottedTankType = ""
             local slottedTanks = 0
 
-            local y1 = 350
-            local y2 = 360
+            local y1 = fuelY
+            local y2 = fuelY+10
             if isRemote() == 1 then
                 y1 = y1 - 50
                 y2 = y2 - 50
@@ -1271,20 +1278,25 @@ function script.onStart()
         end
 
         function BeginReentry()
-            if unit.getAtmosphereDensity() < 0 and unit.getClosestPlanetInfluence() > 0 and core_altitude > ReentryAltitude and not Reentry then
-                Reentry = true
-                if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
-                    Nav.control.cancelCurrentControlMasterMode()
+            if Reentry then
+                msgText "Parachute Re-Entry cancelled"
+            else 
+                StrongBrakes = (((planet:getGravity(planet.center + (vec3(0, 0, 1) * planet.radius)):len()) *
+                    core.getConstructMass()) < lastMaxBrakeInAtmo)
+                if not StrongBrakes  then
+                    msgText = "WARNING: Insufficient Brakes for Parachute Re-Entry"
+                elseif unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and not Reentry then
+                    Reentry = true
+                    if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
+                        Nav.control.cancelCurrentControlMasterMode()
+                    end                
+                    autoroll = true
+                    BrakeIsOn = false
+                    msgText = "Beginning Parachute Re-Entry - Strap In.  Target speed: " .. ReentrySpeed
+                else
+                    msgText = "You do not meet re-entry requirements. (Must be out of atmosphere and close to a planet"
+                    Rentry = false
                 end
-                AltitudeHold = true
-                autoroll = true
-                BrakeIsOn = false
-                HoldAltitude = ReentryAltitude
-                msgText = "Beginning Re-entry.  Target speed: " .. ReentrySpeed .. " Target Altitude: " ..
-                            ReentryAltitude
-            else
-                msgText = "You do not meet re-entry requirements. (Must be out of atmosphere and close to a planet"
-                Rentry = false
             end
         end
         -- BEGIN BUTTON DEFINITIONS
@@ -1355,7 +1367,7 @@ function script.onStart()
         end, ToggleFollowMode, function()
             return isRemote() == 1
         end)
-        MakeButton("Begin Glide Reentry", "Cancel Glide Reentry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+        MakeButton("Parachute Re-Entry", "Cancel Parachute Re-Entry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
             function() return Reentry end, BeginReentry, function() return (core_altitude > ReentryAltitude) end )
         y = y + buttonHeight + 20
         MakeButton("Enable Emergency Warp", "Disable Emergency Warp", buttonWidth, buttonHeight, x, y, function()
@@ -1383,11 +1395,11 @@ function script.onStart()
             end)
         y = y + buttonHeight + 20
         MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
-            return AntigravTargetAltitude == nil
+            return AntigravTargetAltitude ~= nil
         end, ToggleAntigrav, function()
             return antigrav ~= nil
         end)
-        MakeButton("Enable Repair Arrows", "Disable Repair Arrows", buttonWidth, buttonHeight, x, y, function()
+        MakeButton("Enable Repair Arrows", "Disable Repair Arrows", buttonWidth, buttonHeight, x + buttonWidth + 20, y, function()
             return RepairArrows
         end, function()
             RepairArrows = not RepairArrows
@@ -1464,10 +1476,11 @@ function script.onStart()
             if (UpdateCount % FuelUpdateDelay == 0) then
                 updateTanks = true
             end
-
-            DrawTank(newContent, updateTanks, 100, "Atmospheric ", "ATMO", atmoTanks, fuelTimeLeft, fuelPercent)
-            DrawTank(newContent, updateTanks, 200, "Space fuel t", "SPACE", spaceTanks, fuelTimeLeftS, fuelPercentS)
-            DrawTank(newContent, updateTanks, 300, "Rocket fuel ", "ROCKET", rocketTanks, fuelTimeLeftR, fuelPercentR)
+            if (fuelX ~= 0 and fuelY ~= 0) then
+                DrawTank(newContent, updateTanks, fuelX, "Atmospheric ", "ATMO", atmoTanks, fuelTimeLeft, fuelPercent)
+                DrawTank(newContent, updateTanks, fuelX+100, "Space fuel t", "SPACE", spaceTanks, fuelTimeLeftS, fuelPercentS)
+                DrawTank(newContent, updateTanks, fuelX+200, "Rocket fuel ", "ROCKET", rocketTanks, fuelTimeLeftR, fuelPercentR)
+            end
 
             if updateTanks then
                 updateTanks = false
@@ -1956,6 +1969,9 @@ function script.onStart()
                     newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Altitude Hold: %s</text>]],
                                                       warningX, apY, getDistanceDisplayString2(HoldAltitude))
                 end
+            elseif Reentry then
+                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Parachute Re-entry in Progress</text>]],
+                                                      warningX, apY)
             end
             if BrakeLanding then
                 if StrongBrakes then
@@ -3169,7 +3185,7 @@ function script.onStart()
         Kinematic = Kinematics()
         Kep = Keplers()
 
-        InAtmo = (atmosphere() > 0)
+
 
         function getDistanceDisplayString(distance)
             local su = distance > 100000
@@ -3215,7 +3231,7 @@ function script.onStart()
                 return "0s"
             end
             if hours > 0 then
-                return hours .. "h " .. minutes .. "m " .. seconds .. "s"
+                return hours .. "h " .. minutes .. "m "
             elseif minutes > 0 then
                 return minutes .. "m " .. seconds .. "s"
             else
@@ -3259,15 +3275,23 @@ function script.onStart()
                         AutopilotRealigned = false
                         AutopilotStatus = "Aligning"
                         if CustomTarget ~= nil then
+                            system.print("Custom Target Found")
                             if unit.getAtmosphereDensity() == 0 and InAtmo then
-                                system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
-                                system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
-                                system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
-                                system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
-                                system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
-                            end
-                            system.addDataToWidget(widgetMaxMassText, widgetMaxMass)
-                            system.addDataToWidget(widgetTravelTimeText, widgetTravelTime)
+                                if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 0 then
+                                    system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
+                                if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 0 then
+                                    system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
+                                if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 0 then
+                                    system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
+                                if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 0 then
+                                    system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
+                                if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 0 then
+                                    system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
+                                end
+                            if system.updateData(widgetMaxMassText, widgetMaxMass) == 0 then
+                                system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
+                            if system.updateData(widgetTravelTimeText, widgetTravelTime) == 0 then
+                                system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
                         end
                         CustomTarget = nil
                         return true
@@ -3489,6 +3513,7 @@ end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
+        InAtmo = (unit.getAtmosphereDensity() > 0)
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -3528,11 +3553,16 @@ function script.onTick(timerId)
                     system.removeDataFromWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
                     InAtmo = true
                 elseif unit.getAtmosphereDensity() == 0 and InAtmo then
-                    system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
-                    system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
-                    system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
-                    system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
-                    system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
+                    if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 0 then
+                        system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
+                    if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 0 then
+                        system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
+                    if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 0 then
+                        system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
+                    if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 0 then
+                        system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
+                    if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 0 then
+                        system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
                     InAtmo = false
                 end
             else
@@ -4060,16 +4090,6 @@ function script.onTick(timerId)
         end
         local up = vec3(core.getWorldVertical()) * -1
         if AltitudeHold or BrakeLanding or Reentry or VectorToTarget then
-            autoRoll = true
-            if Reentry then
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed)
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
-                -- system.print("Actual: "..Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal).." Target: "..ReentrySpeed)  
-                if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == ReentrySpeed then -- This thing is dumb.
-                    Reentry = false
-                end
-            end
             -- HoldAltitude is the alt we want to hold at
             local altitude = core_altitude
             -- Dampen this.
@@ -4081,6 +4101,21 @@ function script.onTick(timerId)
             if not AltitudeHold then
                 targetPitch = 0
             end
+            autoRoll = true
+            if Reentry then
+                targetPitch = -80
+                if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= ReentrySpeed then -- This thing is dumb.
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed)
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
+                end
+                if unit.getAtmosphereDensity() > 0.05 then
+                    msgText = "PARACHUTE DEPLOYED"
+                    Reentry = false
+                    BrakeLanding = true
+                end    
+            end
+
             -- The clamp should now be redundant
             -- local targetPitch = utils.clamp(altDiff,-20,20) -- Clamp to reasonable values
             -- Align it prograde but keep whatever pitch inputs they gave us before, and ignore pitch input from alignment.
@@ -4681,11 +4716,11 @@ function script.onActionStop(action)
     elseif action == "up" then
         upAmount = upAmount - 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
     elseif action == "down" then
         upAmount = upAmount + 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
     elseif action == "groundaltitudeup" then
         if antigrav and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod

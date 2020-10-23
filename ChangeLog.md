@@ -1,5 +1,15 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.70 - Updates And Bug Fixes
+- Changed Glide Re-Entry to Parachute Re-Entry.  Recommend brown pants.  Do NOT use if you have not performed a Brake Landing in Atmosphere
+- Fixed Interplanetary display when shifting atmo to space and custom to target
+- removed currentGroundAltitudeStabilization undefined variable
+- fuelX and fuelY user positions provided, sets fuel tank text location, (default 100, 350) setting both to 0 turns off fuel tank text display. 
+- removed seconds from formattime strings to clean up displays
+- changed fueltankoptimization value from 20% per level to 5% per level to reflect actual skill effect (affects unslotted tank amounts only)
+- Fixed re-entry button not being able to initiate re-entry
+- Fixed issue with AGG Button display and with Repair Arrow button location.
+
 Version 4.693 - Bugfix
 - Fixed Saving of Variables
 - Removed final references to AutoBrake

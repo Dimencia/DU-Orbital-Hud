@@ -1,8 +1,8 @@
 <!--
     This pattern represents several test elements for DU screens.  It is designed
-    to show the limits of pixel accuracy and mipmapping effects.
+    to show the limits of pixel accuracy, alignment and texture filter effects
 
-    The test patterm is repeated five times with varying stroke widths:
+    The test patters is repeated five times with varying stroke widths:
     0.5px, 1px, 2px, 3px, 4px.
 
     To determine the backing texture size (and thus the maximum theoretical pixel resolution),
@@ -12,143 +12,267 @@
       than the backing texture's resolution, and a stroke-width of 1px in viewbox coordinates
       is less than a full pixel in texture coordinates, resulting in alpha blending to simulate
       less than one pixel.
-    * The second white crosshatch pattern should have distinct, even gaps between the horizontal
-      and vertical lines.  If there are no gaps, the viewbox resolution is too high in that dimension.
-      If the gaps are uneven, the viewbox aspect ratio does not match the aspect ratio of the backing
-      texture.
     * The angled lines in the upper right of the first test pattern should just touch at the corners
       of each horizontal segment. If they do not touch, the viewbox resolution is less than the texture
       resolution, meaning that each half pixel of that test pattern is mapping to a full pixel in the
       backing texture, but because the viewbox resolution is lower than the texture, that full pixel is
       further apart than a full pixel in the texture.
     * The colored lines should be distinctly red, green and blue in the first and second test pattern,
-      but in the second test pattern they should also have no gaps, nor should they smear together to
-      form purple or orange
+      but in the second test pattern they should also have no gaps.  Due to texture filtering, the colors
+      may appear to blend at the edges (particularly red and blue looking pink on their border) but should
+      still all be distinctly visible
     * The circles should have pixelated edges.  If the circles are smooth, the viewbox resolution is lower
       than the backing texture.  If the un-filled circle has gaps, the viewbox resolution is higher than
       the backing texture.
+    
+    * To determine overall viewbox extents, the entire screen should be exactly surrounded by a green box, with
+      white lines at each of the corners.  All of these should be equally visible.
+    * SVG drawing needs to be offset to the pixel center to ensure the desired pixel is being addressed as by
+      default it will draw from the upper-left of the pixel, not the center of the pixel (which is likely what
+      you intend.)  Thus the global translate(0.5, 0.5)
+    * Using preserveAspectRatio="xMinYMin slice" ensures that the 0,0 pixel is always in the upper right corner
+      and if the viewbox is oversize in any direction, the additional pixels will be dropped rather than
+      causing the rest of the image to scale.  If the viewbox is undersized, the image will still scale, so
+      be aware.
+
+    Based on my testing, the backing texture for screens has 1024x613 addressible pixels:
+    XMin = 0, XMax = 1023
+    YMin = 0, YMax = 612
+    When adjusting for other backing resolutions, at least one of the sizes should be a power of 2, while
+    the other will likely be less (often much less).  Adjust until your pixels blend minimally.
+
+    All non-pixel addressing modes will devolve to this maximum discrete resolution. Positioning and
+    sizes - including stroke widths - which result in non-integer pixels will incur increased
+    bluring and blending artifacts
 -->
-<svg class="bootstrap" viewBox="0 0 1024 614.4" preserveAspectRatio="meet">
-    <rect style="stroke:green;stroke-width:1px" x="0" y="0" width="100%" height="100%" />
-    <g id="testpattern">
-    </g>
-    <g style="font-family:Monospace;font-size:12px;stroke:white;fill:white;font-weight:normal">
-        <g transform="translate(0, 100)" style="stroke-width:0.5px"  use="url(#testpattern)">
-            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
-            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+<svg viewBox="0 0 1024 613" preserveAspectRatio="xMinYMin slice" >
+    <g transform="translate(0.5,0.5)">
+        <rect style="stroke:green;stroke-width:1px" x="0" y="0" width="1023" height="612" />
+        <g style="font-family:Monospace;font-size:12px;stroke:white;fill:white;font-weight:normal">
+            <g style="font-family:Monospace">
+                <text style="font-size:20px" x="10" y="180">Monospace</text>
+                <text style="font-size:10px" x="10" y="200">10px</text>
+                <text style="font-size:12px" x="10" y="212">12px</text>
+                <text style="font-size:14px" x="10" y="226">14px</text>
+                <text style="font-size:16px" x="10" y="242">16px</text>
+                <text style="font-size:18px" x="10" y="260">18px</text>
+                <text style="font-size:20px" x="10" y="280">20px</text>
+                <text style="font-size:25px" x="10" y="305">25px</text>
+                <text style="font-size:30px" x="10" y="335">30px</text>
+                <text style="font-size:40px" x="10" y="375">40px</text>
+                <text style="font-size:50px" x="10" y="425">50px</text>
+            </g>
+            <g style="font-family:Montserrat">
+                <text style="font-size:20px" x="150" y="180">Montserrat</text>
+                <text style="font-size:10px" x="150" y="200">10px</text>
+                <text style="font-size:12px" x="150" y="212">12px</text>
+                <text style="font-size:14px" x="150" y="226">14px</text>
+                <text style="font-size:16px" x="150" y="242">16px</text>
+                <text style="font-size:18px" x="150" y="260">18px</text>
+                <text style="font-size:20px" x="150" y="280">20px</text>
+                <text style="font-size:25px" x="150" y="305">25px</text>
+                <text style="font-size:30px" x="150" y="335">30px</text>
+                <text style="font-size:40px" x="150" y="375">40px</text>
+                <text style="font-size:50px" x="150" y="425">50px</text>
+            </g>
+            <g style="font-family:Bank">
+                <text style="font-size:20px" x="300" y="180">Bank</text>
+                <text style="font-size:10px" x="300" y="200">10px</text>
+                <text style="font-size:12px" x="300" y="212">12px</text>
+                <text style="font-size:14px" x="300" y="226">14px</text>
+                <text style="font-size:16px" x="300" y="242">16px</text>
+                <text style="font-size:18px" x="300" y="260">18px</text>
+                <text style="font-size:20px" x="300" y="280">20px</text>
+                <text style="font-size:25px" x="300" y="305">25px</text>
+                <text style="font-size:30px" x="300" y="335">30px</text>
+                <text style="font-size:40px" x="300" y="375">40px</text>
+                <text style="font-size:50px" x="300" y="425">50px</text>
+            </g>
+            <g style="font-family:Arial">
+                <text style="font-size:20px" x="450" y="180">Arial</text>
+                <text style="font-size:10px" x="450" y="200">10px</text>
+                <text style="font-size:12px" x="450" y="212">12px</text>
+                <text style="font-size:14px" x="450" y="226">14px</text>
+                <text style="font-size:16px" x="450" y="242">16px</text>
+                <text style="font-size:18px" x="450" y="260">18px</text>
+                <text style="font-size:20px" x="450" y="280">20px</text>
+                <text style="font-size:25px" x="450" y="305">25px</text>
+                <text style="font-size:30px" x="450" y="335">30px</text>
+                <text style="font-size:40px" x="450" y="375">40px</text>
+                <text style="font-size:50px" x="450" y="425">50px</text>
+            </g>
+            <g style="font-family:Times">
+                <text style="font-size:20px" x="600" y="20">Times</text>
+                <text style="font-size:10px" x="600" y="40">10px</text>
+                <text style="font-size:12px" x="600" y="52">12px</text>
+                <text style="font-size:14px" x="600" y="66">14px</text>
+                <text style="font-size:16px" x="600" y="82">16px</text>
+                <text style="font-size:18px" x="600" y="100">18px</text>
+                <text style="font-size:20px" x="600" y="120">20px</text>
+                <text style="font-size:25px" x="600" y="145">25px</text>
+                <text style="font-size:30px" x="600" y="175">30px</text>
+                <text style="font-size:40px" x="600" y="215">40px</text>
+                <text style="font-size:50px" x="600" y="265">50px</text>
+            </g>
+            <g style="font-family:Georgia">
+                <text style="font-size:20px" x="600" y="300">Georgia</text>
+                <text style="font-size:10px" x="600" y="320">10px</text>
+                <text style="font-size:12px" x="600" y="332">12px</text>
+                <text style="font-size:14px" x="600" y="346">14px</text>
+                <text style="font-size:16px" x="600" y="362">16px</text>
+                <text style="font-size:18px" x="600" y="380">18px</text>
+                <text style="font-size:20px" x="600" y="400">20px</text>
+                <text style="font-size:25px" x="600" y="425">25px</text>
+                <text style="font-size:30px" x="600" y="455">30px</text>
+                <text style="font-size:40px" x="600" y="495">40px</text>
+                <text style="font-size:50px" x="600" y="545">50px</text>
+            </g>
 
-            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
-            <line x1="5" y1="-45" x2="55" y2="-40" />
-            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
-            <line x1="5" y1="-45" x2="10" y2="5" />
+            <g style="font-family:Verdana">
+                <text style="font-size:20px" x="750" y="20">Verdana</text>
+                <text style="font-size:10px" x="750" y="40">10px</text>
+                <text style="font-size:12px" x="750" y="52">12px</text>
+                <text style="font-size:14px" x="750" y="66">14px</text>
+                <text style="font-size:16px" x="750" y="82">16px</text>
+                <text style="font-size:18px" x="750" y="100">18px</text>
+                <text style="font-size:20px" x="750" y="120">20px</text>
+                <text style="font-size:25px" x="750" y="145">25px</text>
+                <text style="font-size:30px" x="750" y="175">30px</text>
+                <text style="font-size:40px" x="750" y="215">40px</text>
+                <text style="font-size:50px" x="750" y="265">50px</text>
+            </g>
+            <g style="font-family:Helvetica">
+                <text style="font-size:20px" x="750" y="300">Helvetica</text>
+                <text style="font-size:10px" x="750" y="320">10px</text>
+                <text style="font-size:12px" x="750" y="332">12px</text>
+                <text style="font-size:14px" x="750" y="346">14px</text>
+                <text style="font-size:16px" x="750" y="362">16px</text>
+                <text style="font-size:18px" x="750" y="380">18px</text>
+                <text style="font-size:20px" x="750" y="400">20px</text>
+                <text style="font-size:25px" x="750" y="425">25px</text>
+                <text style="font-size:30px" x="750" y="455">30px</text>
+                <text style="font-size:40px" x="750" y="495">40px</text>
+                <text style="font-size:50px" x="750" y="545">50px</text>
+            </g>
 
-            <circle style="stroke:none;fill:white;stroke-width:1px" cx="25" cy="-25"
-                r="10" />
-            <circle style="stroke:white;fill:none;stroke-width:1px" cx="25" cy="25"
-                r="10" />
-            
-            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+            <path style="stroke: 1px" d="M 0 0 h 50 M 0 0 v 50 M 1023 0 h -50 M 1023 0 v 50 M 1023 612 h -50 M 1023 612 v -50 M 0 612 h 50 M 0 612 v -50"/>
+            <g transform="translate(0, 100)" style="stroke-width:0.5px">
+                <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+                <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
 
-            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            
-            <text x="60" y="30">0.5px</text>
-        </g>
+                <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+                <line x1="5" y1="-45" x2="55" y2="-40" />
+                <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+                <line x1="5" y1="-45" x2="10" y2="5" />
 
-        <g transform="translate(100, 100)" style="stroke-width:1px" use="url(#testpattern)">
-            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
-            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+                <circle style="stroke:none;fill:white;stroke-width:1px" cx="25" cy="-25"
+                    r="10" />
+                <circle style="stroke:white;fill:none;stroke-width:1px" cx="25" cy="25"
+                    r="10" />
 
-            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
-            <line x1="5" y1="-45" x2="55" y2="-40" />
-            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
-            <line x1="5" y1="-45" x2="10" y2="5" />
+                <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
 
-            <circle style="stroke:none;fill:white" cx="25" cy="-25"
-                r="10" />
-            <circle style="stroke:white;fill:none" cx="25" cy="25"
-                r="10" />
-            
-            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
 
-            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <text x="60" y="30">1.0px</text>
-        </g>
-        <g transform="translate(200, 100)" style="stroke-width:2px">
-            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
-            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+                <text x="60" y="30">0.5px</text>
+            </g>
 
-            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
-            <line x1="5" y1="-45" x2="55" y2="-40" />
-            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
-            <line x1="5" y1="-45" x2="10" y2="5" />
+            <g transform="translate(100, 100)" style="stroke-width:1px">
+                <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+                <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
 
-            <circle style="stroke:none;fill:white" cx="25" cy="-25"
-                r="10" />
-            <circle style="stroke:white;fill:none" cx="25" cy="25"
-                r="10" />
-            
-            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+                <line x1="5" y1="-45" x2="55" y2="-40" />
+                <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+                <line x1="5" y1="-45" x2="10" y2="5" />
 
-            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <text x="60" y="30">2.0px</text>
-        </g>
-        <g transform="translate(300, 100)" style="stroke-width:3px">
-            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
-            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+                <circle style="stroke:none;fill:white" cx="25" cy="-25"
+                    r="10" />
+                <circle style="stroke:white;fill:none" cx="25" cy="25"
+                    r="10" />
 
-            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
-            <line x1="5" y1="-45" x2="55" y2="-40" />
-            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
-            <line x1="5" y1="-45" x2="10" y2="5" />
+                <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
 
-            <circle style="stroke:none;fill:white" cx="25" cy="-25"
-                r="10" />
-            <circle style="stroke:white;fill:none" cx="25" cy="25"
-                r="10" />
-            
-            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <text x="60" y="30">1.0px</text>
+            </g>
+            <g transform="translate(200, 100)" style="stroke-width:2px">
+                <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+                <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
 
-            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <text x="60" y="30">3.0px</text>
-        </g>
-        <g transform="translate(400, 100)" style="stroke-width:4px">
-            <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
-            <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+                <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+                <line x1="5" y1="-45" x2="55" y2="-40" />
+                <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+                <line x1="5" y1="-45" x2="10" y2="5" />
 
-            <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
-            <line x1="5" y1="-45" x2="55" y2="-40" />
-            <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
-            <line x1="5" y1="-45" x2="10" y2="5" />
+                <circle style="stroke:none;fill:white" cx="25" cy="-25"
+                    r="10" />
+                <circle style="stroke:white;fill:none" cx="25" cy="25"
+                    r="10" />
 
-            <circle style="stroke:none;fill:white" cx="25" cy="-25"
-                r="10" />
-            <circle style="stroke:white;fill:none" cx="25" cy="25"
-                r="10" />
-            
-            <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
-            <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
 
-            <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
-            <text x="60" y="30">4.0px</text>
+                <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <text x="60" y="30">2.0px</text>
+            </g>
+            <g transform="translate(300, 100)" style="stroke-width:3px">
+                <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+                <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+
+                <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+                <line x1="5" y1="-45" x2="55" y2="-40" />
+                <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+                <line x1="5" y1="-45" x2="10" y2="5" />
+
+                <circle style="stroke:none;fill:white" cx="25" cy="-25"
+                    r="10" />
+                <circle style="stroke:white;fill:none" cx="25" cy="25"
+                    r="10" />
+
+                <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+
+                <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <text x="60" y="30">3.0px</text>
+            </g>
+            <g transform="translate(400, 100)" style="stroke-width:4px">
+                <path d="M 0 0 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100 m -100 2 h 100" />
+                <path d="M 50 -50 v 100 m 2, -100 v 100 m 2 -100 v 100 m 2 -100 v 100 m 2 -100 v 100" />
+
+                <path d="M 0 -50 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10 m 0 1 h 10" />
+                <line x1="5" y1="-45" x2="55" y2="-40" />
+                <path d="M 0 -50 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10 m 1 0 v 10" />
+                <line x1="5" y1="-45" x2="10" y2="5" />
+
+                <circle style="stroke:none;fill:white" cx="25" cy="-25"
+                    r="10" />
+                <circle style="stroke:white;fill:none" cx="25" cy="25"
+                    r="10" />
+
+                <path style="stroke:red" d="M 60 -30 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:green" d="M 60 -31 h 40 m -40 3 h 40 m -40 3 h 40" />
+                <path style="stroke:blue" d="M 60 -32 h 40 m -40 3 h 40 m -40 3 h 40" />
+
+                <path style="stroke:red" d="M 75 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:green" d="M 76 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <path style="stroke:blue" d="M 77 -50 v 40 m 3 -40 v 40 m 3 -40 v 40" />
+                <text x="60" y="30">4.0px</text>
+            </g>
         </g>
     </g>
 </svg>
