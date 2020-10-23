@@ -291,7 +291,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.2))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -314,7 +314,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.1))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -334,7 +334,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.2))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -1274,7 +1274,7 @@ function script.onStart()
         end
 
         function BeginReentry()
-            if unit.getAtmosphereDensity() < 0 and unit.getClosestPlanetInfluence() > 0 and core_altitude > ReentryAltitude and not Reentry then
+            if unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and core_altitude > ReentryAltitude and not Reentry then
                 Reentry = true
                 if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
                     Nav.control.cancelCurrentControlMasterMode()
@@ -3219,7 +3219,7 @@ function script.onStart()
                 return "0s"
             end
             if hours > 0 then
-                return hours .. "h " .. minutes .. "m " .. seconds .. "s"
+                return hours .. "h " .. minutes .. "m "
             elseif minutes > 0 then
                 return minutes .. "m " .. seconds .. "s"
             else
