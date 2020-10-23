@@ -81,6 +81,7 @@ function script.onStart()
         toggleView = true
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
+        lastMaxBrakeInAtmo = 0
         EmergencyWarp = false
         ReentryMode = false
         mousePitchFactor = 1 -- Mouse control only
@@ -208,7 +209,7 @@ function script.onStart()
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                          "AutopilotTargetIndex", "gearExtended", "targetGroundAltitude", "totalDistanceTravelled",
-                         "totalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake"}
+                         "totalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "lastMaxBrakeInAtmo"}
 
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
@@ -435,6 +436,9 @@ function script.onStart()
 
                 if maxBrake ~= nil then
                     LastMaxBrake = maxBrake
+                end
+                if atmosphere() > 0 then
+                    lastMaxBrakeInAtmo = maxBrake
                 end
                 lastMaxBrakeAtG = gravity
             end
@@ -1274,20 +1278,25 @@ function script.onStart()
         end
 
         function BeginReentry()
-            if unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and core_altitude > ReentryAltitude and not Reentry then
-                Reentry = true
-                if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
-                    Nav.control.cancelCurrentControlMasterMode()
+            if Reentry then
+                msgText "Parachute Re-Entry cancelled"
+            else 
+                StrongBrakes = (((planet:getGravity(planet.center + (vec3(0, 0, 1) * planet.radius)):len()) *
+                    core.getConstructMass()) < lastMaxBrakeInAtmo)
+                if not StrongBrakes  then
+                    msgText = "WARNING: Insufficient Brakes for Parachute Re-Entry"
+                elseif unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and not Reentry then
+                    Reentry = true
+                    if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
+                        Nav.control.cancelCurrentControlMasterMode()
+                    end                
+                    autoroll = true
+                    BrakeIsOn = false
+                    msgText = "Beginning Parachute Re-Entry - Strap In.  Target speed: " .. ReentrySpeed
+                else
+                    msgText = "You do not meet re-entry requirements. (Must be out of atmosphere and close to a planet"
+                    Rentry = false
                 end
-                AltitudeHold = true
-                autoroll = true
-                BrakeIsOn = false
-                HoldAltitude = ReentryAltitude
-                msgText = "Beginning Re-entry.  Target speed: " .. ReentrySpeed .. " Target Altitude: " ..
-                            ReentryAltitude
-            else
-                msgText = "You do not meet re-entry requirements. (Must be out of atmosphere and close to a planet"
-                Rentry = false
             end
         end
         -- BEGIN BUTTON DEFINITIONS
@@ -1358,7 +1367,7 @@ function script.onStart()
         end, ToggleFollowMode, function()
             return isRemote() == 1
         end)
-        MakeButton("Begin Glide Reentry", "Cancel Glide Reentry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+        MakeButton("Parachute Re-Entry", "Cancel Parachute Re-Entry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
             function() return Reentry end, BeginReentry, function() return (core_altitude > ReentryAltitude) end )
         y = y + buttonHeight + 20
         MakeButton("Enable Emergency Warp", "Disable Emergency Warp", buttonWidth, buttonHeight, x, y, function()
@@ -1386,11 +1395,11 @@ function script.onStart()
             end)
         y = y + buttonHeight + 20
         MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
-            return AntigravTargetAltitude == nil
+            return AntigravTargetAltitude ~= nil
         end, ToggleAntigrav, function()
             return antigrav ~= nil
         end)
-        MakeButton("Enable Repair Arrows", "Disable Repair Arrows", buttonWidth, buttonHeight, x, y, function()
+        MakeButton("Enable Repair Arrows", "Disable Repair Arrows", buttonWidth, buttonHeight, x + buttonWidth + 20, y, function()
             return RepairArrows
         end, function()
             RepairArrows = not RepairArrows
@@ -1960,6 +1969,9 @@ function script.onStart()
                     newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Altitude Hold: %s</text>]],
                                                       warningX, apY, getDistanceDisplayString2(HoldAltitude))
                 end
+            elseif Reentry then
+                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Parachute Re-entry in Progress</text>]],
+                                                      warningX, apY)
             end
             if BrakeLanding then
                 if StrongBrakes then
@@ -4078,16 +4090,6 @@ function script.onTick(timerId)
         end
         local up = vec3(core.getWorldVertical()) * -1
         if AltitudeHold or BrakeLanding or Reentry or VectorToTarget then
-            autoRoll = true
-            if Reentry then
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed)
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
-                -- system.print("Actual: "..Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal).." Target: "..ReentrySpeed)  
-                if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == ReentrySpeed then -- This thing is dumb.
-                    Reentry = false
-                end
-            end
             -- HoldAltitude is the alt we want to hold at
             local altitude = core_altitude
             -- Dampen this.
@@ -4099,6 +4101,21 @@ function script.onTick(timerId)
             if not AltitudeHold then
                 targetPitch = 0
             end
+            autoRoll = true
+            if Reentry then
+                targetPitch = -80
+                if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= ReentrySpeed then -- This thing is dumb.
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed)
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
+                end
+                if unit.getAtmosphereDensity() > 0.05 then
+                    msgText = "PARACHUTE DEPLOYED"
+                    Reentry = false
+                    BrakeLanding = true
+                end    
+            end
+
             -- The clamp should now be redundant
             -- local targetPitch = utils.clamp(altDiff,-20,20) -- Clamp to reasonable values
             -- Align it prograde but keep whatever pitch inputs they gave us before, and ignore pitch input from alignment.
