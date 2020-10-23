@@ -27,7 +27,9 @@
     
     * To determine overall viewbox extents, the entire screen should be exactly surrounded by a green box, with
       white lines at each of the corners.  All of these should be equally visible.
-    * SVG drawing needs to be offset to the pixel center to ensure the desired pixel is being addressed.
+    * SVG drawing needs to be offset to the pixel center to ensure the desired pixel is being addressed as by
+      default it will draw from the upper-left of the pixel, not the center of the pixel (which is likely what
+      you intend.)  Thus the global translate(0.5, 0.5)
     * Using preserveAspectRatio="xMinYMin slice" ensures that the 0,0 pixel is always in the upper right corner
       and if the viewbox is oversize in any direction, the additional pixels will be dropped rather than
       causing the rest of the image to scale.  If the viewbox is undersized, the image will still scale, so
@@ -36,6 +38,8 @@
     Based on my testing, the backing texture for screens has 1024x613 addressible pixels:
     XMin = 0, XMax = 1023
     YMin = 0, YMax = 612
+    When adjusting for other backing resolutions, at least one of the sizes should be a power of 2, while
+    the other will likely be less (often much less).  Adjust until your pixels blend minimally.
 
     All non-pixel addressing modes will devolve to this maximum discrete resolution. Positioning and
     sizes - including stroke widths - which result in non-integer pixels will incur increased
