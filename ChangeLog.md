@@ -1,5 +1,25 @@
 ## ChangeLog - Most recent changes at the top
 
+Vertion 4.70 - Updates And Bug Fixes
+- Fixed Interplanetary display when shifting atmo to space and custom to target
+- removed currentGroundAltitudeStabilization undefined variable
+- fuelX and fuelY user positions provided, sets fuel tank text location, (default 100, 350) setting both to 0 turns off fuel tank text display. 
+- removed seconds from formattime strings to clean up displays
+- changed fueltankoptimization value from 20% per level to 5% per level to reflect actual skill effect (affects unslotted tank amounts only)
+- Fixed re-entry button not being able to initiate re-entry
+
+Version 4.693 - Bugfix
+- Fixed Saving of Variables
+- Removed final references to AutoBrake
+
+Version 4.692 - Bugfix
+- Repair arrows should now work for all size cores
+- Restored Navbal (Artifical Horizon) to center by default.  Use centerX=700 and centerY=980 for lower left placement.
+
+Version 4.691 - Bugfix
+- Fixed bug causing hovers to not fire when not using a landing mode
+- Synchronized AH to ticker
+
 Version 4.69 - Cleaning up Local-Global declaration
 - Added support for BrightHUD toggle to prevent AH vanishing if toggled on
 - Modified Reentry button to engage re-entry vice needing to press G after button.\

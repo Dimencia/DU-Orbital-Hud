@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.691
+        VERSION_NUMBER = 4.70
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -24,23 +24,25 @@ function script.onStart()
         local constructMass = core.getConstructMass
         local isRemote = Nav.control.isRemoteControlled
 
--- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
-        local useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
+        -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
+        useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
         freeLookToggle = true -- export: Set to false for default free look behavior.
-        local BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
-        local RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
+        BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
+        RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
         userControlScheme = "Virtual Joystick" -- export: Set to "Virtual Joystick", "Mouse", or "Keyboard"
-        local brightHud = false -- export: Enable to prevent hud dimming when in freelook.
-        local PrimaryR = 130 -- export: Primary HUD color
-        local PrimaryG = 224 -- export: Primary HUD color
-        local PrimaryB = 255 -- export: Primary HUD color
-        local centerX = 700 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
-        local centerY = 980 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale)
-        local vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
-        local vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
-        local altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
-        local altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
-        local circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
+        brightHud = false -- export: Enable to prevent hud dimming when in freelook.
+        PrimaryR = 130 -- export: Primary HUD color
+        PrimaryG = 224 -- export: Primary HUD color
+        PrimaryB = 255 -- export: Primary HUD color
+        centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement.
+        centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement. 
+        vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
+        vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
+        altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
+        altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
+        fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side
+        fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side
+        circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
         hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
@@ -52,12 +54,12 @@ function script.onStart()
         ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
         ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
         EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
-        local AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
+        AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
         MaxGameVelocity = 8333.05 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
         AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
         AutopilotInterplanetaryThrottle = 1.0 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
-        local warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
+        warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
         MouseYSensitivity = 0.003 --export:1 For virtual joystick only
         MouseXSensitivity = 0.003 -- export: For virtual joystick only
         autoRollPreference = false -- export: [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
@@ -69,11 +71,11 @@ function script.onStart()
         brakeSpeedFactor = 3 -- export: When braking, this factor will increase the brake force by brakeSpeedFactor * velocity<br>Valid values: Superior or equal to 0.01
         brakeFlatFactor = 1 -- export: When braking, this factor will increase the brake force by a flat brakeFlatFactor * velocity direction><br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         autoRollFactor = 2 -- export: [Only in atmosphere]<br>When autoRoll is engaged, this factor will increase to strength of the roll back to 0<br>Valid values: Superior or equal to 0.01
-        local DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
-        local fuelTankOptimizationAtmo = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        local fuelTankOptimizationSpace = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        local fuelTankOptimizationRocket = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        local apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
+        DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
+        fuelTankOptimizationAtmo = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        fuelTankOptimizationSpace = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        fuelTankOptimizationRocket = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
         toggleView = true
@@ -93,7 +95,6 @@ function script.onStart()
         rollInput2 = 0
         RetrogradeIsOn = false
         ProgradeIsOn = false
-        AutoBrake = false
         Reentry = false
         FollowMode = false
         TurnBurn = false
@@ -149,13 +150,13 @@ function script.onStart()
 
         -- Local Variables used only within onStart
         local markers = {}
-        local displayOrbit = true
-        local AutopilotEndSpeed = 0
+        displayOrbit = true
+        AutopilotEndSpeed = 0
         local PreviousYawAmount = 0
         local PreviousPitchAmount = 0
         local damageMessage = ""
-        local hasGear = false
-        local AutopilotPlanetGravity = 0
+        hasGear = false
+        AutopilotPlanetGravity = 0
         local UnitHidden = true
         local Buttons = {}
         local AutopilotStrength = 1 -- How strongly autopilot tries to point at a target
@@ -182,10 +183,12 @@ function script.onStart()
         local fuelPercentS = {}
         local fuelTimeLeft = {}
         local fuelPercent = {}
-        local SavedLocations = {}
+        SavedLocations = {}
         local updateTanks = false
         local honeyCombMass = 0
         local lastConstructMass = constructMass()
+        local coreOffset = 16
+        local UpdateCount = 0
 
         -- VARIABLES TO BE SAVED GO HERE
         SaveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -200,7 +203,7 @@ function script.onStart()
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY"}
         AutoVariables = {"EmergencyWarp", "hasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
-                         "AutoBrake", "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
+                         "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
@@ -249,12 +252,8 @@ function script.onStart()
         honeyCombMass = lastConstructMass - updateMass()
         rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) ..
                   [[)]]
-        rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
+        local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
-        UpdateCount = 0
-        titlecolR = rgb
-        titlecol = rgb
-        titlecolS = rgb
         coroutine.yield() -- Give it some time to breathe before we do the rest
         for k in pairs(elementsID) do
             local name = eleType(elementsID[k])
@@ -263,7 +262,6 @@ function script.onStart()
             end
             if (name == "dynamic core") then
                 local hp = eleMaxHp(elementsID[k])
-                coreOffset = 16
                 if hp > 10000 then
                     coreOffset = 128
                 elseif hp > 1000 then
@@ -293,7 +291,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.2))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -316,7 +314,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.1))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -336,7 +334,7 @@ function script.onStart()
                     end
                     curMass = mass - massEmpty
                     if fuelTankOptimizationSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.2))
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
                     end
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
@@ -421,6 +419,7 @@ function script.onStart()
         if atmosphere() > 0 and not dbHud and (gearExtended or not hasGear) then
             BrakeIsOn = true
         end
+        InAtmo = (atmosphere() > 0)
         unit.hide()
 
         -- BEGIN FUNCTION DEFINITIONS
@@ -704,7 +703,6 @@ function script.onStart()
         function ToggleAltitudeHold()
             AltitudeHold = not AltitudeHold
             if AltitudeHold then
-                AutoBrake = false
                 Autopilot = false
                 ProgradeIsOn = false
                 RetrogradeIsOn = false
@@ -743,7 +741,6 @@ function script.onStart()
                     Autopilot = false
                     RetrogradeIsOn = false
                     ProgradeIsOn = false
-                    AutoBrake = false
                     AltitudeHold = false
                     Reentry = false
                     BrakeLanding = false
@@ -831,7 +828,6 @@ function script.onStart()
             RetrogradeIsOn = false -- Don't let both be on
             Autopilot = false
             AltitudeHold = false
-            AutoBrake = false
             FollowMode = false
             BrakeLanding = false
             Reentry = false
@@ -844,7 +840,6 @@ function script.onStart()
             ProgradeIsOn = false -- Don't let both be on
             Autopilot = false
             AltitudeHold = false
-            AutoBrake = false
             FollowMode = false
             BrakeLanding = false
             Reentry = false
@@ -899,7 +894,6 @@ function script.onStart()
                     -- Thanks to Jerico for the help and code starter for arrow markers!
                     if RepairArrows and #markers == 0 then
                         position = vec3(core.getElementPositionById(elementsID[k]))
-                        local coreOffset = 16
                         local x = position.x - coreOffset
                         local y = position.y - coreOffset
                         local z = position.z - coreOffset
@@ -1090,8 +1084,8 @@ function script.onStart()
             local slottedTankType = ""
             local slottedTanks = 0
 
-            local y1 = 350
-            local y2 = 360
+            local y1 = fuelY
+            local y2 = fuelY+10
             if isRemote() == 1 then
                 y1 = y1 - 50
                 y2 = y2 - 50
@@ -1280,7 +1274,7 @@ function script.onStart()
         end
 
         function BeginReentry()
-            if unit.getAtmosphereDensity() < 0 and unit.getClosestPlanetInfluence() > 0 and core_altitude > ReentryAltitude and not Reentry then
+            if unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and core_altitude > ReentryAltitude and not Reentry then
                 Reentry = true
                 if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
                     Nav.control.cancelCurrentControlMasterMode()
@@ -1473,10 +1467,11 @@ function script.onStart()
             if (UpdateCount % FuelUpdateDelay == 0) then
                 updateTanks = true
             end
-
-            DrawTank(newContent, updateTanks, 100, "Atmospheric ", "ATMO", atmoTanks, fuelTimeLeft, fuelPercent)
-            DrawTank(newContent, updateTanks, 200, "Space fuel t", "SPACE", spaceTanks, fuelTimeLeftS, fuelPercentS)
-            DrawTank(newContent, updateTanks, 300, "Rocket fuel ", "ROCKET", rocketTanks, fuelTimeLeftR, fuelPercentR)
+            if (fuelX ~= 0 and fuelY ~= 0) then
+                DrawTank(newContent, updateTanks, fuelX, "Atmospheric ", "ATMO", atmoTanks, fuelTimeLeft, fuelPercent)
+                DrawTank(newContent, updateTanks, fuelX+100, "Space fuel t", "SPACE", spaceTanks, fuelTimeLeftS, fuelPercentS)
+                DrawTank(newContent, updateTanks, fuelX+200, "Rocket fuel ", "ROCKET", rocketTanks, fuelTimeLeftR, fuelPercentR)
+            end
 
             if updateTanks then
                 updateTanks = false
@@ -3178,7 +3173,7 @@ function script.onStart()
         Kinematic = Kinematics()
         Kep = Keplers()
 
-        InAtmo = (atmosphere() > 0)
+
 
         function getDistanceDisplayString(distance)
             local su = distance > 100000
@@ -3224,7 +3219,7 @@ function script.onStart()
                 return "0s"
             end
             if hours > 0 then
-                return hours .. "h " .. minutes .. "m " .. seconds .. "s"
+                return hours .. "h " .. minutes .. "m "
             elseif minutes > 0 then
                 return minutes .. "m " .. seconds .. "s"
             else
@@ -3268,15 +3263,23 @@ function script.onStart()
                         AutopilotRealigned = false
                         AutopilotStatus = "Aligning"
                         if CustomTarget ~= nil then
+                            system.print("Custom Target Found")
                             if unit.getAtmosphereDensity() == 0 and InAtmo then
-                                system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
-                                system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
-                                system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
-                                system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
-                                system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
-                            end
-                            system.addDataToWidget(widgetMaxMassText, widgetMaxMass)
-                            system.addDataToWidget(widgetTravelTimeText, widgetTravelTime)
+                                if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 0 then
+                                    system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
+                                if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 0 then
+                                    system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
+                                if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 0 then
+                                    system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
+                                if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 0 then
+                                    system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
+                                if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 0 then
+                                    system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
+                                end
+                            if system.updateData(widgetMaxMassText, widgetMaxMass) == 0 then
+                                system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
+                            if system.updateData(widgetTravelTimeText, widgetTravelTime) == 0 then
+                                system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
                         end
                         CustomTarget = nil
                         return true
@@ -3498,6 +3501,7 @@ end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
+        InAtmo = (unit.getAtmosphereDensity() > 0)
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -3537,11 +3541,16 @@ function script.onTick(timerId)
                     system.removeDataFromWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
                     InAtmo = true
                 elseif unit.getAtmosphereDensity() == 0 and InAtmo then
-                    system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
-                    system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
-                    system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
-                    system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
-                    system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
+                    if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 0 then
+                        system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
+                    if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 0 then
+                        system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
+                    if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 0 then
+                        system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
+                    if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 0 then
+                        system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
+                    if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 0 then
+                        system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
                     InAtmo = false
                 end
             else
@@ -3870,16 +3879,7 @@ function script.onTick(timerId)
             DidLogOutput = true
         end
 
-        if AutoBrake and AutopilotTargetName ~= "None" and
-            (vec3(core.getConstructWorldPos()) - vec3(AutopilotTargetPlanet.center)):len() <= brakeDistance then
-            brakeInput = 1
-            if planet.name == AutopilotTargetPlanet.name and orbit.apoapsis ~= nil and orbit.eccentricity < 1 then
-                -- We're increasing eccentricity by braking, time to stop
-                brakeInput = 0
-                AutoBrake = false
-            end
-        end
-        if ProgradeIsOn then
+       if ProgradeIsOn then
             if velMag > MinAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
                 AlignToWorldVector(vec3(velocity))
             end
@@ -4699,11 +4699,11 @@ function script.onActionStop(action)
     elseif action == "up" then
         upAmount = upAmount - 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
     elseif action == "down" then
         upAmount = upAmount + 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
     elseif action == "groundaltitudeup" then
         if antigrav and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
