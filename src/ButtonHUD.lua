@@ -78,22 +78,22 @@ function script.onStart()
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
-        toggleView = true
+        ToggleView = true
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
-        lastMaxBrakeInAtmo = 0
+        LastMaxBrakeInAtmo = 0
         EmergencyWarp = false
         ReentryMode = false
-        mousePitchFactor = 1 -- Mouse control only
-        mouseYawFactor = 1 -- Mouse control only
-        hasGear = false
-        pitchInput = 0
-        pitchInput2 = 0
-        yawInput2 = 0
-        rollInput = 0
-        yawInput = 0
-        brakeInput = 0
-        rollInput2 = 0
+        MousePitchFactor = 1 -- Mouse control only
+        MouseYawFactor = 1 -- Mouse control only
+        HasGear = false
+        PitchInput = 0
+        PitchInput2 = 0
+        YawInput2 = 0
+        RollInput = 0
+        YawInput = 0
+        BrakeInput = 0
+        RollInput2 = 0
         RetrogradeIsOn = false
         ProgradeIsOn = false
         Reentry = false
@@ -103,27 +103,26 @@ function script.onStart()
         AutopilotRealigned = false
         HoldingCtrl = false
         PrevViewLock = 1
-        msgText = "empty"
+        MsgText = "empty"
         LastEccentricity = 1
         HoldAltitudeButtonModifier = 5
         AntiGravButtonModifier = 5
-        isBoosting = false -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-        brakeDistance, brakeTime = 0
-        maxBrakeDistance, maxBrakeTime = 0
-        hasDB = false
-        hasSpaceRadar = false
-        hasAtmoRadar = false
+        IsBoosting = false -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
+        BrakeDistance, BrakeTime = 0
+        MaxBrakeDistance, MaxBrakeTime = 0
+        HasSpaceRadar = false
+        HasAtmoRadar = false
         AutopilotTargetIndex = 0
         AutopilotTargetName = "None"
         AutopilotTargetPlanet = nil
-        totalDistanceTravelled = 0.0
-        totalDistanceTrip = 0
-        emergencyWarp = false
-        notTriedEmergencyWarp = true
-        flightTime = 0
-        wipedDatabank = false
+        TotalDistanceTravelled = 0.0
+        TotalDistanceTrip = 0
+        InEmergencyWarp = false
+        NotTriedEmergencyWarp = true
+        FlightTime = 0
+        WipedDatabank = false
         LocationIndex = 0
-        upAmount = 0
+        UpAmount = 0
         BrakeIsOn = false
         Autopilot = false
         AltitudeHold = false
@@ -133,21 +132,21 @@ function script.onStart()
         AutopilotBraking = false
         AutopilotCruising = false
         VectorToTarget = false    
-        simulatedX = 0
-        simulatedY = 0        
+        SimulatedX = 0
+        SimulatedY = 0        
         AutopilotStatus = "Aligning"
-        msgTimer = 3
-        targetGroundAltitude = nil -- So it can tell if one loaded or not
-        gearExtended = nil
-        distance = 0
-        radarMessage = ""
+        MsgTimer = 3
+        TargetGroundAltitude = nil -- So it can tell if one loaded or not
+        GearExtended = nil
+        Distance = 0
+        RadarMessage = ""
         LastOdometerOutput = ""
-        peris = 0
+        Peris = 0
         AntigravTargetAltitude = nil
-        core_altitude = core.getAltitude()
-        elementsID = core.getElementIdList()
-        lastTravelTime = system.getTime()
-        totalFlightTime = 0
+        CoreAltitude = core.getAltitude()
+        ElementsID = core.getElementIdList()
+        LastTravelTime = system.getTime()
+        TotalFlightTime = 0
 
         -- Local Variables used only within onStart
         local markers = {}
@@ -156,7 +155,7 @@ function script.onStart()
         local PreviousYawAmount = 0
         local PreviousPitchAmount = 0
         local damageMessage = ""
-        hasGear = false
+        HasGear = false
         AutopilotPlanetGravity = 0
         local UnitHidden = true
         local Buttons = {}
@@ -203,13 +202,13 @@ function script.onStart()
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY"}
-        AutoVariables = {"EmergencyWarp", "hasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
+        AutoVariables = {"EmergencyWarp", "HasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
-                         "AutopilotTargetIndex", "gearExtended", "targetGroundAltitude", "totalDistanceTravelled",
-                         "totalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "lastMaxBrakeInAtmo"}
+                         "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
+                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo"}
 
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
@@ -238,14 +237,14 @@ function script.onStart()
                 end
             end
             if valuesAreSet then
-                msgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
+                MsgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
             elseif useTheseSettings then
-                msgText = "Updated user preferences used.  Will be saved when you exit seat.  Toggle off useTheseSettings to use saved values"
+                MsgText = "Updated user preferences used.  Will be saved when you exit seat.  Toggle off useTheseSettings to use saved values"
             else
-                msgText = "No Saved Variables Found - Stand up / leave remote to save settings"
+                MsgText = "No Saved Variables Found - Stand up / leave remote to save settings"
             end
         else
-            msgText = "No databank found, install one anywhere and rerun the autoconfigure to save variables"
+            MsgText = "No databank found, install one anywhere and rerun the autoconfigure to save variables"
         end
        -- Loading saved vars is hard on it
         brakeToggle = BrakeToggleDefault
@@ -256,13 +255,13 @@ function script.onStart()
         local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
         coroutine.yield() -- Give it some time to breathe before we do the rest
-        for k in pairs(elementsID) do
-            local name = eleType(elementsID[k])
+        for k in pairs(ElementsID) do
+            local name = eleType(ElementsID[k])
             if (name == "landing gear") then
-                hasGear = true
+                HasGear = true
             end
             if (name == "dynamic core") then
-                local hp = eleMaxHp(elementsID[k])
+                local hp = eleMaxHp(ElementsID[k])
                 if hp > 10000 then
                     coreOffset = 128
                 elseif hp > 1000 then
@@ -271,10 +270,10 @@ function script.onStart()
                     coreOffset = 32
                 end
             end
-            eleTotalMaxHp = eleTotalMaxHp + eleMaxHp(elementsID[k])
+            eleTotalMaxHp = eleTotalMaxHp + eleMaxHp(ElementsID[k])
             if (name == "atmospheric fuel-tank" or name == "space fuel-tank" or name == "rocket fuel-tank") then
-                local hp = eleMaxHp(elementsID[k])
-                local mass = eleMass(elementsID[k])
+                local hp = eleMaxHp(ElementsID[k])
+                local mass = eleMass(ElementsID[k])
                 local curMass = 0
                 local curTime = system.getTime()
                 if (name == "atmospheric fuel-tank") then
@@ -297,7 +296,7 @@ function script.onStart()
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
                     end
-                    atmoTanks[#atmoTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+                    atmoTanks[#atmoTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
                                                  vanillaMaxVolume, massEmpty, curMass, curTime}
                 end
                 if (name == "rocket fuel-tank") then
@@ -320,7 +319,7 @@ function script.onStart()
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
                     end
-                    rocketTanks[#rocketTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+                    rocketTanks[#rocketTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
                                                      vanillaMaxVolume, massEmpty, curMass, curTime}
                 end
                 if (name == "space fuel-tank") then
@@ -340,7 +339,7 @@ function script.onStart()
                     if curMass > vanillaMaxVolume then
                         vanillaMaxVolume = curMass
                     end
-                    spaceTanks[#spaceTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+                    spaceTanks[#spaceTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
                                                    vanillaMaxVolume, massEmpty, curMass, curTime}
                 end
             end
@@ -359,9 +358,9 @@ function script.onStart()
         end
         if radar_1 then
             if eleType(radar_1.getId()) == "Space Radar" then
-                hasSpaceRadar = true
+                HasSpaceRadar = true
             else
-                hasAtmoRadar = true
+                HasAtmoRadar = true
             end
         end
         -- Close door and retract ramp if available
@@ -389,28 +388,28 @@ function script.onStart()
         else
             system.freeze(0)
         end
-        if hasGear then
-            if gearExtended == nil then
-                gearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
+        if HasGear then
+            if GearExtended == nil then
+                GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
             end
-            if gearExtended then
+            if GearExtended then
                 Nav.control.extendLandingGears()
             else
                 Nav.control.retractLandingGears()
             end
         end
-        if targetGroundAltitude ~= nil then
-            Nav.axisCommandManager:setTargetGroundAltitude(targetGroundAltitude)
-            if targetGroundAltitude == 0 and not hasGear then gearExtended = true end
+        if TargetGroundAltitude ~= nil then
+            Nav.axisCommandManager:setTargetGroundAltitude(TargetGroundAltitude)
+            if TargetGroundAltitude == 0 and not HasGear then GearExtended = true end
         else 
-            if gearExtended or not hasGear then
+            if GearExtended or not HasGear then
                 Nav.axisCommandManager:setTargetGroundAltitude(0)
-                gearExtended = true
+                GearExtended = true
             else
                 Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
             end
         end
-        if atmosphere() > 0 and not dbHud and (gearExtended or not hasGear) then
+        if atmosphere() > 0 and not dbHud and (GearExtended or not HasGear) then
             BrakeIsOn = true
         end
         WasInAtmo = (atmosphere() > 0)
@@ -431,7 +430,7 @@ function script.onStart()
                     LastMaxBrake = maxBrake
                 end
                 if atmosphere() > 0 then
-                    lastMaxBrakeInAtmo = maxBrake
+                    LastMaxBrakeInAtmo = maxBrake
                 end
                 lastMaxBrakeAtG = gravity
             end
@@ -485,9 +484,9 @@ function script.onStart()
                 -- Nearest planet, gravity also important - if it's 0, we don't autopilot to the target planet, the target isn't near a planet.                      
                 table.insert(atlas[0], newLocation)
                 -- Store atmosphere so we know whether the location is in space or not
-                msgText = "Location saved as " .. name
+                MsgText = "Location saved as " .. name
             else
-                msgText = "Databank must be installed to save locations"
+                MsgText = "Databank must be installed to save locations"
             end
         end
 
@@ -506,7 +505,7 @@ function script.onStart()
             index = -1
             for k, v in pairs(SavedLocations) do
                 if v.name and v.name == CustomTarget.name then
-                    msgText = v.name .. " saved location cleared"
+                    MsgText = v.name .. " saved location cleared"
                     index = k
                     break
                 end
@@ -524,7 +523,7 @@ function script.onStart()
         end
 
         function ToggleRadarPanel()
-            if radarPanelID ~= nil and peris == 0 then
+            if radarPanelID ~= nil and Peris == 0 then
                 system.destroyWidgetPanel(radarPanelID)
                 radarPanelID = nil
                 if perisPanelID ~= nil then
@@ -533,7 +532,7 @@ function script.onStart()
                 end
             else
                 -- If radar is installed but no weapon, don't show periscope
-                if peris == 1 then
+                if Peris == 1 then
                     system.destroyWidgetPanel(radarPanelID)
                     radarPanelID = nil
                     _autoconf.displayCategoryPanel(radar, radar_size, L_TEXT("ui_lua_widget_periscope", "Periscope"),
@@ -546,7 +545,7 @@ function script.onStart()
                     radarPanelID = _autoconf.panels[_autoconf.panels_size]
                     placeRadar = false
                 end
-                peris = 0
+                Peris = 0
             end
         end
 
@@ -666,7 +665,7 @@ function script.onStart()
             else
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
-                    msgText = "WARNING: Insufficient Brakes - Attempting coast landing, beware obstacles"
+                    MsgText = "WARNING: Insufficient Brakes - Attempting coast landing, beware obstacles"
                 end
                 if not AltitudeHold then
                     ToggleAltitudeHold()
@@ -689,8 +688,8 @@ function script.onStart()
                     ToggleAltitudeHold()
                 end
                 AutoTakeoff = true
-                HoldAltitude = core_altitude + AutoTakeoffAltitude
-                gearExtended = false
+                HoldAltitude = CoreAltitude + AutoTakeoffAltitude
+                GearExtended = false
                 Nav.control.retractLandingGears()
                 Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard set this for takeoff, you wouldn't use takeoff from a hangar
                 BrakeIsOn = true
@@ -707,16 +706,16 @@ function script.onStart()
                 BrakeLanding = false
                 Reentry = false
                 autoRoll = true
-                if (not gearExtended and not BrakeIsOn) or atmosphere() == 0 then -- Never autotakeoff in space
+                if (not GearExtended and not BrakeIsOn) or atmosphere() == 0 then -- Never autotakeoff in space
                     AutoTakeoff = false
-                    HoldAltitude = core_altitude
+                    HoldAltitude = CoreAltitude
                     if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
                 else
                     AutoTakeoff = true
-                    HoldAltitude = core_altitude + AutoTakeoffAltitude
-                    gearExtended = false
+                    HoldAltitude = CoreAltitude + AutoTakeoffAltitude
+                    GearExtended = false
                     Nav.control.retractLandingGears()
                     Nav.axisCommandManager:setTargetGroundAltitude(500)
                     BrakeIsOn = true -- Engage brake for warmup
@@ -742,21 +741,21 @@ function script.onStart()
                     Reentry = false
                     BrakeLanding = false
                     AutoTakeoff = false
-                    OldGearExtended = gearExtended
-                    gearExtended = false
+                    OldGearExtended = GearExtended
+                    GearExtended = false
                     Nav.control.retractLandingGears()
                     Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard-set this for auto-follow
                 else
                     BrakeIsOn = true
                     autoRoll = autoRollPreference
-                    gearExtended = OldGearExtended
-                    if gearExtended then
+                    GearExtended = OldGearExtended
+                    if GearExtended then
                         Nav.control.extendLandingGears()
                         Nav.axisCommandManager:setTargetGroundAltitude(0)
                     end
                 end
             else
-                msgText = "Follow Mode only works with Remote controller"
+                MsgText = "Follow Mode only works with Remote controller"
                 FollowMode = false
             end
         end
@@ -779,7 +778,7 @@ function script.onStart()
                 if CustomTarget ~= nil then
                     StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                     if not StrongBrakes and velMag > MinAutopilotSpeed then
-                        msgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
+                        MsgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
                     end
                     -- Going to need to add all those conditions here.  Let's start with the easiest.
                     if unit.getAtmosphereDensity() > 0 then
@@ -788,7 +787,7 @@ function script.onStart()
                             if not VectorToTarget then
                                 ToggleVectorToTarget()
                             end
-                            -- if gearExtended or BrakeIsOn then
+                            -- if GearExtended or BrakeIsOn then
                             --    ToggleAutoTakeoff()
                             -- else
                             --    ToggleAltitudeHold()
@@ -875,11 +874,11 @@ function script.onStart()
             local disabledElements = 0
             local colorMod = 0
             local color = ""
-            for k in pairs(elementsID) do
+            for k in pairs(ElementsID) do
                 local hp = 0
                 local mhp = 0
-                mhp = eleMaxHp(elementsID[k])
-                hp = eleHp(elementsID[k])
+                mhp = eleMaxHp(ElementsID[k])
+                hp = eleHp(ElementsID[k])
                 curShipHP = curShipHP + hp
                 if (hp < mhp) then
                     if (hp == 0) then
@@ -889,7 +888,7 @@ function script.onStart()
                     end
                     -- Thanks to Jerico for the help and code starter for arrow markers!
                     if RepairArrows and #markers == 0 then
-                        position = vec3(core.getElementPositionById(elementsID[k]))
+                        position = vec3(core.getElementPositionById(ElementsID[k]))
                         local x = position.x - coreOffset
                         local y = position.y - coreOffset
                         local z = position.z - coreOffset
@@ -908,9 +907,9 @@ function script.onStart()
                         table.insert(markers, core.spawnArrowSticker(x, y + 1, z, "west"))
                         table.insert(markers, core.spawnArrowSticker(x, y + 1, z, "west"))
                         core.rotateSticker(markers[10], -90, 0, 90)
-                        table.insert(markers, elementsID[k])
+                        table.insert(markers, ElementsID[k])
                     end
-                elseif RepairArrows and #markers > 0 and markers[11] == elementsID[k] then
+                elseif RepairArrows and #markers > 0 and markers[11] == ElementsID[k] then
                     for j in pairs(markers) do
                         core.deleteSticker(markers[j])
                     end
@@ -952,10 +951,10 @@ function script.onStart()
         end
 
         function DrawCursorLine(newContent)
-            local strokeColor = mfloor(utils.clamp((distance / (ResolutionWidth / 4)) * 255, 0, 255))
+            local strokeColor = mfloor(utils.clamp((Distance / (ResolutionWidth / 4)) * 255, 0, 255))
             newContent[#newContent + 1] = stringf(
                                               "<line x1='0' y1='0' x2='%fpx' y2='%fpx' style='stroke:rgb(%d,%d,%d);stroke-width:2;transform:translate(50%%, 50%%)' />",
-                                              simulatedX, simulatedY, mfloor(PrimaryR + 0.5) + strokeColor,
+                                              SimulatedX, SimulatedY, mfloor(PrimaryR + 0.5) + strokeColor,
                                               mfloor(PrimaryG + 0.5) - strokeColor, mfloor(PrimaryB + 0.5) - strokeColor)
         end
 
@@ -971,9 +970,9 @@ function script.onStart()
 
         function wipeSaveVariables()
             if not dbHud then
-                msgText =
+                MsgText =
                     "No Databank Found, unable to wipe. \nYou must have a Databank attached to ship prior to running the HUD autoconfigure"
-                msgTimer = 5
+                MsgTimer = 5
             elseif valuesAreSet then
                 if doubleCheck then
                     -- If any values are set, wipe them all
@@ -983,14 +982,14 @@ function script.onStart()
                     for k, v in pairs(AutoVariables) do
                         dbHud.setStringValue(v, jencode(nil))
                     end
-                    msgText =
+                    MsgText =
                         "Databank wiped. New variables will save after re-enter seat and exit"
-                    msgTimer = 5
+                    MsgTimer = 5
                     doubleCheck = false
                     valuesAreSet = false
-                    wipedDatabank = true
+                    WipedDatabank = true
                 else
-                    msgText = "Press ALT-7 again to confirm wipe"
+                    MsgText = "Press ALT-7 again to confirm wipe"
                     doubleCheck = true
                 end
             end
@@ -1006,8 +1005,8 @@ function script.onStart()
         end
 
         function SetButtonContains()
-            local x = simulatedX + ResolutionWidth / 2
-            local y = simulatedY + ResolutionHeight / 2
+            local x = SimulatedX + ResolutionWidth / 2
+            local y = SimulatedY + ResolutionHeight / 2
             for _, v in pairs(Buttons) do
                 -- enableName, disableName, width, height, x, y, toggleVar, toggleFunction, drawCondition
                 v.hovered = Contains(x, y, v.x, v.y, v.width, v.height)
@@ -1218,8 +1217,8 @@ function script.onStart()
             local pitchAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationUp()) *
                                     AutopilotStrength
 
-            yawInput2 = yawInput2 - (yawAmount + (yawAmount - PreviousYawAmount) * DampingMultiplier)
-            pitchInput2 = pitchInput2 + (pitchAmount + (pitchAmount - PreviousPitchAmount) * DampingMultiplier)
+            YawInput2 = YawInput2 - (yawAmount + (yawAmount - PreviousYawAmount) * DampingMultiplier)
+            PitchInput2 = PitchInput2 + (pitchAmount + (pitchAmount - PreviousPitchAmount) * DampingMultiplier)
             PreviousYawAmount = yawAmount
             PreviousPitchAmount = pitchAmount
             -- Return true or false depending on whether or not we're aligned
@@ -1259,7 +1258,7 @@ function script.onStart()
                     AntigravTargetAltitude = nil
                     antigrav.hide()
                 else
-                    AntigravTargetAltitude = core_altitude
+                    AntigravTargetAltitude = CoreAltitude
                     if AntigravTargetAltitude < 1000 then
                         AntigravTargetAltitude = 1000
                     end
@@ -1271,13 +1270,13 @@ function script.onStart()
 
         function BeginReentry()
             if Reentry then
-                msgText = "Parachute Re-Entry cancelled"
+                MsgText = "Parachute Re-Entry cancelled"
             else 
-                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < lastMaxBrakeInAtmo)
+                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrakeInAtmo)
                 if not StrongBrakes  then
-                    msgText = "WARNING: Insufficient Brakes for Parachute Re-Entry"
+                    MsgText = "WARNING: Insufficient Brakes for Parachute Re-Entry"
                 elseif not planet.atmos then 
-                    msgText = "Parachute Re-Entry requires a planet with atmospher"
+                    MsgText = "Parachute Re-Entry requires a planet with atmospher"
                 elseif unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and not Reentry then
                     Reentry = true
                     if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
@@ -1285,9 +1284,9 @@ function script.onStart()
                     end                
                     autoroll = true
                     BrakeIsOn = false
-                    msgText = "Beginning Parachute Re-Entry - Strap In.  Target speed: " .. ReentrySpeed
+                    MsgText = "Beginning Parachute Re-Entry - Strap In.  Target speed: " .. ReentrySpeed
                 else
-                    msgText = "Parachute requirements not met. (Must be out of atmosphere and within gravity influence of a planet with atmosphere"
+                    MsgText = "Parachute requirements not met. (Must be out of atmosphere and within gravity influence of a planet with atmosphere"
                     Rentry = false
                 end
             end
@@ -1303,9 +1302,9 @@ function script.onStart()
             end, function()
                 brakeToggle = not brakeToggle
                 if (brakeToggle) then
-                    msgText = "Brakes in Toggle Mode"
+                    MsgText = "Brakes in Toggle Mode"
                 else
-                    msgText = "Brakes in Default Mode"
+                    MsgText = "Brakes in Default Mode"
                 end
             end)
         MakeButton("Align Prograde", "Disable Prograde", buttonWidth, buttonHeight,
@@ -1361,16 +1360,16 @@ function script.onStart()
             return isRemote() == 1
         end)
         MakeButton("Parachute Re-Entry", "Cancel Parachute Re-Entry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
-            function() return Reentry end, BeginReentry, function() return (core_altitude > ReentryAltitude) end )
+            function() return Reentry end, BeginReentry, function() return (CoreAltitude > ReentryAltitude) end )
         y = y + buttonHeight + 20
         MakeButton("Enable Emergency Warp", "Disable Emergency Warp", buttonWidth, buttonHeight, x, y, function()
             return EmergencyWarp
         end, function()
             EmergencyWarp = not EmergencyWarp
             if (EmergencyWarp) then
-                msgText = "Emergency Warp Enabled"
+                MsgText = "Emergency Warp Enabled"
             else
-                msgText = "Emergency Warp Disabled"
+                MsgText = "Emergency Warp Disabled"
             end
         end, function()
             return warpdrive ~= nil
@@ -1381,9 +1380,9 @@ function script.onStart()
             end, function()
                 displayOrbit = not displayOrbit
                 if (displayOrbit) then
-                    msgText = "Orbit Display Enabled"
+                    MsgText = "Orbit Display Enabled"
                 else
-                    msgText = "Orbit Display Disabled"
+                    MsgText = "Orbit Display Disabled"
                 end
             end)
         y = y + buttonHeight + 20
@@ -1397,9 +1396,9 @@ function script.onStart()
         end, function()
             RepairArrows = not RepairArrows
             if (RepairArrows) then
-                msgText = "Repair Arrows Enabled"
+                MsgText = "Repair Arrows Enabled"
             else
-                msgText = "Repair Arrows Diabled"
+                MsgText = "Repair Arrows Diabled"
             end
         end, function()
             return isRemote() == 1
@@ -1425,7 +1424,7 @@ function script.onStart()
         -- HUD - https://github.com/Rezoix/DU-hud with major modifications by Archeageo
         function updateHud(newContent)
 
-            local altitude = core_altitude
+            local altitude = CoreAltitude
             local velocity = core.getVelocity()
             local speed = vec3(velocity):len()
             local worldV = vec3(core.getWorldVertical())
@@ -1462,7 +1461,7 @@ function script.onStart()
 
             -- RADAR
 
-            newContent[#newContent + 1] = radarMessage
+            newContent[#newContent + 1] = RadarMessage
 
             -- FUEL TANKS
 
@@ -1595,7 +1594,7 @@ function script.onStart()
             </g>]], x1, ys2, mfloor(spd))
         end
 
-        function DrawOdometer(newContent, totalDistanceTrip, totalDistanceTravelled, flightStyle, flightTime)
+        function DrawOdometer(newContent, TotalDistanceTrip, TotalDistanceTravelled, flightStyle, flightTime)
             local xg = 1240
             local yg1 = 55
             local yg2 = 65
@@ -1642,8 +1641,8 @@ function script.onStart()
                     <text class="txtend" x="1240" y="10">Max Brake: %.2f kN</text>
                     <text class="txtend" x="1240" y="30">Max Thrust: %.2f kN</text>
                     <text class="txtbig txtmid" x="960" y="130">%s</text>
-                ]], totalDistanceTrip, (totalDistanceTravelled / 1000), FormatTimeString(flightTime),
-                                                  FormatTimeString(totalFlightTime), (totalMass / 1000),
+                ]], TotalDistanceTrip, (TotalDistanceTravelled / 1000), FormatTimeString(flightTime),
+                                                  FormatTimeString(TotalFlightTime), (totalMass / 1000),
                                                   (LastMaxBrake / 1000), (maxThrust / 1000), flightStyle)
                 if gravity > 0.1 then
                     newContent[#newContent + 1] = stringf([[
@@ -1920,8 +1919,8 @@ function script.onStart()
             if GyroIsOn then
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Gyro Enabled</text>]], warningX, gyroY)
             end
-            if gearExtended then
-                if hasGear then
+            if GearExtended then
+                if HasGear then
                     newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Gear Extended</text>]],
                                                       warningX, gearY)
                 else
@@ -3542,19 +3541,19 @@ function script.onStop()
     Nav.control.switchOffHeadlights()
     -- Open door and extend ramp if available
     local atmo = unit.getAtmosphereDensity()
-    if door and (atmo > 0 or (atmo == 0 and core_altitude < 10000)) then
+    if door and (atmo > 0 or (atmo == 0 and CoreAltitude < 10000)) then
         for _, v in pairs(door) do
             v.activate()
         end
     end
-    if forcefield and (atmo > 0 or (atmo == 0 and core_altitude < 10000)) then
+    if forcefield and (atmo > 0 or (atmo == 0 and CoreAltitude < 10000)) then
         for _, v in pairs(forcefield) do
             v.activate()
         end
     end
     -- Save variables
     if dbHud then
-        if not wipedDatabank then
+        if not WipedDatabank then
             for k, v in pairs(AutoVariables) do
                 dbHud.setStringValue(v, json.encode(_G[v]))
             end
@@ -3580,26 +3579,26 @@ function script.onTick(timerId)
                 system.updateData(interplanetaryHeaderText,
                     '{"label": "Target", "value": "' .. AutopilotTargetName .. '", "unit":""}')
                 travelTime = GetAutopilotTravelTime() -- This also sets AutopilotDistance so we don't have to calc it again
-                distance = AutopilotDistance
+                Distance = AutopilotDistance
                 if not TurnBurn then
-                    brakeDistance, brakeTime = GetAutopilotBrakeDistanceAndTime(velMag)
-                    maxBrakeDistance, maxBrakeTime = GetAutopilotBrakeDistanceAndTime(MaxGameVelocity)
+                    BrakeDistance, BrakeTime = GetAutopilotBrakeDistanceAndTime(velMag)
+                    MaxBrakeDistance, MaxBrakeTime = GetAutopilotBrakeDistanceAndTime(MaxGameVelocity)
                 else
-                    brakeDistance, brakeTime = GetAutopilotTBBrakeDistanceAndTime(velMag)
-                    maxBrakeDistance, maxBrakeTime = GetAutopilotTBBrakeDistanceAndTime(MaxGameVelocity)
+                    BrakeDistance, BrakeTime = GetAutopilotTBBrakeDistanceAndTime(velMag)
+                    MaxBrakeDistance, MaxBrakeTime = GetAutopilotTBBrakeDistanceAndTime(MaxGameVelocity)
                 end
                 system.updateData(widgetDistanceText, '{"label": "Distance", "value": "' ..
-                    getDistanceDisplayString(distance) .. '", "unit":""}')
+                    getDistanceDisplayString(Distance) .. '", "unit":""}')
                 system.updateData(widgetTravelTimeText, '{"label": "Travel Time", "value": "' ..
                     FormatTimeString(travelTime) .. '", "unit":""}')
                 system.updateData(widgetCurBrakeDistanceText, '{"label": "Cur Brake Distance", "value": "' ..
-                    getDistanceDisplayString(brakeDistance) .. '", "unit":""}')
+                    getDistanceDisplayString(BrakeDistance) .. '", "unit":""}')
                 system.updateData(widgetCurBrakeTimeText, '{"label": "Cur Brake Time", "value": "' ..
-                    FormatTimeString(brakeTime) .. '", "unit":""}')
+                    FormatTimeString(BrakeTime) .. '", "unit":""}')
                 system.updateData(widgetMaxBrakeDistanceText, '{"label": "Max Brake Distance", "value": "' ..
-                    getDistanceDisplayString(maxBrakeDistance) .. '", "unit":""}')
+                    getDistanceDisplayString(MaxBrakeDistance) .. '", "unit":""}')
                 system.updateData(widgetMaxBrakeTimeText, '{"label": "Max Brake Time", "value": "' ..
-                    FormatTimeString(maxBrakeTime) .. '", "unit":""}')
+                    FormatTimeString(MaxBrakeTime) .. '", "unit":""}')
                 system.updateData(widgetMaxMassText, '{"label": "Maximum Mass", "value": "' ..
                     string.format("%.2f tons", (planetMaxMass / 1000)) .. '", "unit":""}')
                 if unit.getAtmosphereDensity() > 0 and not WasInAtmo then
@@ -3626,9 +3625,9 @@ function script.onTick(timerId)
             else
                 system.updateData(interplanetaryHeaderText,
                     '{"label": "Target", "value": "' .. CustomTarget.name .. '", "unit":""}')
-                distance = (vec3(core.getConstructWorldPos()) - CustomTarget.position):len()
+                Distance = (vec3(core.getConstructWorldPos()) - CustomTarget.position):len()
                 system.updateData(widgetDistanceText, '{"label": "Distance", "value": "' ..
-                    getDistanceDisplayString(distance) .. '", "unit":""}')
+                    getDistanceDisplayString(Distance) .. '", "unit":""}')
                 system.removeDataFromWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
                 system.removeDataFromWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
                 system.removeDataFromWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
@@ -3641,17 +3640,17 @@ function script.onTick(timerId)
             HideInterplanetaryPanel()
         end
         if warpdrive ~= nil then
-            if emergencyWarp then
+            if InEmergencyWarp then
                 if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
-                    msgText = "EMERGENCY WARP IN 5 SECONDS - PRESS ALT-J to CANCEL"
-                    msgTimer = 5
+                    MsgText = "EMERGENCY WARP IN 5 SECONDS - PRESS ALT-J to CANCEL"
+                    MsgTimer = 5
                     unit.setTimer("emergencyWarpTick", 5)
-                    emergencyWarp = false
+                    InEmergencyWarp = false
                 else
-                    msgText = "Emergency Warp Condition Met - Cannot Warp, will retry in 1 second\n" ..
+                    MsgText = "Emergency Warp Condition Met - Cannot Warp, will retry in 1 second\n" ..
                                   (json.decode(warpdrive.getData()).errorMsg)
                     msgTick = 1
-                    emergencyWarp = false
+                    InEmergencyWarp = false
                     unit.setTimer("reEmergencyWarp", 1)
                 end
             end
@@ -3667,17 +3666,17 @@ function script.onTick(timerId)
         if (radar_1 and #radar_1.getEntries() > 0) then
             local target
             target = radar_1.getData():find('identifiedConstructs":%[%]')
-            if hasSpaceRadar and EmergencyWarp then
+            if HasSpaceRadar and EmergencyWarp then
                 local id, distance = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
                 if id ~= nil and id ~= "" then
-                    if (math.floor(distance) < EmergencyWarpDistance) and notTriedEmergencyWarp then
-                        emergencyWarp = true
-                        notTriedEmergencyWarp = false
+                    if (math.floor(distance) < EmergencyWarpDistance) and NotTriedEmergencyWarp then
+                        InEmergencyWarp = true
+                        NotTriedEmergencyWarp = false
                     end
                 end
             end
             if target == nil and perisPanelID == nil then
-                peris = 1
+                Peris = 1
                 ToggleRadarPanel()
             end
             if target ~= nil and perisPanelID ~= nil then
@@ -3688,7 +3687,7 @@ function script.onTick(timerId)
             end
 
             local radarContacts = radar_1.getEntries()
-            radarMessage = string.format(
+            RadarMessage = string.format(
                                [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: %i contacts</text>]],
                                #radarContacts)
 
@@ -3700,13 +3699,13 @@ function script.onTick(timerId)
             end
             if #friendlies > 0 then
                 local y = 15
-                radarMessage = string.format(
+                RadarMessage = string.format(
                                    [[%s<text class="pbright txtbig txtmid" x="1370" y="%s">Friendlies In Range</text>]],
-                                   radarMessage, y)
+                                   RadarMessage, y)
                 for k, v in pairs(friendlies) do
                     y = y + 20
-                    radarMessage = string.format([[%s<text class="pdim txtmid" x="1370" y="%s">%s</text>]],
-                                       radarMessage, y, radar_1.getConstructName(v))
+                    RadarMessage = string.format([[%s<text class="pdim txtmid" x="1370" y="%s">%s</text>]],
+                                       RadarMessage, y, radar_1.getConstructName(v))
                 end
             end
 
@@ -3714,12 +3713,12 @@ function script.onTick(timerId)
             local data
             data = radar_1.getData():find('worksInEnvironment":false')
             if data then
-                radarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: Jammed</text>]]
+                RadarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: Jammed</text>]]
             else
-                radarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: No Contacts</text>]]
+                RadarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: No Contacts</text>]]
             end
             if radarPanelID ~= nil then
-                peris = 0
+                Peris = 0
                 ToggleRadarPanel()
             end
         end
@@ -3727,25 +3726,25 @@ function script.onTick(timerId)
         -- Update odometer output string
         local newContent = {}
         local flightStyle = GetFlightStyle()
-        DrawOdometer(newContent, totalDistanceTrip, totalDistanceTravelled, flightStyle, flightTime)
+        DrawOdometer(newContent, TotalDistanceTrip, TotalDistanceTravelled, flightStyle, FlightTime)
         checkDamage(newContent)
         LastOdometerOutput = table.concat(newContent, "")
         collectgarbage("collect")
     elseif timerId == "reEmergencyWarp" then
-        notTriedEmergencyWarp = true
-        emergencyWarp = true
+        NotTriedEmergencyWarp = true
+        InEmergencyWarp = true
         unit.stopTimer("reEmergencyWarp")
     elseif timerId == "msgTick" then
         -- This is used to clear a message on screen after a short period of time and then stop itself
         local newContent = {}
         DisplayMessage(newContent, "empty")
-        msgText = "empty"
+        MsgText = "empty"
         unit.stopTimer("msgTick")
-        msgTimer = 3
+        MsgTimer = 3
     elseif timerId == "emergencyWarpTick" then
         if EmergencyWarp then 
-            msgText = "EMERGENCY WARP ACTIVATED"
-            msgTimer = 5
+            MsgText = "EMERGENCY WARP ACTIVATED"
+            MsgTimer = 5
             warpdrive.activateWarp()
             warpdrive.show()
             showWarpWidget = true
@@ -3754,16 +3753,16 @@ function script.onTick(timerId)
     elseif timerId == "animateTick" then
         Animated = true
         Animating = false
-        simulatedX = 0
-        simulatedY = 0
+        SimulatedX = 0
+        SimulatedY = 0
         unit.stopTimer("animateTick")
     elseif timerId == "apTick" then
         -- Localized Functions
         local isRemote = Nav.control.isRemoteControlled
 
-        yawInput2 = 0
-        rollInput2 = 0
-        pitchInput2 = 0
+        YawInput2 = 0
+        RollInput2 = 0
+        PitchInput2 = 0
         LastApsDiff = -1
         velocity = vec3(core.getWorldVelocity())
         velMag = vec3(velocity):len()
@@ -3773,7 +3772,7 @@ function script.onTick(timerId)
         orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
         local deltaX = system.getMouseDeltaX()
         local deltaY = system.getMouseDeltaY()
-        targetGroundAltitude = Nav:getTargetGroundAltitude()
+        TargetGroundAltitude = Nav:getTargetGroundAltitude()
         local TrajectoryAlignmentStrength = 0.002 -- How strongly AP tries to align your velocity vector to the target when not in orbit
         local isWarping = (velMag > 8334)
         if not isWarping and LastIsWarping then
@@ -3789,13 +3788,13 @@ function script.onTick(timerId)
             desiredBaseAltitude = antigrav.getBaseAltitude()
         end
         if BrakeIsOn then
-            brakeInput = 1
+            BrakeInput = 1
         else
-            brakeInput = 0
+            BrakeInput = 0
         end
-        core_altitude = core.getAltitude()
-        if core_altitude == 0 then
-            core_altitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
+        CoreAltitude = core.getAltitude()
+        if CoreAltitude == 0 then
+            CoreAltitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
         end
 
         local newContent = {}
@@ -3812,16 +3811,16 @@ function script.onTick(timerId)
 
         newContent[#newContent + 1] =
             [[<svg width="100%" height="100%" style="position:absolute;top:0;left:0"  viewBox="0 0 2560 1440">]]
-        if msgText ~= "empty" then
-            DisplayMessage(newContent, msgText)
+        if MsgText ~= "empty" then
+            DisplayMessage(newContent, MsgText)
         end
         if isRemote() == 0 and userControlScheme == "Virtual Joystick" then
             DrawDeadZone(newContent)
         end
 
         if isRemote() == 1 and screen_1 and screen_1.getMouseY() ~= -1 then
-            simulatedX = screen_1.getMouseX() * 2560
-            simulatedY = screen_1.getMouseY() * 1440
+            SimulatedX = screen_1.getMouseX() * 2560
+            SimulatedY = screen_1.getMouseY() * 1440
             SetButtonContains()
             DrawButtons(newContent)
             if screen_1.getMouseState() == 1 then
@@ -3829,12 +3828,12 @@ function script.onTick(timerId)
             end
             newContent[#newContent + 1] = string.format(
                                               [[<g transform="translate(1280 720)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
-                                              simulatedX, simulatedY)
+                                              SimulatedX, SimulatedY)
         elseif system.isViewLocked() == 0 then
             if isRemote() == 1 and HoldingCtrl then
                 if not Animating then
-                    simulatedX = simulatedX + deltaX
-                    simulatedY = simulatedY + deltaY
+                    SimulatedX = SimulatedX + deltaX
+                    SimulatedY = SimulatedY + deltaY
                 end
                 SetButtonContains()
                 DrawButtons(newContent)
@@ -3867,51 +3866,51 @@ function script.onTick(timerId)
                 if not Animating then
                     newContent[#newContent + 1] = string.format(
                                                       [[<g transform="translate(1280 720)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
-                                                      simulatedX, simulatedY)
+                                                      SimulatedX, SimulatedY)
                 end
             else
                 CheckButtons()
-                simulatedX = 0
-                simulatedY = 0 -- Reset after they do view things, and don't keep sending inputs while unlocked view
+                SimulatedX = 0
+                SimulatedY = 0 -- Reset after they do view things, and don't keep sending inputs while unlocked view
                 -- Except of course autopilot, which is later.
             end
         else
-            simulatedX = simulatedX + deltaX
-            simulatedY = simulatedY + deltaY
-            distance = math.sqrt(simulatedX * simulatedX + simulatedY * simulatedY)
+            SimulatedX = SimulatedX + deltaX
+            SimulatedY = SimulatedY + deltaY
+            Distance = math.sqrt(SimulatedX * SimulatedX + SimulatedY * SimulatedY)
             if not HoldingCtrl and isRemote() == 0 then -- Draw deadzone circle if it's navigating
                 if userControlScheme == "Virtual Joystick" then -- Virtual Joystick
                     -- Do navigation things
 
-                    if simulatedX > 0 and simulatedX > DeadZone then
-                        yawInput2 = yawInput2 - (simulatedX - DeadZone) * MouseXSensitivity
-                    elseif simulatedX < 0 and simulatedX < (DeadZone * -1) then
-                        yawInput2 = yawInput2 - (simulatedX + DeadZone) * MouseXSensitivity
+                    if SimulatedX > 0 and SimulatedX > DeadZone then
+                        YawInput2 = YawInput2 - (SimulatedX - DeadZone) * MouseXSensitivity
+                    elseif SimulatedX < 0 and SimulatedX < (DeadZone * -1) then
+                        YawInput2 = YawInput2 - (SimulatedX + DeadZone) * MouseXSensitivity
                     else
-                        yawInput2 = 0
+                        YawInput2 = 0
                     end
 
-                    if simulatedY > 0 and simulatedY > DeadZone then
-                        pitchInput2 = pitchInput2 - (simulatedY - DeadZone) * MouseYSensitivity
-                    elseif simulatedY < 0 and simulatedY < (DeadZone * -1) then
-                        pitchInput2 = pitchInput2 - (simulatedY + DeadZone) * MouseYSensitivity
+                    if SimulatedY > 0 and SimulatedY > DeadZone then
+                        PitchInput2 = PitchInput2 - (SimulatedY - DeadZone) * MouseYSensitivity
+                    elseif SimulatedY < 0 and SimulatedY < (DeadZone * -1) then
+                        PitchInput2 = PitchInput2 - (SimulatedY + DeadZone) * MouseYSensitivity
                     else
-                        pitchInput2 = 0
+                        PitchInput2 = 0
                     end
                 elseif userControlScheme == "Mouse" then -- Mouse Direct
-                    simulatedX = 0
-                    simulatedY = 0
-                    -- pitchInput2 = pitchInput2 - deltaY * mousePitchFactor
-                    -- yawInput2 = yawInput2 - deltaX * mouseYawFactor
+                    SimulatedX = 0
+                    SimulatedY = 0
+                    -- PitchInput2 = PitchInput2 - deltaY * MousePitchFactor
+                    -- YawInput2 = YawInput2 - deltaX * MouseYawFactor
                     -- So... this is weird.  
                     -- It's doing some odd things and giving us some weird values. 
 
                     -- utils.smoothstep(progress, low, high)*2-1
-                    pitchInput2 = (-utils.smoothstep(deltaY, -100, 100) + 0.5) * 2 * mousePitchFactor
-                    yawInput2 = (-utils.smoothstep(deltaX, -100, 100) + 0.5) * 2 * mouseYawFactor
+                    PitchInput2 = (-utils.smoothstep(deltaY, -100, 100) + 0.5) * 2 * MousePitchFactor
+                    YawInput2 = (-utils.smoothstep(deltaX, -100, 100) + 0.5) * 2 * MouseYawFactor
                 else -- Keyboard mode
-                    simulatedX = 0
-                    simulatedY = 0
+                    SimulatedX = 0
+                    SimulatedY = 0
                     -- Don't touch anything, they have it with kb only.  
                 end
 
@@ -3923,7 +3922,7 @@ function script.onTick(timerId)
                 -- What that means is, if we get here, check our hovers.  If one of them is active, trigger the thing and deactivate the hover
                 CheckButtons()
 
-                if distance > DeadZone then -- Draw a line to the cursor from the screen center
+                if Distance > DeadZone then -- Draw a line to the cursor from the screen center
                     -- Note that because SVG lines fucking suck, we have to do a translate and they can't use calc in their params
                     DrawCursorLine(newContent)
                 end
@@ -3938,7 +3937,7 @@ function script.onTick(timerId)
             -- Cursor always on top, draw it last
             newContent[#newContent + 1] = string.format(
                                               [[<g transform="translate(1280 720)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
-                                              simulatedX, simulatedY)
+                                              SimulatedX, SimulatedY)
         end
         newContent[#newContent + 1] = [[</svg></body>]]
         content = table.concat(newContent, "")
@@ -4044,7 +4043,7 @@ function script.onTick(timerId)
                 end
             elseif AutopilotBraking then
                 BrakeIsOn = true
-                brakeInput = 1
+                BrakeInput = 1
                 if TurnBurn then
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 100) -- This stays 100 to not mess up our calculations
                 end
@@ -4064,7 +4063,7 @@ function script.onTick(timerId)
                         AutopilotStatus = "Aligning" -- Disable autopilot and reset
                         -- TODO: This is being added to newContent *after* we already drew the screen, so it'll never get displayed
                         DisplayMessage(newContent, "Autopilot completed, orbit established")
-                        brakeInput = 0
+                        BrakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
                     end
                 end
@@ -4120,8 +4119,8 @@ function script.onTick(timerId)
             local nearby = (distance < targetDistance)
             local maxSpeed = 100 -- Over 300kph max, but, it scales down as it approaches
             local targetSpeed = utils.clamp((distance - targetDistance) / 2, 10, maxSpeed)
-            pitchInput2 = 0
-            local aligned = (math.abs(yawInput2) < 0.1)
+            PitchInput2 = 0
+            local aligned = (math.abs(YawInput2) < 0.1)
             if (aligned and velMag < targetSpeed and not nearby) then -- or (not BrakeIsOn and onShip) then
                 -- if not onShip then -- Don't mess with brake if they're on ship
                 BrakeIsOn = false
@@ -4146,13 +4145,13 @@ function script.onTick(timerId)
                 pitchPID:inject(targetPitch - pitch)
                 local autoPitchInput = pitchPID:get()
 
-                pitchInput2 = autoPitchInput
+                PitchInput2 = autoPitchInput
             end
         end
         local up = vec3(core.getWorldVertical()) * -1
         if AltitudeHold or BrakeLanding or Reentry or VectorToTarget then
             -- HoldAltitude is the alt we want to hold at
-            local altitude = core_altitude
+            local altitude = CoreAltitude
             -- Dampen this.
             local altDiff = HoldAltitude - altitude
             -- This may be better to smooth evenly regardless of HoldAltitude.  Let's say, 2km scaling?  Should be very smooth for atmo
@@ -4171,7 +4170,7 @@ function script.onTick(timerId)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                 end
                 if unit.getAtmosphereDensity() > 0.05 then
-                    msgText = "PARACHUTE DEPLOYED"
+                    MsgText = "PARACHUTE DEPLOYED"
                     Reentry = false
                     BrakeLanding = true
                     targetPitch = 0
@@ -4182,7 +4181,7 @@ function script.onTick(timerId)
             -- local targetPitch = utils.clamp(altDiff,-20,20) -- Clamp to reasonable values
             -- Align it prograde but keep whatever pitch inputs they gave us before, and ignore pitch input from alignment.
             -- So, you know, just yaw.
-            local oldInput = pitchInput2
+            local oldInput = PitchInput2
             if velMag > MinAutopilotSpeed then
                 AlignToWorldVector(vec3(velocity))
             end
@@ -4203,16 +4202,16 @@ function script.onTick(timerId)
                 local airFriction = vec3(core.getWorldAirFrictionAcceleration()) -- Maybe includes lift?
                 if maxBrake ~= nil then
                     LastMaxBrake = maxBrake
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, core.getConstructMass(), 0, 0,
+                    BrakeDistance, BrakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, core.getConstructMass(), 0, 0,
                                                    maxBrake + (airFriction:len() - airFriction:project_on(up):len()) *
                                                        core.getConstructMass())
                 else
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, core.getConstructMass(), 0, 0,
+                    BrakeDistance, BrakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, core.getConstructMass(), 0, 0,
                                                    LastMaxBrake + vec3(core.getWorldAirFrictionAcceleration()):len() *
                                                        core.getConstructMass())
                 end
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
-                if distanceToTarget <= brakeDistance then
+                if distanceToTarget <= BrakeDistance then
                     VectorStatus = "Finalizing Approach"
                     if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                         Nav.control.cancelCurrentControlMasterMode()
@@ -4238,7 +4237,7 @@ function script.onTick(timerId)
                 end
                 LastTargetDistance = distanceToTarget
             end
-            pitchInput2 = oldInput
+            PitchInput2 = oldInput
             local constrF = vec3(core.getConstructWorldOrientationForward())
             local constrR = vec3(core.getConstructWorldOrientationRight())
             local worldV = vec3(core.getWorldVertical())
@@ -4260,10 +4259,10 @@ function script.onTick(timerId)
                         if velMag < 1 then
                             BrakeLanding = false
                             AltitudeHold = false
-                            gearExtended = true
+                            GearExtended = true
                             Nav.control.extendLandingGears()
                             Nav.axisCommandManager:setTargetGroundAltitude(0)
-                            upAmount = 0
+                            UpAmount = 0
                             BrakeIsOn = true
                         else
                             BrakeIsOn = true
@@ -4292,23 +4291,23 @@ function script.onTick(timerId)
                 end
                 pitchPID:inject(targetPitch - pitch)
                 local autoPitchInput = pitchPID:get()
-                pitchInput2 = pitchInput2 + autoPitchInput
+                PitchInput2 = PitchInput2 + autoPitchInput
             end
         end
         LastEccentricity = orbit.eccentricity
         -- antigrav by zerofg
         -- it's very rough but get the job done, AGG are weird
-        if antigrav and core_altitude < 200000 and antigrav.getState() == 1 then
+        if antigrav and CoreAltitude < 200000 and antigrav.getState() == 1 then
             if AntigravTargetAltitude == nil then -- no target : try to stabilize if too far from actual altitude (
-                local AGGtargetDistance = core_altitude - antigrav.getBaseAltitude()
-                if core_altitude > 800 and AGGtargetDistance < -200 then
-                    desiredBaseAltitude = math.max(core_altitude + 100, 1000)
+                local AGGtargetDistance = CoreAltitude - antigrav.getBaseAltitude()
+                if CoreAltitude > 800 and AGGtargetDistance < -200 then
+                    desiredBaseAltitude = math.max(CoreAltitude + 100, 1000)
                 elseif AGGtargetDistance > 200 then
-                    desiredBaseAltitude = core_altitude - 100
+                    desiredBaseAltitude = CoreAltitude - 100
                 end
 
             else -- I tried using a PID but didn't work that well, so I'm just regulating speed instead
-                local AGGtargetDistance = AntigravTargetAltitude - core_altitude
+                local AGGtargetDistance = AntigravTargetAltitude - CoreAltitude
                 -- totaly stole the code from lisa-lionheart for vSpeed
                 local velocity = vec3(core.getWorldVelocity())
                 local up = vec3(core.getWorldVertical()) * -1
@@ -4328,17 +4327,17 @@ function script.onTick(timerId)
                 maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
 
                 if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
-                    desiredBaseAltitude = core_altitude + 100
+                    desiredBaseAltitude = CoreAltitude + 100
 
                 elseif vSpd > maxVSpeed then -- not as bad as going too fast down but still need to slow down or at least stop accelerating
-                    desiredBaseAltitude = math.max(core_altitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
+                    desiredBaseAltitude = math.max(CoreAltitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
 
                 elseif math.abs(AGGtargetDistance) > 150 or math.abs(vSpd) > 15 then
                     if math.abs(vSpd) > 10 then
-                        desiredBaseAltitude = core_altitude +
+                        desiredBaseAltitude = CoreAltitude +
                                                   math.max(math.min(AGGtargetDistance - vSpd / 10.0, 100), -100)
                     else
-                        desiredBaseAltitude = core_altitude + math.max(math.min(AGGtargetDistance, 100), -100)
+                        desiredBaseAltitude = CoreAltitude + math.max(math.min(AGGtargetDistance, 100), -100)
                     end
 
                 else -- getting close to the target
@@ -4367,10 +4366,10 @@ function script.onFlush()
     turnAssistFactor = math.max(turnAssistFactor, 0.01)
 
     -- final inputs
-    local finalPitchInput = pitchInput + pitchInput2 + system.getControlDeviceForwardInput()
-    local finalRollInput = rollInput + rollInput2 + system.getControlDeviceYawInput()
-    local finalYawInput = (yawInput + yawInput2) - system.getControlDeviceLeftRightInput()
-    local finalBrakeInput = brakeInput
+    local finalPitchInput = PitchInput + PitchInput2 + system.getControlDeviceForwardInput()
+    local finalRollInput = RollInput + RollInput2 + system.getControlDeviceYawInput()
+    local finalYawInput = (YawInput + YawInput2) - system.getControlDeviceLeftRightInput()
+    local finalBrakeInput = BrakeInput
 
     -- Axis
     local worldVertical = vec3(core.getWorldVertical()) -- along gravity
@@ -4494,7 +4493,7 @@ function script.onFlush()
     if (verticalCommandType == axisCommandType.byThrottle) then
         local verticalStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
                                                verticalStrafeEngineTags, axisCommandId.vertical)
-        if upAmount ~= 0 or BrakeLanding then
+        if UpAmount ~= 0 or BrakeLanding then
             Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity, 'airfoil',
                 'ground', '', tolerancePercentToSkipOtherPriorities)
         else
@@ -4509,7 +4508,7 @@ function script.onFlush()
 
     -- Auto Navigation (Cruise Control)
     if (autoNavigationAcceleration:len() > constants.epsilon) then
-        if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.95) -- if the velocity is not properly aligned with the forward
+        if (BrakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.95) -- if the velocity is not properly aligned with the forward
          -- if the velocity is not properly aligned with the forward
         then
             autoNavigationEngineTags = autoNavigationEngineTags .. ', brake'
@@ -4525,7 +4524,7 @@ function script.onFlush()
     cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
     if Nav.axisCommandManager:getAxisCommandType(0) == 1 and (speed * 3.6 > cc_speed) then
         unit.setEngineThrust('rocket_engine', 0)
-    elseif (isboosting) then
+    elseif (IsBoosting) then
         unit.setEngineThrust('rocket_engine', 1)
     end
 
@@ -4552,13 +4551,13 @@ end
 
 function script.onActionStart(action)
     if action == "gear" then
-        gearExtended = not gearExtended
-        if gearExtended then
+        GearExtended = not GearExtended
+        if GearExtended then
             VectorToTarget = false
-            if (vBooster or hover) and (unit.getAtmosphereDensity() > 0 or core_altitude < ReentryAltitude) then
+            if (vBooster or hover) and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
-                    msgText = "WARNING: Insufficient Brakes - Attempting landing anyway"
+                    MsgText = "WARNING: Insufficient Brakes - Attempting landing anyway"
                 end
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                     Nav.control.cancelCurrentControlMasterMode()
@@ -4568,7 +4567,7 @@ function script.onActionStart(action)
                 AltitudeHold = false
                 BrakeLanding = true
                 autoRoll = true
-                gearExtended = false -- Don't actually do it
+                GearExtended = false -- Don't actually do it
                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             else
                 Nav.control.extendLandingGears()
@@ -4585,27 +4584,27 @@ function script.onActionStart(action)
             Nav.control.switchOnHeadlights()
         end
     elseif action == "forward" then
-        pitchInput = pitchInput - 1
+        PitchInput = PitchInput - 1
     elseif action == "backward" then
-        pitchInput = pitchInput + 1
+        PitchInput = PitchInput + 1
     elseif action == "left" then
-        rollInput = rollInput - 1
+        RollInput = RollInput - 1
     elseif action == "right" then
-        rollInput = rollInput + 1
+        RollInput = RollInput + 1
     elseif action == "yawright" then
-        yawInput = yawInput - 1
+        YawInput = YawInput - 1
     elseif action == "yawleft" then
-        yawInput = yawInput + 1
+        YawInput = YawInput + 1
     elseif action == "straferight" then
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.lateral, 1.0)
     elseif action == "strafeleft" then
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.lateral, -1.0)
     elseif action == "up" then
-        upAmount = upAmount + 1
+        UpAmount = UpAmount + 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
     elseif action == "down" then
-        upAmount = upAmount - 1
+        UpAmount = UpAmount - 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
     elseif action == "groundaltitudeup" then
@@ -4639,10 +4638,10 @@ function script.onActionStart(action)
         end
     elseif action == "option1" then
         IncrementAutopilotTargetIndex()
-        toggleView = false
+        ToggleView = false
     elseif action == "option2" then
         DecrementAutopilotTargetIndex()
-        toggleView = false
+        ToggleView = false
     elseif action == "option3" then
         if hideHudOnToggleWidgets then
             if showHud then
@@ -4651,29 +4650,29 @@ function script.onActionStart(action)
                 showHud = true
             end
         end
-        toggleView = false
+        ToggleView = false
         ToggleWidgets()
     elseif action == "option4" then
         ToggleAutopilot()
-        toggleView = false
+        ToggleView = false
     elseif action == "option5" then
         ToggleTurnBurn()
-        toggleView = false
+        ToggleView = false
     elseif action == "option6" then
         ToggleAltitudeHold()
-        toggleView = false
+        ToggleView = false
     elseif action == "option7" then
         wipeSaveVariables()
-        toggleView = false
+        ToggleView = false
     elseif action == "option8" then
         ToggleFollowMode()
-        toggleView = false
+        ToggleView = false
     elseif action == "option9" then
         if gyro ~= nil then
             gyro.toggle()
             GyroIsOn = gyro.getState() == 1
         end
-        toggleView = false
+        ToggleView = false
     elseif action == "lshift" then
         if system.isViewLocked() == 1 then
             HoldingCtrl = true
@@ -4699,8 +4698,8 @@ function script.onActionStart(action)
     elseif action == "booster" then
         -- Nav:toggleBoosters()
         -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-        isboosting = not isboosting
-        if (isboosting) then
+        IsBoosting = not IsBoosting
+        if (IsBoosting) then
             unit.setEngineThrust('rocket_engine', 1)
         else
             unit.setEngineThrust('rocket_engine', 0)
@@ -4725,7 +4724,7 @@ function script.onActionStart(action)
         end
     elseif action == "warp" then
         if warpdrive ~= nil then
-            if not emergencyWarp then
+            if not InEmergencyWarp then
                 if showWarpWidget then
                     warpdrive.hide()
                     showWarpWidget = false
@@ -4734,7 +4733,7 @@ function script.onActionStart(action)
                     showWarpWidget = true
                 end
                 if json.decode(warpdrive.getData()).buttonMsg == "CANNOT WARP" then
-                    msgText = json.decode(warpdrive.getData()).errorMsg
+                    MsgText = json.decode(warpdrive.getData()).errorMsg
                 else
                     warpdrive.activateWarp()
                     warpdrive.show()
@@ -4742,9 +4741,9 @@ function script.onActionStart(action)
                 end
             else
                 unit.stopTimer("emergencyWarpTick")
-                emergencyWarp = false -- lower case is IN situation
+                InEmergencyWarp = false -- lower case is IN situation
                 EmergencyWarp = false -- upper case is if to monitor for situation
-                msgText = "Emergency Warp Cancelled"
+                MsgText = "Emergency Warp Cancelled"
             end
         end
     end
@@ -4752,27 +4751,27 @@ end
 
 function script.onActionStop(action)
     if action == "forward" then
-        pitchInput = pitchInput + 1
+        PitchInput = PitchInput + 1
     elseif action == "backward" then
-        pitchInput = pitchInput - 1
+        PitchInput = PitchInput - 1
     elseif action == "left" then
-        rollInput = rollInput + 1
+        RollInput = RollInput + 1
     elseif action == "right" then
-        rollInput = rollInput - 1
+        RollInput = RollInput - 1
     elseif action == "yawright" then
-        yawInput = yawInput + 1
+        YawInput = YawInput + 1
     elseif action == "yawleft" then
-        yawInput = yawInput - 1
+        YawInput = YawInput - 1
     elseif action == "straferight" then
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.lateral, -1.0)
     elseif action == "strafeleft" then
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.lateral, 1.0)
     elseif action == "up" then
-        upAmount = upAmount - 1
+        UpAmount = UpAmount - 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
     elseif action == "down" then
-        upAmount = upAmount + 1
+        UpAmount = UpAmount + 1
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
     elseif action == "groundaltitudeup" then
@@ -4781,19 +4780,19 @@ function script.onActionStop(action)
         elseif AltitudeHold then
             HoldAltitudeButtonModifier = OldButtonMod
         end
-        toggleView = false
+        ToggleView = false
     elseif action == "groundaltitudedown" then
         if antigrav and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
         elseif AltitudeHold then
             HoldAltitudeButtonModifier = OldButtonMod
         end
-        toggleView = false
+        ToggleView = false
     elseif action == "lshift" then
         if system.isViewLocked() == 1 then
             HoldingCtrl = false
-            simulatedX = 0
-            simulatedY = 0 -- Reset for steering purposes
+            SimulatedX = 0
+            SimulatedY = 0 -- Reset for steering purposes
             system.lockView(PrevViewLock)
         elseif Nav.control.isRemoteControlled() == 1 and ShiftShowsRemoteButtons then
             HoldingCtrl = false
@@ -4810,14 +4809,14 @@ function script.onActionStop(action)
         end
     elseif action == "lalt" then
         if Nav.control.isRemoteControlled() == 0 and freeLookToggle then
-            if toggleView then
+            if ToggleView then
                 if system.isViewLocked() == 1 then
                     system.lockView(0)
                 else
                     system.lockView(1)
                 end
             else
-                toggleView = true
+                ToggleView = true
             end
         elseif Nav.control.isRemoteControlled() == 0 and not freeLookToggle and userControlScheme == "Keyboard" then
             system.lockView(0)
@@ -4874,9 +4873,9 @@ function DisplayMessage(newContent, displayText)
         end
         newContent[#newContent + 1] = [[</text>]]
     end
-    if msgTimer ~= 0 then
-        unit.setTimer("msgTick", msgTimer)
-        msgTimer = 0
+    if MsgTimer ~= 0 then
+        unit.setTimer("msgTick", MsgTimer)
+        MsgTimer = 0
     end
 end
 
@@ -4884,22 +4883,22 @@ function updateDistance()
     local curTime = system.getTime()
     local velocity = vec3(core.getWorldVelocity())
     local spd = vec3(velocity):len()
-    local elapsedTime = curTime - lastTravelTime
+    local elapsedTime = curTime - LastTravelTime
     if (spd > 1.38889) then
         spd = spd / 1000
-        local newDistance = spd * (curTime - lastTravelTime)
-        totalDistanceTravelled = totalDistanceTravelled + newDistance
-        totalDistanceTrip = totalDistanceTrip + newDistance
+        local newDistance = spd * (curTime - LastTravelTime)
+        TotalDistanceTravelled = TotalDistanceTravelled + newDistance
+        TotalDistanceTrip = TotalDistanceTrip + newDistance
     end
-    flightTime = flightTime + elapsedTime
-    totalFlightTime = totalFlightTime + elapsedTime
-    lastTravelTime = curTime
+    FlightTime = FlightTime + elapsedTime
+    TotalFlightTime = TotalFlightTime + elapsedTime
+    LastTravelTime = curTime
 end
 
 function updateMass()
     local totMass = 0
-    for k in pairs(elementsID) do
-        totMass = totMass + core.getElementMassById(elementsID[k])
+    for k in pairs(ElementsID) do
+        totMass = totMass + core.getElementMassById(ElementsID[k])
     end
     return totMass
 end    
