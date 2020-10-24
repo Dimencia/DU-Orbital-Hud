@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.71 - Bug Fixes
+- Fixed Interplanetary display updating with change from custom to planet and atmo to space (again)
+
 Version 4.70 - Updates And Bug Fixes
 - Changed Glide Re-Entry to Parachute Re-Entry.  Recommend brown pants.  Do NOT use if you have not performed a Brake Landing in Atmosphere
 - Fixed Interplanetary display when shifting atmo to space and custom to target

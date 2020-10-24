@@ -420,7 +420,7 @@ function script.onStart()
         if atmosphere() > 0 and not dbHud and (gearExtended or not hasGear) then
             BrakeIsOn = true
         end
-        InAtmo = (atmosphere() > 0)
+        WasInAtmo = (atmosphere() > 0)
         unit.hide()
 
         -- BEGIN FUNCTION DEFINITIONS
@@ -599,6 +599,7 @@ function script.onStart()
 
         -- Interplanetary helper
         function SetupInterplanetaryPanel()
+            InAtmo = (atmosphere() > 0)
             panelInterplanetary = system.createWidgetPanel("Interplanetary Helper")
             interplanetaryHeader = system.createWidget(panelInterplanetary, "value")
             interplanetaryHeaderText = system.createData('{"label": "Target Planet", "value": "N/A", "unit":""}')
@@ -3275,22 +3276,21 @@ function script.onStart()
                         AutopilotRealigned = false
                         AutopilotStatus = "Aligning"
                         if CustomTarget ~= nil then
-                            system.print("Custom Target Found")
-                            if unit.getAtmosphereDensity() == 0 and InAtmo then
-                                if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 0 then
+                            if unit.getAtmosphereDensity() == 0 then
+                                if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
                                     system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
-                                if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 0 then
+                                if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 1 then
                                     system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
-                                if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 0 then
+                                if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 1 then
                                     system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
-                                if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 0 then
+                                if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 1 then
                                     system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
-                                if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 0 then
+                                if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 1 then
                                     system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
-                                end
-                            if system.updateData(widgetMaxMassText, widgetMaxMass) == 0 then
+                            end
+                            if system.updateData(widgetMaxMassText, widgetMaxMass) == 1 then
                                 system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
-                            if system.updateData(widgetTravelTimeText, widgetTravelTime) == 0 then
+                            if system.updateData(widgetTravelTimeText, widgetTravelTime) == 1 then
                                 system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
                         end
                         CustomTarget = nil
@@ -3513,7 +3513,6 @@ end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
-        InAtmo = (unit.getAtmosphereDensity() > 0)
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -3545,25 +3544,28 @@ function script.onTick(timerId)
                     FormatTimeString(maxBrakeTime) .. '", "unit":""}')
                 system.updateData(widgetMaxMassText, '{"label": "Maximum Mass", "value": "' ..
                     string.format("%.2f tons", (planetMaxMass / 1000)) .. '", "unit":""}')
-                if unit.getAtmosphereDensity() > 0 and not InAtmo then
+                if unit.getAtmosphereDensity() > 0 and not WasInAtmo then
+                    system.print("HERE1")
                     system.removeDataFromWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
                     system.removeDataFromWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
                     system.removeDataFromWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
                     system.removeDataFromWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
                     system.removeDataFromWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
-                    InAtmo = true
-                elseif unit.getAtmosphereDensity() == 0 and InAtmo then
-                    if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 0 then
+                    WasInAtmo = true
+                end
+                if unit.getAtmosphereDensity() == 0 and WasInAtmo then
+                    system.print("HERE2")
+                    if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
                         system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
-                    if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 0 then
+                    if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 1 then
                         system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
-                    if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 0 then
+                    if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 1 then
                         system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
-                    if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 0 then
+                    if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 1 then
                         system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
-                    if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 0 then
+                    if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 1 then
                         system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
-                    InAtmo = false
+                    WasInAtmo = false
                 end
             else
                 system.updateData(interplanetaryHeaderText,
