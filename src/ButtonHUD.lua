@@ -3545,7 +3545,6 @@ function script.onTick(timerId)
                 system.updateData(widgetMaxMassText, '{"label": "Maximum Mass", "value": "' ..
                     string.format("%.2f tons", (planetMaxMass / 1000)) .. '", "unit":""}')
                 if unit.getAtmosphereDensity() > 0 and not WasInAtmo then
-                    system.print("HERE1")
                     system.removeDataFromWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
                     system.removeDataFromWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
                     system.removeDataFromWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
@@ -3554,7 +3553,6 @@ function script.onTick(timerId)
                     WasInAtmo = true
                 end
                 if unit.getAtmosphereDensity() == 0 and WasInAtmo then
-                    system.print("HERE2")
                     if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
                         system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
                     if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 1 then
