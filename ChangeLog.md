@@ -2,6 +2,12 @@
 
 Version 4.71 - Bug Fixes
 - Fixed Interplanetary display updating with change from custom to planet and atmo to space (again)
+- Changed upper Warning Messages to not be hidden when Buttons shown
+- Fixed script error when using button to cancel Parachute Re-Entry
+- Added planet.atmos = true/false and planet.gravity = X.XX (in g) to Atlas for calculations about planets when not there.
+- Changed Strongbrakes to StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
+- Fixed Landing Gear sensing and operation
+- Fixed emergency warp to cancel if Emergency Warp mode toggled off or cancellation key is pressed.
 
 Version 4.70 - Updates And Bug Fixes
 - Changed Glide Re-Entry to Parachute Re-Entry.  Recommend brown pants.  Do NOT use if you have not performed a Brake Landing in Atmosphere

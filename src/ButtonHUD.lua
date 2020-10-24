@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.70
+        VERSION_NUMBER = 4.71
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -389,32 +389,25 @@ function script.onStart()
         else
             system.freeze(0)
         end
-        if targetGroundAltitude ~= nil then
-            Nav.axisCommandManager:setTargetGroundAltitude(targetGroundAltitude)
-        end
         if hasGear then
             if gearExtended == nil then
                 gearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
-                if gearExtended then
-                    Nav.control.extendLandingGears()
-                else
-                    Nav.control.retractLandingGears()
-                end
             end
-            if targetGroundAltitude == nil then
-                if gearExtended then
-                    Nav.axisCommandManager:setTargetGroundAltitude(0)
-                else
-                    Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
-                end
-            end
-        elseif targetGroundAltitude == nil then
-            if atmosphere() == 0 then
-                gearExtended = false
-                Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
+            if gearExtended then
+                Nav.control.extendLandingGears()
             else
-                gearExtended = true -- Show warning message and set behavior
+                Nav.control.retractLandingGears()
+            end
+        end
+        if targetGroundAltitude ~= nil then
+            Nav.axisCommandManager:setTargetGroundAltitude(targetGroundAltitude)
+            if targetGroundAltitude == 0 and not hasGear then gearExtended = true end
+        else 
+            if gearExtended or not hasGear then
                 Nav.axisCommandManager:setTargetGroundAltitude(0)
+                gearExtended = true
+            else
+                Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
             end
         end
         if atmosphere() > 0 and not dbHud and (gearExtended or not hasGear) then
@@ -671,8 +664,7 @@ function script.onStart()
                 BrakeLanding = false
                 -- Don't disable alt hold for auto land
             else
-                StrongBrakes = (((planet:getGravity(planet.center + (vec3(0, 0, 1) * planet.radius)):len()) *
-                                   core.getConstructMass()) < LastMaxBrake)
+                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
                     msgText = "WARNING: Insufficient Brakes - Attempting coast landing, beware obstacles"
                 end
@@ -785,8 +777,7 @@ function script.onStart()
                 -- f2. Should we even try to let this happen on ships with bad brakes.  Eventually, try that.  For now just don't let them use this
 
                 if CustomTarget ~= nil then
-                    StrongBrakes = (((planet:getGravity(planet.center + (vec3(0, 0, 1) * planet.radius)):len()) *
-                                       core.getConstructMass()) < LastMaxBrake)
+                    StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                     if not StrongBrakes and velMag > MinAutopilotSpeed then
                         msgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
                     end
@@ -1280,12 +1271,13 @@ function script.onStart()
 
         function BeginReentry()
             if Reentry then
-                msgText "Parachute Re-Entry cancelled"
+                msgText = "Parachute Re-Entry cancelled"
             else 
-                StrongBrakes = (((planet:getGravity(planet.center + (vec3(0, 0, 1) * planet.radius)):len()) *
-                    core.getConstructMass()) < lastMaxBrakeInAtmo)
+                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < lastMaxBrakeInAtmo)
                 if not StrongBrakes  then
                     msgText = "WARNING: Insufficient Brakes for Parachute Re-Entry"
+                elseif not planet.atmos then 
+                    msgText = "Parachute Re-Entry requires a planet with atmospher"
                 elseif unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and not Reentry then
                     Reentry = true
                     if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
@@ -1295,7 +1287,7 @@ function script.onStart()
                     BrakeIsOn = false
                     msgText = "Beginning Parachute Re-Entry - Strap In.  Target speed: " .. ReentrySpeed
                 else
-                    msgText = "You do not meet re-entry requirements. (Must be out of atmosphere and close to a planet"
+                    msgText = "Parachute requirements not met. (Must be out of atmosphere and within gravity influence of a planet with atmosphere"
                     Rentry = false
                 end
             end
@@ -1877,7 +1869,6 @@ function script.onStart()
                 local distance = math.sqrt((dx)^2 + (dy)^2)
                     
                 if distance < horizonRadius then
-                    --system.print(relativePitch .. " " .. relativeYaw)
                     newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="3" stroke="white" stroke-width="3" fill="white" />', x, y)
                     -- Draw a dot or whatever at x,y, it's inside the AH
                 else
@@ -1887,10 +1878,7 @@ function script.onStart()
                     -- atan(x/y) = ang (in radians)
                     -- There is a special overload for doing this on a circle and setting up the signs correctly for the quadrants
                     local angle = math.atan(dy,dx) 
-
-
-                    --system.print(angle)
-                    -- Project this onto the circle
+                     -- Project this onto the circle
                     -- These are backwards from what they're supposed to be.  Don't know why, that's just what makes it work apparently
                     local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
                     local projectedY = centerY + horizonRadius*math.sin(angle)
@@ -1916,7 +1904,7 @@ function script.onStart()
             local gearY = 900
             local hoverY = 930
             local ewarpY = 960
-            local apY = 225
+            local apY = 200
             local turnBurnY = 150
             local gyroY = 960
             if isRemote() == 1 then
@@ -2109,7 +2097,9 @@ function script.onStart()
                         },
                         name = 'Madis',
                         planetarySystemId = 0,
-                        radius = 44300
+                        radius = 44300,
+                        atmos = true,
+                        gravity = 0.36
                     },
                     [2] = {
                         GM = 157470826617,
@@ -2121,7 +2111,9 @@ function script.onStart()
                         },
                         name = 'Alioth',
                         planetarySystemId = 0,
-                        radius = 126068
+                        radius = 126068,
+                        atmos = true,
+                        gravity = 1.01
                     },
                     [3] = {
                         GM = 11776905000,
@@ -2133,7 +2125,9 @@ function script.onStart()
                         },
                         name = 'Thades',
                         planetarySystemId = 0,
-                        radius = 49000
+                        radius = 49000,
+                        atmos = true,
+                        gravity = 0.50
                     },
                     [4] = {
                         GM = 14893847582,
@@ -2145,7 +2139,9 @@ function script.onStart()
                         },
                         name = 'Talemai',
                         planetarySystemId = 0,
-                        radius = 57450
+                        radius = 57450,
+                        atmos = true,
+                        gravity = 0.46                    
                     },
                     [5] = {
                         GM = 16951680000,
@@ -2157,7 +2153,9 @@ function script.onStart()
                         },
                         name = 'Feli',
                         planetarySystemId = 0,
-                        radius = 60000
+                        radius = 60000,
+                        atmos = true,
+                        gravity = 0.48                    
                     },
                     [6] = {
                         GM = 10502547741,
@@ -2169,7 +2167,9 @@ function script.onStart()
                         },
                         name = 'Sicari',
                         planetarySystemId = 0,
-                        radius = 51100
+                        radius = 51100,
+                        atmos = true,
+                        gravity = 0.41                    
                     },
                     [7] = {
                         GM = 13033380591,
@@ -2181,7 +2181,9 @@ function script.onStart()
                         },
                         name = 'Sinnen',
                         planetarySystemId = 0,
-                        radius = 54950
+                        radius = 54950,
+                        atmos = true,
+                        gravity = 0.44                    
                     },
                     [8] = {
                         GM = 18477723600,
@@ -2193,7 +2195,9 @@ function script.onStart()
                         },
                         name = 'Teoma',
                         planetarySystemId = 0,
-                        radius = 62000
+                        radius = 62000,
+                        atmos = true,
+                        gravity = 0.49
                     },
                     [9] = {
                         GM = 18606274330,
@@ -2205,7 +2209,9 @@ function script.onStart()
                         },
                         name = 'Jago',
                         planetarySystemId = 0,
-                        radius = 61590
+                        radius = 61590,
+                        atmos = true,
+                        gravity = 0.50
                     },
                     [10] = {
                         GM = 78480000,
@@ -2217,7 +2223,9 @@ function script.onStart()
                         },
                         name = 'Madis Moon 1',
                         planetarySystemId = 0,
-                        radius = 10000
+                        radius = 10000,
+                        atmos = false,
+                        gravity = 0.08
                     },
                     [11] = {
                         GM = 237402000,
@@ -2229,7 +2237,9 @@ function script.onStart()
                         },
                         name = 'Madis Moon 2',
                         planetarySystemId = 0,
-                        radius = 11000
+                        radius = 11000,
+                        atmos = false,
+                        gravity = 0.10
                     },
                     [12] = {
                         GM = 265046609,
@@ -2241,7 +2251,9 @@ function script.onStart()
                         },
                         name = 'Madis Moon 3',
                         planetarySystemId = 0,
-                        radius = 15005
+                        radius = 15005,
+                        atmos = false,
+                        gravity = 0.12
                     },
                     [21] = {
                         GM = 2118960000,
@@ -2253,7 +2265,9 @@ function script.onStart()
                         },
                         name = 'Alioth Moon 1',
                         planetarySystemId = 0,
-                        radius = 30000
+                        radius = 30000,
+                        atmos = false,
+                        gravity = 0.24
                     },
                     [22] = {
                         GM = 2165833514,
@@ -2265,7 +2279,9 @@ function script.onStart()
                         },
                         name = 'Alioth Moon 4',
                         planetarySystemId = 0,
-                        radius = 30330
+                        radius = 30330,
+                        atmos = false,
+                        gravity = 0.24
                     },
                     [26] = {
                         GM = 68234043600,
@@ -2277,7 +2293,9 @@ function script.onStart()
                         },
                         name = 'Sanctuary',
                         planetarySystemId = 0,
-                        radius = 83400
+                        radius = 83400,
+                        atmos = true,
+                        gravity = 1.00
                     },
                     [30] = {
                         GM = 211564034,
@@ -2289,7 +2307,9 @@ function script.onStart()
                         },
                         name = 'Thades Moon 1',
                         planetarySystemId = 0,
-                        radius = 14002
+                        radius = 14002,
+                        atmos = false,
+                        gravity = 0.11
                     },
                     [31] = {
                         GM = 264870000,
@@ -2301,7 +2321,9 @@ function script.onStart()
                         },
                         name = 'Thades Moon 2',
                         planetarySystemId = 0,
-                        radius = 15000
+                        radius = 15000,
+                        atmos = false,
+                        gravity = 0.12
                     },
                     [40] = {
                         GM = 141264000,
@@ -2313,7 +2335,9 @@ function script.onStart()
                         },
                         name = 'Talemai Moon 2',
                         planetarySystemId = 0,
-                        radius = 12000
+                        radius = 12000,
+                        atmos = false,
+                        gravity = 0.10
                     },
                     [41] = {
                         GM = 106830900,
@@ -2325,7 +2349,9 @@ function script.onStart()
                         },
                         name = 'Talemai Moon 3',
                         planetarySystemId = 0,
-                        radius = 11000
+                        radius = 11000,
+                        atmos = false,
+                        gravity = 0.09
                     },
                     [42] = {
                         GM = 264870000,
@@ -2337,7 +2363,9 @@ function script.onStart()
                         },
                         name = 'Talemai Moon 1',
                         planetarySystemId = 0,
-                        radius = 15000
+                        radius = 15000,
+                        atmos = false,
+                        gravity = 0.12
                     },
                     [50] = {
                         GM = 499917600,
@@ -2349,7 +2377,9 @@ function script.onStart()
                         },
                         name = 'Feli Moon 1',
                         planetarySystemId = 0,
-                        radius = 14000
+                        radius = 14000,
+                        atmos = false,
+                        gravity = 0.11
                     },
                     [70] = {
                         GM = 396912600,
@@ -2361,7 +2391,9 @@ function script.onStart()
                         },
                         name = 'Sinnen Moon 1',
                         planetarySystemId = 0,
-                        radius = 17000
+                        radius = 17000,
+                        atmos = false,
+                        gravity = 0.14
                     },
                     [100] = {
                         GM = 13975172474,
@@ -2373,7 +2405,9 @@ function script.onStart()
                         },
                         name = 'Lacobus',
                         planetarySystemId = 0,
-                        radius = 55650
+                        radius = 55650,
+                        atmos = true,
+                        gravity = 0.46
                     },
                     [101] = {
                         GM = 264870000,
@@ -2385,7 +2419,9 @@ function script.onStart()
                         },
                         name = 'Lacobus Moon 3',
                         planetarySystemId = 0,
-                        radius = 15000
+                        radius = 15000,
+                        atmos = false,
+                        gravity = 0.12
                     },
                     [102] = {
                         GM = 444981600,
@@ -2397,7 +2433,9 @@ function script.onStart()
                         },
                         name = 'Lacobus Moon 1',
                         planetarySystemId = 0,
-                        radius = 18000
+                        radius = 18000,
+                        atmos = false,
+                        gravity = 0.14
                     },
                     [103] = {
                         GM = 211503600,
@@ -2409,7 +2447,9 @@ function script.onStart()
                         },
                         name = 'Lacobus Moon 2',
                         planetarySystemId = 0,
-                        radius = 14000
+                        radius = 14000,
+                        atmos = false,
+                        gravity = 0.11
                     },
                     [110] = {
                         GM = 9204742375,
@@ -2421,7 +2461,9 @@ function script.onStart()
                         },
                         name = 'Symeon',
                         planetarySystemId = 0,
-                        radius = 49050
+                        radius = 49050,
+                        atmos = true,
+                        gravity = 0.39
                     },
                     [120] = {
                         GM = 7135606629,
@@ -2433,7 +2475,9 @@ function script.onStart()
                         },
                         name = 'Ion',
                         planetarySystemId = 0,
-                        radius = 44950
+                        radius = 44950,
+                        atmos = true,
+                        gravity = 0.36
                     },
                     [121] = {
                         GM = 106830900,
@@ -2445,7 +2489,9 @@ function script.onStart()
                         },
                         name = 'Ion Moon 1',
                         planetarySystemId = 0,
-                        radius = 11000
+                        radius = 11000,
+                        atmos = false,
+                        gravity = 0.09
                     },
                     [122] = {
                         GM = 176580000,
@@ -2457,8 +2503,10 @@ function script.onStart()
                         },
                         name = 'Ion Moon 2',
                         planetarySystemId = 0,
-                        radius = 15000
-                    }
+                        radius = 15000,
+                        atmos = false,
+                        gravity = 0.12
+                    },
                 }
             }
         end
@@ -3410,6 +3458,16 @@ function script.onStart()
             return flightStyle
         end
 
+        function hoverDetectGround()
+            local groundDistance = -1
+            if vBooster then
+                groundDistance = vBooster.distance()
+            elseif hover then
+                groundDistance = hover.distance()
+            end
+            return groundDistance
+        end            
+
         function round(num, numDecimalPlaces)
             local mult = 10 ^ (numDecimalPlaces or 0)
             return mfloor(num * mult + 0.5) / mult
@@ -3582,6 +3640,26 @@ function script.onTick(timerId)
         else
             HideInterplanetaryPanel()
         end
+        if warpdrive ~= nil then
+            if emergencyWarp then
+                if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
+                    msgText = "EMERGENCY WARP IN 5 SECONDS - PRESS ALT-J to CANCEL"
+                    msgTimer = 5
+                    unit.setTimer("emergencyWarpTick", 5)
+                    emergencyWarp = false
+                else
+                    msgText = "Emergency Warp Condition Met - Cannot Warp, will retry in 1 second\n" ..
+                                  (json.decode(warpdrive.getData()).errorMsg)
+                    msgTick = 1
+                    emergencyWarp = false
+                    unit.setTimer("reEmergencyWarp", 1)
+                end
+            end
+            if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
+                warpdrive.show()
+                showWarpWidget = true
+            end
+        end        
     elseif timerId == "oneSecond" then
         -- Timer for evaluation every 1 second
         refreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
@@ -3645,26 +3723,7 @@ function script.onTick(timerId)
                 ToggleRadarPanel()
             end
         end
-        if warpdrive ~= nil then
-            if emergencyWarp then
-                if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
-                    msgText = "EMERGENCY WARP IN 5 SECONDS - PRESS ALT-J to CANCEL"
-                    msgTimer = 5
-                    unit.setTimer("emergencyWarpTick", 5)
-                    emergencyWarp = false
-                else
-                    msgText = "Emergency Warp Condition Met - Cannot Warp, will retry in 1 second\n" ..
-                                  (json.decode(warpdrive.getData()).errorMsg)
-                    msgTick = 1
-                    emergencyWarp = false
-                    unit.setTimer("reEmergencyWarp", 1)
-                end
-            end
-            if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
-                warpdrive.show()
-                showWarpWidget = true
-            end
-        end
+
         -- Update odometer output string
         local newContent = {}
         local flightStyle = GetFlightStyle()
@@ -3684,11 +3743,13 @@ function script.onTick(timerId)
         unit.stopTimer("msgTick")
         msgTimer = 3
     elseif timerId == "emergencyWarpTick" then
-        msgText = "EMERGENCY WARP ACTIVATED"
-        msgTimer = 5
-        warpdrive.activateWarp()
-        warpdrive.show()
-        showWarpWidget = true
+        if EmergencyWarp then 
+            msgText = "EMERGENCY WARP ACTIVATED"
+            msgTimer = 5
+            warpdrive.activateWarp()
+            warpdrive.show()
+            showWarpWidget = true
+        end
         unit.stopTimer("emergencyWarpTick")
     elseif timerId == "animateTick" then
         Animated = true
@@ -4113,6 +4174,7 @@ function script.onTick(timerId)
                     msgText = "PARACHUTE DEPLOYED"
                     Reentry = false
                     BrakeLanding = true
+                    targetPitch = 0
                 end    
             end
 
@@ -4149,9 +4211,7 @@ function script.onTick(timerId)
                                                    LastMaxBrake + vec3(core.getWorldAirFrictionAcceleration()):len() *
                                                        core.getConstructMass())
                 end
-                -- system.print("Distance " .. distanceToTarget .. " brake " .. brakeDistance .. " vel " .. velocity:len() .. " vspd " .. vSpd)
-                StrongBrakes = (((planet:getGravity(planet.center + (vec3(0, 0, 1) * planet.radius)):len()) *
-                                   core.getConstructMass()) < LastMaxBrake)
+                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if distanceToTarget <= brakeDistance then
                     VectorStatus = "Finalizing Approach"
                     if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
@@ -4179,7 +4239,12 @@ function script.onTick(timerId)
                 LastTargetDistance = distanceToTarget
             end
             pitchInput2 = oldInput
+            local constrF = vec3(core.getConstructWorldOrientationForward())
+            local constrR = vec3(core.getConstructWorldOrientationRight())
+            local worldV = vec3(core.getWorldVertical())
             local groundDistance = -1
+            local pitch = getPitch(worldV, constrF, constrR)
+            local autoPitchThreshold = 0.1
             if BrakeLanding then
                 targetPitch = 0
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
@@ -4187,24 +4252,22 @@ function script.onTick(timerId)
                 end
                 Nav.axisCommandManager:setTargetGroundAltitude(500)
                 Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(500)
-                if vBooster then
-                    groundDistance = vBooster.distance()
-                elseif hover then
-                    groundDistance = hover.distance()
-                end
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                groundDistance = hoverDetectGround()
                 if groundDistance > -1 then
-                    autoRoll = autoRollPreference
-                    if velMag < 1 then
-                        BrakeLanding = false
-                        AltitudeHold = false
-                        gearExtended = true
-                        Nav.control.extendLandingGears()
-                        Nav.axisCommandManager:setTargetGroundAltitude(0)
-                        upAmount = 0
-                        BrakeIsOn = true
-                    else
-                        BrakeIsOn = true
+                    if math.abs(targetPitch - pitch) < autoPitchThreshold then
+                        autoRoll = autoRollPreference
+                        if velMag < 1 then
+                            BrakeLanding = false
+                            AltitudeHold = false
+                            gearExtended = true
+                            Nav.control.extendLandingGears()
+                            Nav.axisCommandManager:setTargetGroundAltitude(0)
+                            upAmount = 0
+                            BrakeIsOn = true
+                        else
+                            BrakeIsOn = true
+                        end
                     end
                 elseif StrongBrakes and (velocity:normalize():dot(-up) < 0.99) then
                     BrakeIsOn = true
@@ -4222,11 +4285,6 @@ function script.onTick(timerId)
                     end
                 end
             end
-            local constrF = vec3(core.getConstructWorldOrientationForward())
-            local constrR = vec3(core.getConstructWorldOrientationRight())
-            local worldV = vec3(core.getWorldVertical())
-            local pitch = getPitch(worldV, constrF, constrR)
-            local autoPitchThreshold = 0.1
             -- Copied from autoroll let's hope this is how a PID works... 
             if math.abs(targetPitch - pitch) > autoPitchThreshold then
                 if (pitchPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
@@ -4498,10 +4556,9 @@ function script.onActionStart(action)
         if gearExtended then
             VectorToTarget = false
             if (vBooster or hover) and (unit.getAtmosphereDensity() > 0 or core_altitude < ReentryAltitude) then
-                StrongBrakes = (((planet:getGravity(planet.center + (vec3(0, 0, 1) * planet.radius)):len()) *
-                                   core.getConstructMass()) < LastMaxBrake)
+                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
-                    msgText = "WARNING: Insufficient Brakes - Attempting coast landing, beware obstacles"
+                    msgText = "WARNING: Insufficient Brakes - Attempting landing anyway"
                 end
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                     Nav.control.cancelCurrentControlMasterMode()
@@ -4597,12 +4654,8 @@ function script.onActionStart(action)
         toggleView = false
         ToggleWidgets()
     elseif action == "option4" then
-        -- if unit.getAtmosphereDensity() > 0 then 
-        --    msgText "Clear atmosphere before engaging autopilot"
-        -- else
         ToggleAutopilot()
         toggleView = false
-        -- end
     elseif action == "option5" then
         ToggleTurnBurn()
         toggleView = false
@@ -4689,7 +4742,8 @@ function script.onActionStart(action)
                 end
             else
                 unit.stopTimer("emergencyWarpTick")
-                emergencyWarp = false
+                emergencyWarp = false -- lower case is IN situation
+                EmergencyWarp = false -- upper case is if to monitor for situation
                 msgText = "Emergency Warp Cancelled"
             end
         end
