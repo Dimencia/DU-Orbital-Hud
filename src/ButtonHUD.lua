@@ -464,9 +464,9 @@ function script.onStart()
             end
     
             table.sort(AtlasOrdered, atlasCmp)
-            for i, v in ipairs(AtlasOrdered) do
-                system.print("Index: ".. i .. " Name: ".. v.name .. " Atlas: " .. v.index)
-            end    
+            -- for i, v in ipairs(AtlasOrdered) do
+            --     system.print("Index: ".. i .. " Name: ".. v.name .. " Atlas: " .. v.index)
+            -- end    
         end
 
         function AddLocationsToAtlas() -- Just called once during init really
