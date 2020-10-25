@@ -5,6 +5,8 @@ Version 4.72 - Variable Updates
 - Proper formatting of local and global variables for consistency.  
 - Fixed databank wipe to not wipe saved locations.
 - Autopilot locations now in alphabetical order.
+- Changed new save locations to be named as PlanetName.# or PlanetName.# "Nearest Atmo Contact" to work with new sorting.
+- Reordered button locations to clean up around some that show conditionally.
 
 Version 4.71 - Bug Fixes
 - Fixed Interplanetary display updating with change from custom to planet and atmo to space (again)

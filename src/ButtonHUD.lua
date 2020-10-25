@@ -480,9 +480,8 @@ function script.onStart()
             -- Add a new location to SavedLocations
             if dbHud then
                 local position = vec3(core.getConstructWorldPos())
-                local name = #SavedLocations .. ". " ..
-                                 planet.name -- TODO: If radar isn't jammed, get the name of the nearest construct and tack it on here
-                    
+                local name = planet.name .. ". " .. #SavedLocations
+                                                      
                 if radar_1 then -- Just match the first one
                     local id,_ = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
                     if id ~= nil and id ~= "" then
@@ -805,11 +804,6 @@ function script.onStart()
                             if not VectorToTarget then
                                 ToggleVectorToTarget()
                             end
-                            -- if GearExtended or BrakeIsOn then
-                            --    ToggleAutoTakeoff()
-                            -- else
-                            --    ToggleAltitudeHold()
-                            -- end
                         else
                             -- Vector to target
                             if not VectorToTarget then
@@ -1372,15 +1366,18 @@ function script.onStart()
                 return AutoTakeoff
             end, ToggleAutoTakeoff)
         y = y + buttonHeight + 20
-        MakeButton("Engage Follow Mode", "Disable Follow Mode", buttonWidth, buttonHeight, x, y, function()
-            return FollowMode
-        end, ToggleFollowMode, function()
-            return isRemote() == 1
-        end)
-        MakeButton("Parachute Re-Entry", "Cancel Parachute Re-Entry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
-            function() return Reentry end, BeginReentry, function() return (CoreAltitude > ReentryAltitude) end )
-        y = y + buttonHeight + 20
-        MakeButton("Enable Emergency Warp", "Disable Emergency Warp", buttonWidth, buttonHeight, x, y, function()
+        MakeButton("Show Orbit Display", "Hide Orbit Display", buttonWidth, buttonHeight, x, y,
+            function()
+                return DisplayOrbit
+            end, function()
+                DisplayOrbit = not DisplayOrbit
+                if (DisplayOrbit) then
+                    MsgText = "Orbit Display Enabled"
+                else
+                    MsgText = "Orbit Display Disabled"
+                end
+            end)
+        MakeButton("Enable Emergency Warp", "Disable Emergency Warp", buttonWidth, buttonHeight, x + buttonWidth + 20, y, function()
             return EmergencyWarp
         end, function()
             EmergencyWarp = not EmergencyWarp
@@ -1392,22 +1389,19 @@ function script.onStart()
         end, function()
             return warpdrive ~= nil
         end)
-        MakeButton("Show Orbit Display", "Hide Orbit Display", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
-            function()
-                return DisplayOrbit
-            end, function()
-                DisplayOrbit = not DisplayOrbit
-                if (DisplayOrbit) then
-                    MsgText = "Orbit Display Enabled"
-                else
-                    MsgText = "Orbit Display Disabled"
-                end
-            end)
         y = y + buttonHeight + 20
         MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
             return AntigravTargetAltitude ~= nil
         end, ToggleAntigrav, function()
             return antigrav ~= nil
+        end)       
+        MakeButton("Parachute Re-Entry", "Cancel Parachute Re-Entry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+            function() return Reentry end, BeginReentry, function() return (CoreAltitude > ReentryAltitude) end )
+        y = y + buttonHeight + 20
+        MakeButton("Engage Follow Mode", "Disable Follow Mode", buttonWidth, buttonHeight, x, y, function()
+            return FollowMode
+        end, ToggleFollowMode, function()
+            return isRemote() == 1
         end)
         MakeButton("Enable Repair Arrows", "Disable Repair Arrows", buttonWidth, buttonHeight, x + buttonWidth + 20, y, function()
             return RepairArrows
