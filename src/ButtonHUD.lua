@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.72
+        VERSION_NUMBER = 4.73
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -56,6 +56,7 @@ function script.onStart()
         EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
         AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
+        LandingGearGroundHeight = 0 --export: Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear,
         MaxGameVelocity = 8333.05 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
         AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
         AutopilotInterplanetaryThrottle = 1.0 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
@@ -152,6 +153,8 @@ function script.onStart()
         DisplayOrbit = true
         AutopilotEndSpeed = 0
         SavedLocations = {}
+        LandingGearGroundHeight = 0
+        AntigravJustToggledOn = false
 
         -- Local Variables used only within onStart
         local markers = {}
@@ -201,14 +204,15 @@ function script.onStart()
                              "fuelTankOptimizationSpace", "fuelTankOptimizationRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
-                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY"}
+                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight"}
         AutoVariables = {"EmergencyWarp", "HasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                          "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
-                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo"}
+                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo",
+                        "AntigravJustToggledOn"}
 
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
@@ -389,9 +393,7 @@ function script.onStart()
             system.freeze(0)
         end
         if HasGear then
-            if GearExtended == nil then
-                GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
-            end
+            GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
             if GearExtended then
                 Nav.control.extendLandingGears()
             else
@@ -403,7 +405,7 @@ function script.onStart()
             if TargetGroundAltitude == 0 and not HasGear then GearExtended = true end
         else 
             if GearExtended or not HasGear then
-                Nav.axisCommandManager:setTargetGroundAltitude(0)
+                Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
                 GearExtended = true
             else
                 Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
@@ -768,7 +770,7 @@ function script.onStart()
                     GearExtended = OldGearExtended
                     if GearExtended then
                         Nav.control.extendLandingGears()
-                        Nav.axisCommandManager:setTargetGroundAltitude(0)
+                        Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
                     end
                 end
             else
@@ -1269,12 +1271,14 @@ function script.onStart()
                     antigrav.deactivate()
                     AntigravTargetAltitude = nil
                     antigrav.hide()
+                    AntigravJustToggledOn = false
                 else
                     AntigravTargetAltitude = CoreAltitude
                     if AntigravTargetAltitude < 1000 then
                         AntigravTargetAltitude = 1000
                     end
                     antigrav.activate()
+                    AntigravJustToggledOn = true
                     antigrav.show()
                 end
             end
@@ -1282,14 +1286,18 @@ function script.onStart()
 
         function BeginReentry()
             if Reentry then
-                MsgText = "Parachute Re-Entry cancelled"
-            else 
+                MsgText = "Re-Entry cancelled"
+                Reentry = false
+                autoRoll = autoRollPreference
+                AltitudeHold = false
+            elseif unit.getAtmosphereDensity() ~= 0 or unit.getClosestPlanetInfluence() <= 0 or Reentry or not planet.atmos then
+                MsgText = "Re-Entry requirements not met: you must start out of atmosphere and within a planets gravity well over a planet with atmosphere"
+                MsgTimer = 5
+            elseif not ReentryMode then-- Parachute ReEntry
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrakeInAtmo)
                 if not StrongBrakes  then
                     MsgText = "WARNING: Insufficient Brakes for Parachute Re-Entry"
-                elseif not planet.atmos then 
-                    MsgText = "Parachute Re-Entry requires a planet with atmospher"
-                elseif unit.getAtmosphereDensity() <= 0 and unit.getClosestPlanetInfluence() > 0 and not Reentry then
+                else
                     Reentry = true
                     if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
                         Nav.control.cancelCurrentControlMasterMode()
@@ -1297,10 +1305,18 @@ function script.onStart()
                     autoroll = true
                     BrakeIsOn = false
                     MsgText = "Beginning Parachute Re-Entry - Strap In.  Target speed: " .. ReentrySpeed
-                else
-                    MsgText = "Parachute requirements not met. (Must be out of atmosphere and within gravity influence of a planet with atmosphere"
-                    Rentry = false
                 end
+            else --Glide Reentry
+                Reentry = true
+                if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
+                AltitudeHold = true
+                autoroll = true
+                BrakeIsOn = false
+                HoldAltitude = ReentryAltitude
+                MsgText = "Beginning Re-entry.  Target speed: " .. ReentrySpeed .. " Target Altitude: " ..
+                            ReentryAltitude
             end
         end
         -- BEGIN BUTTON DEFINITIONS
@@ -1390,11 +1406,8 @@ function script.onStart()
             return warpdrive ~= nil
         end)
         y = y + buttonHeight + 20
-        MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
-            return AntigravTargetAltitude ~= nil
-        end, ToggleAntigrav, function()
-            return antigrav ~= nil
-        end)       
+        MakeButton("Glide Re-Entry", "Cancel Glide Re-Entry", buttonWidth, buttonHeight, x, y,
+            function() return Reentry end, function() ReentryMode = true BeginReentry() end, function() return (CoreAltitude > ReentryAltitude) end )
         MakeButton("Parachute Re-Entry", "Cancel Parachute Re-Entry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
             function() return Reentry end, BeginReentry, function() return (CoreAltitude > ReentryAltitude) end )
         y = y + buttonHeight + 20
@@ -1415,6 +1428,12 @@ function script.onStart()
         end, function()
             return isRemote() == 1
         end)
+        y = y + buttonHeight + 20
+        MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
+            return AntigravTargetAltitude ~= nil
+        end, ToggleAntigrav, function()
+            return antigrav ~= nil
+        end)   
         y = y + buttonHeight + 20
         MakeButton(function()
             return string.format("Toggle Control Scheme - Current: %s", userControlScheme)
@@ -3796,8 +3815,9 @@ function script.onTick(timerId)
             end
         end
         LastIsWarping = isWarping
-        if antigrav and antigrav.getState() == 1 and not desiredBaseAltitude then -- initialise if needed
+        if antigrav and ((antigrav.getState() == 1 and not desiredBaseAltitude) or AntigravJustToggledOn) then -- initialise if needed
             desiredBaseAltitude = antigrav.getBaseAltitude()
+            if AntigravJustToggledOn then AntigravJustToggledOn = false end
         end
         if BrakeIsOn then
             BrakeInput = 1
@@ -4174,18 +4194,24 @@ function script.onTick(timerId)
                 targetPitch = 0
             end
             autoRoll = true
+            
             if Reentry then
-                targetPitch = -80
                 if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= ReentrySpeed then -- This thing is dumb.
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
-                end
-                if unit.getAtmosphereDensity() > 0.05 then
-                    MsgText = "PARACHUTE DEPLOYED"
+                end 
+                if not ReentryMode then
+                    targetPitch = -80
+                    if unit.getAtmosphereDensity() > 0.05 then
+                        MsgText = "PARACHUTE DEPLOYED"
+                        Reentry = false
+                        BrakeLanding = true
+                        targetPitch = 0
+                    end
+                elseif Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == ReentrySpeed then
+                    ReentryMode = false
                     Reentry = false
-                    BrakeLanding = true
-                    targetPitch = 0
                 end    
             end
 
@@ -4273,7 +4299,7 @@ function script.onTick(timerId)
                             AltitudeHold = false
                             GearExtended = true
                             Nav.control.extendLandingGears()
-                            Nav.axisCommandManager:setTargetGroundAltitude(0)
+                            Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
                             UpAmount = 0
                             BrakeIsOn = true
                         else
@@ -4583,7 +4609,7 @@ function script.onActionStart(action)
                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             else
                 Nav.control.extendLandingGears()
-                Nav.axisCommandManager:setTargetGroundAltitude(0)
+                Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
             end
         else
             Nav.control.retractLandingGears()
