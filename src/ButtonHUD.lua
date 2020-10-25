@@ -1821,6 +1821,8 @@ function script.onStart()
                 local rectW = 78
                 local rectH = 19
 
+                -- altitude = altitude - 270
+
                 table.insert(newContent, stringf([[
                     <g class="pdim">                        
                         <rect class="line" x="%d" y="%d" width="%d" height="%d"/> 
@@ -1832,6 +1834,8 @@ function script.onStart()
                 local index = 0
                 local divisor = 1
                 local forwardFract = 0
+                local isNegative = altitude < 0
+                local altitude = math.abs(altitude)
                 while index < 6 do
                     local glyphW = 11
                     local glyphH = 16
@@ -1845,6 +1849,10 @@ function script.onStart()
                         glyphYOffset = glyphYOffset + 2
                         glyphXOffset = glyphXOffset - 6
                         class = "altbig"
+                    end
+
+                    if isNegative then  
+                        class = class .. " red"
                     end
 
                     local digit = (altitude / divisor) % 10
