@@ -1821,7 +1821,7 @@ function script.onStart()
                 local rectW = 78
                 local rectH = 19
 
-                -- altitude = altitude - 270
+                altitude = altitude - 270
 
                 table.insert(newContent, stringf([[
                     <g class="pdim">                        
@@ -1835,6 +1835,10 @@ function script.onStart()
                 local divisor = 1
                 local forwardFract = 0
                 local isNegative = altitude < 0
+                local rolloverDigit = 9
+                if isNegative then
+                    rolloverDigit = 0
+                end
                 local altitude = math.abs(altitude)
                 while index < 6 do
                     local glyphW = 11
@@ -1862,6 +1866,15 @@ function script.onStart()
                     local fract = forwardFract
                     if index == 0 then
                         fract = digit - intDigit
+                        if isNegative then
+                            fract = 1 - fract
+                        end
+                    end
+
+                    if isNegative and (index == 0 or forwardFract ~= 0) then
+                        local temp = fracDigit
+                        fracDigit = intDigit
+                        intDigit = temp
                     end
 
                     local topGlyphOffset = glyphH * (fract - 1) 
@@ -1880,7 +1893,7 @@ function script.onStart()
                     
                     index = index + 1
                     divisor = divisor * 10
-                    if intDigit == 9 then
+                    if intDigit == rolloverDigit then
                         forwardFract = fract
                     else
                         forwardFract = 0
