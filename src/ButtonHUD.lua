@@ -4578,13 +4578,13 @@ function script.onFlush()
     -- Rockets
     Nav:setBoosterCommand('rocket_engine')
     -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-    if(true) then
+    if(IsBoosting) then
         local speed = vec3(core.getVelocity()):len()
         local setEngineThrust = unit.setEngineThrust
         local maxSpeedLag = 0.15
         if Nav.axisCommandManager:getAxisCommandType(0) == 1 then -- Cruise control rocket boost assist, Dodgin's modified.
             local cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
-            if (speed * 3.6 > cc_speed * (1 - maxSpeedLag)) then
+            if speed * 3.6 > (cc_speed * (1 - maxSpeedLag)) then
                 setEngineThrust('rocket_engine', 0)
             elseif (IsBoosting) then
                 setEngineThrust('rocket_engine', 1)
@@ -4601,7 +4601,6 @@ function script.onFlush()
                 end
             else
                 targetSpeed = targetSpeed * 1050 / 3.6 -- 1100km/hr being max safe speed in atmo for most ships
-                system.print("Speed: "..speed.." Target: "..targetSpeed.." mod: " ..(targetSpeed * (1- maxSpeedLag) ))
                 if speed >= (targetSpeed * (1- maxSpeedLag)) then
                     setEngineThrust('rocket_engine', 0)
                 elseif (IsBoosting) then
