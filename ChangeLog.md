@@ -1,5 +1,23 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.72 - Variable Updates
+- IMPORTANT: Databank Wipe is advised. (You will not lose saved locations)
+- Proper formatting of local and global variables for consistency.  
+- Fixed databank wipe to not wipe saved locations.
+- Autopilot locations now in alphabetical order.
+- Changed new save locations to be named as PlanetName.# or PlanetName.# "Nearest Atmo Contact" to work with new sorting.
+- Reordered button locations to clean up around some that show conditionally.
+
+Version 4.71 - Bug Fixes
+- Fixed Interplanetary display updating with change from custom to planet and atmo to space (again)
+- Changed upper Warning Messages to not be hidden when Buttons shown
+- Fixed script error when using button to cancel Parachute Re-Entry
+- Added planet.atmos = true/false and planet.gravity = X.XX (in g) to Atlas for calculations about planets when not there.
+- Changed Strongbrakes to StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
+- Fixed Landing Gear sensing and operation
+- Fixed emergency warp to cancel if Emergency Warp mode toggled off or cancellation key is pressed.
+- Fixed hover engines performing brake landing.
+
 Version 4.70 - Updates And Bug Fixes
 - Changed Glide Re-Entry to Parachute Re-Entry.  Recommend brown pants.  Do NOT use if you have not performed a Brake Landing in Atmosphere
 - Fixed Interplanetary display when shifting atmo to space and custom to target
