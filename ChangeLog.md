@@ -1,9 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.73 - Landing Gear Adjustment
+Version 4.73 - Atmosphere Rocket Engine assist
 - Changed landed ground target height to user variable instead of 0 if landing gear used.  Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear, not countersunk, on bottom of ship.  14 appears to be Large landing gear setting.
 - Restored Glide Re-Entry as option to Parachute Re-Entry.  Still will not work well for some ships.
 - Enhanced AGG when toggling on after already in use so it reacts faster.
+- Altimeter support for negative altitude, turns red when < 0 m and counts up as you go down
+- Added atmospheric rocket engine assist, code provided by Azraeil.  Lets rockets assist in atmosphere while in throttle mode without firing constantly and wasting fuel, same as with cruise control already.
 
 Version 4.72 - Variable Updates
 - IMPORTANT: Databank Wipe is advised. (You will not lose saved locations)

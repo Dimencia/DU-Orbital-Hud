@@ -57,7 +57,7 @@ function script.onStart()
         AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
         LandingGearGroundHeight = 0 --export: Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear,
-        MaxGameVelocity = 8333.05 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
+        MaxGameVelocity = 8333.00 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
         AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
         AutopilotInterplanetaryThrottle = 1.0 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
         warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
@@ -4427,6 +4427,7 @@ function script.onFlush()
     local currentRollDeg = getRoll(worldVertical, constructForward, constructRight)
     local currentRollDegAbs = math.abs(currentRollDeg)
     local currentRollDegSign = utils.sign(currentRollDeg)
+    local atmosphere = unit.getAtmosphereDensity()
 
     -- Rotation
     local constructAngularVelocity = vec3(core.getWorldAngularVelocity())
@@ -4435,7 +4436,7 @@ function script.onFlush()
             finalYawInput * yawSpeedFactor * constructUp
 
     -- In atmosphere?
-    if worldVertical:len() > 0.01 and unit.getAtmosphereDensity() > 0.0 then
+    if worldVertical:len() > 0.01 and atmosphere > 0.0 then
         local autoRollRollThreshold = 1.0
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
         if autoRoll == true and currentRollDegAbs > autoRollRollThreshold and finalRollInput == 0 then
@@ -4566,12 +4567,37 @@ function script.onFlush()
     -- Rockets
     Nav:setBoosterCommand('rocket_engine')
     -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-    speed = vec3(core.getVelocity()):len()
-    cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
-    if Nav.axisCommandManager:getAxisCommandType(0) == 1 and (speed * 3.6 > cc_speed) then
-        unit.setEngineThrust('rocket_engine', 0)
-    elseif (IsBoosting) then
-        unit.setEngineThrust('rocket_engine', 1)
+    if(true) then
+        local speed = vec3(core.getVelocity()):len()
+        local setEngineThrust = unit.setEngineThrust
+        local maxSpeedLag = 0.15
+        if Nav.axisCommandManager:getAxisCommandType(0) == 1 then -- Cruise control rocket boost assist, Dodgin's modified.
+            local cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
+            if (speed * 3.6 > cc_speed * (1 - maxSpeedLag)) then
+                setEngineThrust('rocket_engine', 0)
+            elseif (IsBoosting) then
+                setEngineThrust('rocket_engine', 1)
+            end
+        else -- Atmosphere Rocket Boost Assist Not in Cruise Control by Azraeil
+            local throttle = unit.getThrottle()
+            local targetSpeed = (throttle/100)
+            if atmosphere == 0 then
+                targetSpeed = targetSpeed * MaxGameVelocity
+                if speed >= (targetSpeed * (1- maxSpeedLag)) then
+                    setEngineThrust('rocket_engine', 0)
+                elseif (IsBoosting) then
+                    setEngineThrust('rocket_engine', 1)
+                end
+            else
+                targetSpeed = targetSpeed * 1050 / 3.6 -- 1100km/hr being max safe speed in atmo for most ships
+                system.print("Target: "..targetSpeed.." mod: " ..(targetSpeed * (1- maxSpeedLag) ))
+                if speed >= (targetSpeed * (1- maxSpeedLag)) then
+                    setEngineThrust('rocket_engine', 0)
+                elseif (IsBoosting) then
+                    setEngineThrust('rocket_engine', 1)
+                end
+            end
+        end
     end
 
     -- antigrav
