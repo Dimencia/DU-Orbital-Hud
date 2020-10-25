@@ -1821,8 +1821,6 @@ function script.onStart()
                 local rectW = 78
                 local rectH = 19
 
-                altitude = altitude - 270
-
                 table.insert(newContent, stringf([[
                     <g class="pdim">                        
                         <rect class="line" x="%d" y="%d" width="%d" height="%d"/> 
