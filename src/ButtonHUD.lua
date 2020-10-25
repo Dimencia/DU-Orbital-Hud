@@ -454,10 +454,26 @@ function script.onStart()
             
         end
 
+        function UpdateAtlasLocationsList()
+            AtlasOrdered = {}
+            for k, v in pairs(atlas[0]) do
+                table.insert(AtlasOrdered, { name = v.name, index = k} )
+            end
+            local function atlasCmp (left, right)
+                return left.name < right.name
+            end
+    
+            table.sort(AtlasOrdered, atlasCmp)
+            for i, v in ipairs(AtlasOrdered) do
+                system.print("Index: ".. i .. " Name: ".. v.name .. " Atlas: " .. v.index)
+            end    
+        end
+
         function AddLocationsToAtlas() -- Just called once during init really
             for k, v in pairs(SavedLocations) do
                 table.insert(atlas[0], v)
             end
+            UpdateAtlasLocationsList()
         end
 
         function AddNewLocation() -- Don't call this unless they have a databank or it's kinda pointless
@@ -483,6 +499,7 @@ function script.onStart()
                 SavedLocations[#SavedLocations + 1] = newLocation
                 -- Nearest planet, gravity also important - if it's 0, we don't autopilot to the target planet, the target isn't near a planet.                      
                 table.insert(atlas[0], newLocation)
+                UpdateAtlasLocationsList()
                 -- Store atmosphere so we know whether the location is in space or not
                 MsgText = "Location saved as " .. name
             else
@@ -514,6 +531,7 @@ function script.onStart()
                 table.remove(SavedLocations, index)
             end
             DecrementAutopilotTargetIndex()
+            UpdateAtlasLocationsList()
         end
 
         function DrawDeadZone(newContent)
@@ -3303,59 +3321,57 @@ function script.onStart()
                 AutopilotTargetPlanet = nil
                 return true
             end
-            local count = 0
-            for k, v in pairs(atlas[0]) do
-                count = count + 1
-                if count == AutopilotTargetIndex then
-                    if v.center then -- Is a real atlas entry
-                        AutopilotTargetName = v.name
-                        AutopilotTargetPlanet = galaxyReference[0][k]
-                        AutopilotTargetCoords = vec3(AutopilotTargetPlanet.center) -- Aim center until we align
-                        -- Determine the end speed
-                        _, AutopilotEndSpeed = Kep(AutopilotTargetPlanet):escapeAndOrbitalSpeed(AutopilotTargetOrbit)
-                        -- AutopilotEndSpeed = 0
-                        -- AutopilotPlanetGravity = AutopilotTargetPlanet:getGravity(AutopilotTargetPlanet.center + vec3({1,0,0}) * AutopilotTargetOrbit):len() -- Any direction, at our orbit height
-                        AutopilotPlanetGravity = 0 -- This is inaccurate unless we integrate and we're not doing that.  
-                        AutopilotAccelerating = false
-                        AutopilotBraking = false
-                        AutopilotCruising = false
-                        Autoilot = false
-                        AutopilotRealigned = false
-                        AutopilotStatus = "Aligning"
-                        if CustomTarget ~= nil then
-                            if unit.getAtmosphereDensity() == 0 then
-                                if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
-                                    system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
-                                if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 1 then
-                                    system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
-                                if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 1 then
-                                    system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
-                                if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 1 then
-                                    system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
-                                if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 1 then
-                                    system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
-                            end
-                            if system.updateData(widgetMaxMassText, widgetMaxMass) == 1 then
-                                system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
-                            if system.updateData(widgetTravelTimeText, widgetTravelTime) == 1 then
-                                system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
-                        end
-                        CustomTarget = nil
-                        return true
-                    else -- Is one of our fake locations with a .name, .position, and .atmosphere
-                        -- AutopilotTargetName = "None"
-                        AutopilotTargetPlanet = nil
-                        AutopilotTargetName = nil
-                        CustomTarget = v
+
+            local atlasIndex = AtlasOrdered[AutopilotTargetIndex].index
+            local autopilotEntry = atlas[0][atlasIndex]
+            if autopilotEntry.center then -- Is a real atlas entry
+                AutopilotTargetName = autopilotEntry.name
+                AutopilotTargetPlanet = galaxyReference[0][atlasIndex]
+                AutopilotTargetCoords = vec3(AutopilotTargetPlanet.center) -- Aim center until we align
+                -- Determine the end speed
+                _, AutopilotEndSpeed = Kep(AutopilotTargetPlanet):escapeAndOrbitalSpeed(AutopilotTargetOrbit)
+                -- AutopilotEndSpeed = 0
+                -- AutopilotPlanetGravity = AutopilotTargetPlanet:getGravity(AutopilotTargetPlanet.center + vec3({1,0,0}) * AutopilotTargetOrbit):len() -- Any direction, at our orbit height
+                AutopilotPlanetGravity = 0 -- This is inaccurate unless we integrate and we're not doing that.  
+                AutopilotAccelerating = false
+                AutopilotBraking = false
+                AutopilotCruising = false
+                Autoilot = false
+                AutopilotRealigned = false
+                AutopilotStatus = "Aligning"
+                if CustomTarget ~= nil then
+                    if unit.getAtmosphereDensity() == 0 then
+                        if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
+                            system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
+                        if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 1 then
+                            system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
+                        if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 1 then
+                            system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
+                        if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 1 then
+                            system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
+                        if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 1 then
+                            system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
                     end
+                    if system.updateData(widgetMaxMassText, widgetMaxMass) == 1 then
+                        system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
+                    if system.updateData(widgetTravelTimeText, widgetTravelTime) == 1 then
+                        system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
                 end
+                CustomTarget = nil
+                return true
+            else -- Is one of our fake locations with a .name, .position, and .atmosphere
+                -- AutopilotTargetName = "None"
+                AutopilotTargetPlanet = nil
+                AutopilotTargetName = nil
+                CustomTarget = autopilotEntry
             end
             return false
         end
 
         function IncrementAutopilotTargetIndex()
             AutopilotTargetIndex = AutopilotTargetIndex + 1
-            if AutopilotTargetIndex > tablelength(atlas[0]) then
+            -- if AutopilotTargetIndex > tablelength(atlas[0]) then
+            if AutopilotTargetIndex > #AtlasOrdered then
                 AutopilotTargetIndex = 0
             end
             UpdateAutopilotTarget()
@@ -3363,9 +3379,11 @@ function script.onStart()
 
         function DecrementAutopilotTargetIndex()
             AutopilotTargetIndex = AutopilotTargetIndex - 1
+                
             if AutopilotTargetIndex < 0 then
-                AutopilotTargetIndex = tablelength(atlas[0])
-            end
+            --    AutopilotTargetIndex = tablelength(atlas[0])
+                AutopilotTargetIndex = #AtlasOrdered
+            end        
             UpdateAutopilotTarget()
         end
 
