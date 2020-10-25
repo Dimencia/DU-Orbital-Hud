@@ -4603,7 +4603,7 @@ function script.onFlush()
                 end
             else
                 targetSpeed = targetSpeed * 1050 / 3.6 -- 1100km/hr being max safe speed in atmo for most ships
-                system.print("Target: "..targetSpeed.." mod: " ..(targetSpeed * (1- maxSpeedLag) ))
+                system.print("Speed: "..speed.." Target: "..targetSpeed.." mod: " ..(targetSpeed * (1- maxSpeedLag) ))
                 if speed >= (targetSpeed * (1- maxSpeedLag)) then
                     setEngineThrust('rocket_engine', 0)
                 elseif (IsBoosting) then
