@@ -8,6 +8,8 @@ Version 4.71 - Bug Fixes
 - Changed Strongbrakes to StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
 - Fixed Landing Gear sensing and operation
 - Fixed emergency warp to cancel if Emergency Warp mode toggled off or cancellation key is pressed.
+- Fixed hover engines performing brake landing.
+- renaming of variables for consistancy
 
 Version 4.70 - Updates And Bug Fixes
 - Changed Glide Re-Entry to Parachute Re-Entry.  Recommend brown pants.  Do NOT use if you have not performed a Brake Landing in Atmosphere

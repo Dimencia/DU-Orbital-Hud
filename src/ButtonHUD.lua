@@ -147,16 +147,17 @@ function script.onStart()
         ElementsID = core.getElementIdList()
         LastTravelTime = system.getTime()
         TotalFlightTime = 0
-
-        -- Local Variables used only within onStart
-        local markers = {}
+        HasGear = false
+        AutopilotPlanetGravity = 0
         displayOrbit = true
         AutopilotEndSpeed = 0
+        SavedLocations = {}
+                
+        -- Local Variables used only within onStart
+        local markers = {}
         local PreviousYawAmount = 0
         local PreviousPitchAmount = 0
         local damageMessage = ""
-        HasGear = false
-        AutopilotPlanetGravity = 0
         local UnitHidden = true
         local Buttons = {}
         local AutopilotStrength = 1 -- How strongly autopilot tries to point at a target
@@ -183,7 +184,6 @@ function script.onStart()
         local fuelPercentS = {}
         local fuelTimeLeft = {}
         local fuelPercent = {}
-        SavedLocations = {}
         local updateTanks = false
         local honeyCombMass = 0
         local lastConstructMass = constructMass()
