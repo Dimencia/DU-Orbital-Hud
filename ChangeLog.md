@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.72 - Variable Updates
+- proper formatting of local and global variables for consistency.  Databank Wipe is advised. (You will not lose saved locations)
+
 Version 4.71 - Bug Fixes
 - Fixed Interplanetary display updating with change from custom to planet and atmo to space (again)
 - Changed upper Warning Messages to not be hidden when Buttons shown
@@ -9,7 +12,6 @@ Version 4.71 - Bug Fixes
 - Fixed Landing Gear sensing and operation
 - Fixed emergency warp to cancel if Emergency Warp mode toggled off or cancellation key is pressed.
 - Fixed hover engines performing brake landing.
-- renaming of variables for consistancy
 
 Version 4.70 - Updates And Bug Fixes
 - Changed Glide Re-Entry to Parachute Re-Entry.  Recommend brown pants.  Do NOT use if you have not performed a Brake Landing in Atmosphere

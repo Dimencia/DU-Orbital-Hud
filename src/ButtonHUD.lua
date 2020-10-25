@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.71
+        VERSION_NUMBER = 4.72
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -149,10 +149,10 @@ function script.onStart()
         TotalFlightTime = 0
         HasGear = false
         AutopilotPlanetGravity = 0
-        displayOrbit = true
+        DisplayOrbit = true
         AutopilotEndSpeed = 0
         SavedLocations = {}
-                
+
         -- Local Variables used only within onStart
         local markers = {}
         local PreviousYawAmount = 0
@@ -203,7 +203,7 @@ function script.onStart()
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY"}
         AutoVariables = {"EmergencyWarp", "HasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
-                         "Autopilot", "TurnBurn", "AltitudeHold", "displayOrbit", "BrakeLanding",
+                         "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
@@ -980,7 +980,7 @@ function script.onStart()
                         dbHud.setStringValue(v, jencode(nil))
                     end
                     for k, v in pairs(AutoVariables) do
-                        dbHud.setStringValue(v, jencode(nil))
+                        if v ~= "SavedLocations" then dbHud.setStringValue(v, jencode(nil)) end
                     end
                     MsgText =
                         "Databank wiped. New variables will save after re-enter seat and exit"
@@ -1376,10 +1376,10 @@ function script.onStart()
         end)
         MakeButton("Show Orbit Display", "Hide Orbit Display", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
             function()
-                return displayOrbit
+                return DisplayOrbit
             end, function()
-                displayOrbit = not displayOrbit
-                if (displayOrbit) then
+                DisplayOrbit = not DisplayOrbit
+                if (DisplayOrbit) then
                     MsgText = "Orbit Display Enabled"
                 else
                     MsgText = "Orbit Display Disabled"
@@ -1505,7 +1505,7 @@ function script.onStart()
             DrawSpeed(newContent, spd)
 
             DrawWarnings(newContent)
-            DisplayOrbit(newContent)
+            DisplayOrbitScreen(newContent)
             if screen_2 then
                 local pos = vec3(core.getConstructWorldPos())
                 local x = 960 + pos.x / MapXRatio
@@ -1980,9 +1980,9 @@ function script.onStart()
             newContent[#newContent + 1] = "</g>"
         end
 
-        function DisplayOrbit(newContent)
+        function DisplayOrbitScreen(newContent)
             if orbit ~= nil and unit.getAtmosphereDensity() < 0.2 and planet ~= nil and orbit.apoapsis ~= nil and
-                orbit.periapsis ~= nil and orbit.period ~= nil and orbit.apoapsis.speed > 5 and displayOrbit then
+                orbit.periapsis ~= nil and orbit.period ~= nil and orbit.apoapsis.speed > 5 and DisplayOrbit then
                 -- If orbits are up, let's try drawing a mockup
                 local orbitMapX = 75
                 local orbitMapY = 0
@@ -3803,7 +3803,7 @@ function script.onTick(timerId)
         if showHud then
             updateHud(newContent) -- sets up Content for us
         else
-            DisplayOrbit(newContent)
+            DisplayOrbitScreen(newContent)
             DrawWarnings(newContent)
         end
 
