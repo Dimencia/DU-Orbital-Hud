@@ -1,9 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
 Version 4.72 - Variable Updates
-- IMPORTANRT: proper formatting of local and global variables for consistency.  Databank Wipe is advised.
-- proper formatting of local and global variables for consistency.  Databank Wipe is advised. (You will not lose saved locations)
-- fixed databank wipe to not wipe saved locations.
+- IMPORTANT: Databank Wipe is advised. (You will not lose saved locations)
+- Proper formatting of local and global variables for consistency.  
+- Fixed databank wipe to not wipe saved locations.
 - Autopilot locations now in alphabetical order.
 
 Version 4.71 - Bug Fixes
