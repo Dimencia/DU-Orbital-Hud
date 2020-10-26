@@ -6,6 +6,7 @@ Version 4.73 - Atmosphere Rocket Engine assist
 - Enhanced AGG when toggling on after already in use so it reacts faster.
 - Altimeter support for negative altitude, turns red when < 0 m and counts up as you go down
 - Added atmospheric rocket engine assist, code provided by Azraeil.  Lets rockets assist in atmosphere while in throttle mode without firing constantly and wasting fuel, same as with cruise control already.  Rocket will toggle off automatically when at 85% of target speed as determined by either throttle setting * max speed in atmo (1050) or MaxGameVelocity parameter.  In cruise control mode it will toggle at 85% of desired cruise speed.
+- Added notification if Rockets are on down bottom.
 
 Version 4.72 - Variable Updates
 - IMPORTANT: Databank Wipe is advised. (You will not lose saved locations)

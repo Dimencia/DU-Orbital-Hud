@@ -1985,7 +1985,10 @@ function script.onStart()
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">E-WARP ENGAGED</text>]],
                                                   warningX, ewarpY)
             end                
-            if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
+            if IsBoosting then
+                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">ROCKET BOOST ENABLED</text>]],
+                                                  warningX, ewarpY+20)
+            end                  if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Target AGG Altitude: %s</text>]],
                     warningX, apY, getDistanceDisplayString2(AntigravTargetAltitude))
             elseif Autopilot and AutopilotTargetName ~= "None" then
