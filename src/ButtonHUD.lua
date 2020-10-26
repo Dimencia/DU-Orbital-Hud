@@ -36,6 +36,8 @@ function script.onStart()
         PrimaryB = 255 -- export: Primary HUD color
         centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement.
         centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement. 
+        throtPosX = 1110 -- export: X position of Throttle Indicator, default 1110 to put it to right of default AH centerX parameter.
+        throtPosY = 540 -- export: Y position of Throttle indicator, default is 540 to place it centered on default AH centerY parameter.
         vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
         vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
         altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
@@ -1708,8 +1710,8 @@ function script.onStart()
 
         function DrawThrottle(newContent, flightStyle, throt, flightValue)
 
-            local y1 = centerY+65
-            local y2 = centerY+75
+            local y1 = throtPosY+65
+            local y2 = throtPosY+75
             if isRemote() == 1 then
                 y1 = 55
                 y2 = 65
@@ -1730,15 +1732,15 @@ function script.onStart()
                     <path class="linethick" d="M %d %d L %d %d L %d %d L %d %d"/>
                     <g transform="translate(0 %d)">
                         <polygon points="%d,%d %d,%d %d,%d"/>
-                    </g>]], throtclass, centerX+143, centerY-50, centerX+150, centerY-50, centerX+150, centerY+50, centerX+143, centerY+50, (1 - math.abs(throt)), 
-                    centerX+130, centerY+50, centerX+125, centerY+53, centerX+125, centerY+47)
+                    </g>]], throtclass, throtPosX-7, throtPosY-50, throtPosX, throtPosY-50, throtPosX, throtPosY+50, throtPosX-7, throtPosY+50, (1 - math.abs(throt)), 
+                    throtPosX-20, throtPosY+50, throtPosX-25, throtPosY+53, throtPosX-25, throtPosY+47)
             end
             newContent[#newContent + 1] = stringf([[
                 <g class="pbright txtstart">
                         <text x="%d" y="%d">%s</text>
                         <text x="%d" y="%d">%d %s</text>
                 </g>
-            </g>]], centerX+150, y1, label, centerX+150, y2, value, unit)
+            </g>]], throtPosX, y1, label, throtPosX, y2, value, unit)
         end
 
         -- Draw vertical speed indicator - Code by lisa-lionheart 
@@ -1922,7 +1924,7 @@ function script.onStart()
         end
 
         function DrawPrograde (newContent, atmos, velocity, speed, centerX, centerY)
-            if speed > 5 then
+            if speed > 5 and atmos == 0 then
                 local horizonRadius = circleRad -- Aliased globa
                 local pitchRange = 20
                 local yawRange = 20
@@ -1963,16 +1965,14 @@ function script.onStart()
 
                 distance = math.sqrt((dx)^2 + (dy)^2)
                 -- Retrograde Dot
-                if atmos == 0 then
-                    if distance < horizonRadius then
-                        newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', x, y)
-                        -- Draw a dot or whatever at x,y, it's inside the AH
-                    else
-                        local angle = math.atan(dy,dx) 
-                        local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
-                        local projectedY = centerY + horizonRadius*math.sin(angle)
-                            newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', projectedX, projectedY)
-                    end
+                if distance < horizonRadius then
+                    newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', x, y)
+                    -- Draw a dot or whatever at x,y, it's inside the AH
+                else
+                    local angle = math.atan(dy,dx) 
+                    local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
+                    local projectedY = centerY + horizonRadius*math.sin(angle)
+                    newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', projectedX, projectedY)
                 end
             end
         end
