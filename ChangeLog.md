@@ -1,5 +1,13 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.74
+- Changed warp widget to show up if a target is selected and it is more than 2 SU away.
+- Added retrograde red dot to AH while in space.  Make white dot (prograde) show in atmosphere. Smaller dots.
+- Added support for Fuel Tank Handling talen for unslotted fuel tank calculation.  Must use value of person who placed the tank, 1-5 for each type of tank.  This is in addition to Fuel Tank Optimization
+- Fixed Elemental Damage sometimes reporting 99% when fully healed and no damaged componet total listed.
+- Moved throttle to right side of AH to make room for Roll value.
+- Updated formattime to show days and hours, or hours and min, or min and sec, or sec
+
 Version 4.73 - Atmosphere Rocket Engine assist
 - Changed landed ground target height to user variable instead of 0 if landing gear used.  Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear, not countersunk, on bottom of ship.  14 appears to be Large landing gear setting.
 - Restored Glide Re-Entry as option to Parachute Re-Entry.  Still will not work well for some ships.

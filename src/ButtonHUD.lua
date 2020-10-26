@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.73
+        VERSION_NUMBER = 4.74
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -76,6 +76,9 @@ function script.onStart()
         fuelTankOptimizationAtmo = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
         fuelTankOptimizationSpace = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
         fuelTankOptimizationRocket = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
+        fuelTankHandlingAtmo = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
+        fuelTankHandlingSpace = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
+        fuelTankHandlingRocket = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
@@ -201,7 +204,8 @@ function script.onStart()
                              "brakeFlatFactor", "autoRollFactor", "turnAssistFactor", "torqueFactor",
                              "AutoTakeoffAltitude", "TargetHoverHeight", "AutopilotInterplanetaryThrottle",
                              "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankOptimizationAtmo",
-                             "fuelTankOptimizationSpace", "fuelTankOptimizationRocket", "RemoteFreeze",
+                             "fuelTankOptimizationSpace", "fuelTankOptimizationRocket", "fuelTankHandlingAtmo",
+                             "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight"}
@@ -294,6 +298,9 @@ function script.onStart()
                         massEmpty = 182.67
                     end
                     curMass = mass - massEmpty
+                    if fuelTankHandlingAtmo > 0 then
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
+                    end
                     if fuelTankOptimizationAtmo > 0 then
                         vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
                     end
@@ -317,6 +324,9 @@ function script.onStart()
                         massEmpty = 886.72
                     end
                     curMass = mass - massEmpty
+                    if fuelTankHandlingRocket > 0 then
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
+                    end
                     if fuelTankOptimizationRocket > 0 then
                         vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
                     end
@@ -337,6 +347,9 @@ function script.onStart()
                         massEmpty = 988.67
                     end
                     curMass = mass - massEmpty
+                    if fuelTankHandlingSpace > 0 then
+                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
+                    end
                     if fuelTankOptimizationSpace > 0 then
                         vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
                     end
@@ -930,9 +943,9 @@ function script.onStart()
                     markers = {}
                 end
             end
-            percentDam = mfloor((curShipHP * 100 / maxShipHP))
+            percentDam = mfloor((curShipHP / maxShipHP)*100)
             if currentConstructMass < lastConstructMass then
-                voxelDam = math.ceil(100 * (currentConstructMass - updateMass()) / honeyCombMass)
+                voxelDam = math.floor( ((currentConstructMass - updateMass()) / honeyCombMass) * 100)
                 lastConstructMass = currentConstructMass
             end
             if voxelDam < 100 or percentDam < 100 then
@@ -1521,11 +1534,11 @@ function script.onStart()
                if not IsInFreeLook() or brightHud then
                     if unit.getClosestPlanetInfluence() > 0 then
                         DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, "ROLL")
-                        DrawPrograde(newContent, originalPitch, originalRoll, atmos, velocity, speed, centerX, centerY)
+                        DrawPrograde(newContent, atmos, velocity, speed, centerX, centerY)
                         DrawAltitudeDisplay(newContent, altitude, atmos)
                     else
                         DrawArtificialHorizon(newContent, pitch, roll, atmos, centerX, centerY, "YAW")
-                        DrawPrograde(newContent, originalPitch, originalRoll, atmos, velocity, speed, centerX, centerY)
+                        DrawPrograde(newContent, atmos, velocity, speed, centerX, centerY)
                     end
                 end
             end
@@ -1717,15 +1730,15 @@ function script.onStart()
                     <path class="linethick" d="M %d %d L %d %d L %d %d L %d %d"/>
                     <g transform="translate(0 %d)">
                         <polygon points="%d,%d %d,%d %d,%d"/>
-                    </g>]], throtclass, centerX-143, centerY-50, centerX-150, centerY-50, centerX-150, centerY+50, centerX-143, centerY+50, (1 - math.abs(throt)), 
-                    centerX-130, centerY+50, centerX-125, centerY+53, centerX-125, centerY+47)
+                    </g>]], throtclass, centerX+143, centerY-50, centerX+150, centerY-50, centerX+150, centerY+50, centerX+143, centerY+50, (1 - math.abs(throt)), 
+                    centerX+130, centerY+50, centerX+125, centerY+53, centerX+125, centerY+47)
             end
             newContent[#newContent + 1] = stringf([[
                 <g class="pbright txtstart">
                         <text x="%d" y="%d">%s</text>
                         <text x="%d" y="%d">%d %s</text>
                 </g>
-            </g>]], centerX-150, y1, label, centerX-150, y2, value, unit)
+            </g>]], centerX+150, y1, label, centerX+150, y2, value, unit)
         end
 
         -- Draw vertical speed indicator - Code by lisa-lionheart 
@@ -1766,6 +1779,7 @@ function script.onStart()
             local horizonRadius = circleRad -- Aliased global
             if horizonRadius > 0 then
                 local pitchC = mfloor(originalPitch)
+                local rollC = mfloor(originalRoll)
                 local len = 0
                 local tickerPath = stringf([[<path transform="rotate(%f,%d,%d)" class="dim line" d="]], (-1 * originalRoll), centerX, centerY)
                 newContent[#newContent + 1] = stringf([[<clipPath id="cut"><circle r="%f" cx="%d" cy="%d"/></clipPath>]],(horizonRadius - 1), centerX, centerY)
@@ -1809,7 +1823,13 @@ function script.onStart()
                     <text x="%d" y="%d">%s</text>
                     <text x="%d" y="%d">%d deg</text>
                 </g>
-                ]], centerX, centerY-circleRad-20, pitchstring, centerX, centerY-circleRad-10, pitchC)
+                ]], centerX, centerY-horizonRadius-20, pitchstring, centerX, centerY-horizonRadius-10, pitchC)
+                newContent[#newContent + 1] = stringf([["
+                <g class="pdim txt txtmid">
+                    <text x="%d" y="%d">%s</text>
+                    <text x="%d" y="%d">%d deg</text>
+                </g>
+                ]], centerX-horizonRadius-20, centerY, bottomText, centerX-horizonRadius-20, centerY+10, rollC)
             end
         end
 
@@ -1901,12 +1921,12 @@ function script.onStart()
             end
         end
 
-        function DrawPrograde (newContent, originalPitch, originalRoll, atmos, velocity, speed, centerX, centerY)
-            if atmos == 0 and speed > 5 then
+        function DrawPrograde (newContent, atmos, velocity, speed, centerX, centerY)
+            if speed > 5 then
                 local horizonRadius = circleRad -- Aliased globa
                 local pitchRange = 20
                 local yawRange = 20
-
+                velocity = vec3(velocity)
                 local relativePitch = getRelativePitch(velocity)
                 local relativeYaw = getRelativeYaw(velocity)
                 
@@ -1918,7 +1938,7 @@ function script.onStart()
                 local distance = math.sqrt((dx)^2 + (dy)^2)
                     
                 if distance < horizonRadius then
-                    newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="3" stroke="white" stroke-width="3" fill="white" />', x, y)
+                    newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', x, y)
                     -- Draw a dot or whatever at x,y, it's inside the AH
                 else
                     -- x,y is outside the AH.  Figure out how to draw an arrow on the edge of the circle pointing to it.
@@ -1931,7 +1951,28 @@ function script.onStart()
                     -- These are backwards from what they're supposed to be.  Don't know why, that's just what makes it work apparently
                     local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
                     local projectedY = centerY + horizonRadius*math.sin(angle)
-                        newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="3" stroke="white" stroke-width="3" fill="white" />', projectedX, projectedY)
+                        newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', projectedX, projectedY)
+                end
+                relativePitch = getRelativePitch(-velocity)
+                relativeYaw = getRelativeYaw(-velocity)
+                
+                dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
+                dy = (relativePitch/pitchRange)*horizonRadius
+                x = centerX + dx
+                y = centerY + dy
+
+                distance = math.sqrt((dx)^2 + (dy)^2)
+                -- Retrograde Dot
+                if atmos == 0 then
+                    if distance < horizonRadius then
+                        newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', x, y)
+                        -- Draw a dot or whatever at x,y, it's inside the AH
+                    else
+                        local angle = math.atan(dy,dx) 
+                        local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
+                        local projectedY = centerY + horizonRadius*math.sin(angle)
+                            newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', projectedX, projectedY)
+                    end
                 end
             end
         end
@@ -3325,13 +3366,16 @@ function script.onStart()
         end
 
         function FormatTimeString(seconds)
+            local days = mfloor(seconds / 86400)
             local hours = mfloor(seconds / 3600)
             local minutes = mfloor(seconds / 60 % 60)
             local seconds = mfloor(seconds % 60)
             if seconds < 0 or hours < 0 or minutes < 0 then
                 return "0s"
             end
-            if hours > 0 then
+            if days > 0 then 
+                return days .. "d " .. hours .."h "
+            elseif hours > 0 then
                 return hours .. "h " .. minutes .. "m "
             elseif minutes > 0 then
                 return minutes .. "m " .. seconds .. "s"
@@ -3707,9 +3751,12 @@ function script.onTick(timerId)
                     unit.setTimer("reEmergencyWarp", 1)
                 end
             end
-            if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
+            if json.decode(warpdrive.getData()).destination ~= "Unknown" and json.decode(warpdrive.getData()).distance > 400000 then
                 warpdrive.show()
                 showWarpWidget = true
+            else
+                warpdrive.hide()
+                showWarpWidget = false
             end
         end        
     elseif timerId == "oneSecond" then
