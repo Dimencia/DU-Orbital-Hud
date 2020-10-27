@@ -7,6 +7,7 @@ Version 4.74
 - Fixed Elemental Damage sometimes reporting 99% when fully healed and no damaged componet total listed.
 - Moved throttle, default position, to right side of AH to make room for Roll value.  Added throttle position x and y user parameters.
 - Updated formattime to show days and hours, or hours and min, or min and sec, or sec
+- Fixed issue with ships that had landing gear but no longer have it but databank still thought they did.
 
 Version 4.73 - Atmosphere Rocket Engine assist
 - Changed landed ground target height to user variable instead of 0 if landing gear used.  Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear, not countersunk, on bottom of ship.  14 appears to be Large landing gear setting.

@@ -211,7 +211,7 @@ function script.onStart()
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight"}
-        AutoVariables = {"EmergencyWarp", "HasGear", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
+        AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
@@ -417,7 +417,9 @@ function script.onStart()
         end
         if TargetGroundAltitude ~= nil then
             Nav.axisCommandManager:setTargetGroundAltitude(TargetGroundAltitude)
-            if TargetGroundAltitude == 0 and not HasGear then GearExtended = true end
+            if TargetGroundAltitude == 0 and not HasGear then 
+                GearExtended = true 
+            end
         else 
             if GearExtended or not HasGear then
                 Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
@@ -481,9 +483,6 @@ function script.onStart()
             end
     
             table.sort(AtlasOrdered, atlasCmp)
-            -- for i, v in ipairs(AtlasOrdered) do
-            --     system.print("Index: ".. i .. " Name: ".. v.name .. " Atlas: " .. v.index)
-            -- end    
         end
 
         function AddLocationsToAtlas() -- Just called once during init really
@@ -1928,9 +1927,9 @@ function script.onStart()
                 local horizonRadius = circleRad -- Aliased globa
                 local pitchRange = 20
                 local yawRange = 20
-                velocity = vec3(velocity)
-                local relativePitch = getRelativePitch(velocity)
-                local relativeYaw = getRelativeYaw(velocity)
+                local velo = vec3(velocity)
+                local relativePitch = getRelativePitch(velo)
+                local relativeYaw = getRelativeYaw(velo)
                 
                 local dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
                 local dy = (relativePitch/pitchRange)*horizonRadius
@@ -1955,8 +1954,8 @@ function script.onStart()
                     local projectedY = centerY + horizonRadius*math.sin(angle)
                         newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', projectedX, projectedY)
                 end
-                relativePitch = getRelativePitch(-velocity)
-                relativeYaw = getRelativeYaw(-velocity)
+                relativePitch = getRelativePitch(-velo)
+                relativeYaw = getRelativeYaw(-velo)
                 
                 dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
                 dy = (relativePitch/pitchRange)*horizonRadius
