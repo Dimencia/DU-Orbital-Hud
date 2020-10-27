@@ -1,5 +1,15 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.74 - MAJOR fix to wings and aerilons - Upgrade strongly recommended
+- It turns out that when we made the change to prevent vertical space engines firing randomly decaying orbits, we also removed Wing Engines.  This has been restored and you should see vastly improved performance from your lift surfaces, especially if you hit spacebar.  Ask Dimencia for more info.
+- Changed warp widget to show up if a target is selected and it is more than 2 SU away.
+- Added retrograde red dot to AH while in space.  Smaller dots.  Show prograde dot in atmo when going fast enough for it to matter.
+- Added support for Fuel Tank Handling talen for unslotted fuel tank calculation.  Must use value of person who placed the tank, 1-5 for each type of tank.  This is in addition to Fuel Tank Optimization.  Unslotted fuel tank percentage will closely match slotted if values of Handling and Optimization are correct.
+- Fixed Elemental Damage sometimes reporting 99% when fully healed and no damaged componet total listed.
+- Moved throttle, default position, to right side of AH to make room for Roll value.  Added throttle position x and y user parameters.
+- Updated formattime to show days and hours, or hours and min, or min and sec, or sec
+- Fixed issue with ships that had landing gear but no longer have it but databank still thought they did.
+
 Version 4.73 - Atmosphere Rocket Engine assist
 - Changed landed ground target height to user variable instead of 0 if landing gear used.  Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear, not countersunk, on bottom of ship.  14 appears to be Large landing gear setting.
 - Restored Glide Re-Entry as option to Parachute Re-Entry.  Still will not work well for some ships.
