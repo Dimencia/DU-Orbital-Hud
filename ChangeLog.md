@@ -1,6 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.74
+Version 4.74 - MAJOR fix to wings and aerilons - Upgrade strongly recommended
+- It turns out that when we made the change to prevent vertical space engines firing randomly decaying orbits, we also removed Wing Engines.  This has been restored and you should see vastly improved performance from your lift surfaces, especially if you hit spacebar.  Ask Dimencia for more info.
 - Changed warp widget to show up if a target is selected and it is more than 2 SU away.
 - Added retrograde red dot to AH while in space.  Smaller dots.  Show prograde dot in atmo when going fast enough for it to matter.
 - Added support for Fuel Tank Handling talen for unslotted fuel tank calculation.  Must use value of person who placed the tank, 1-5 for each type of tank.  This is in addition to Fuel Tank Optimization.  Unslotted fuel tank percentage will closely match slotted if values of Handling and Optimization are correct.
