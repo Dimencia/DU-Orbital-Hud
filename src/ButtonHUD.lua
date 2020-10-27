@@ -1923,7 +1923,7 @@ function script.onStart()
         end
 
         function DrawPrograde (newContent, atmos, velocity, speed, centerX, centerY)
-            if speed > 5 and atmos == 0 then
+            if (speed > 5 and atmos == 0) or (speed > MinAutopilotSpeed) then
                 local horizonRadius = circleRad -- Aliased globa
                 local pitchRange = 20
                 local yawRange = 20
@@ -1964,14 +1964,16 @@ function script.onStart()
 
                 distance = math.sqrt((dx)^2 + (dy)^2)
                 -- Retrograde Dot
-                if distance < horizonRadius then
-                    newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', x, y)
-                    -- Draw a dot or whatever at x,y, it's inside the AH
-                else
-                    local angle = math.atan(dy,dx) 
-                    local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
-                    local projectedY = centerY + horizonRadius*math.sin(angle)
-                    newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', projectedX, projectedY)
+                if( atmos == 0) then
+                    if distance < horizonRadius then
+                        newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', x, y)
+                        -- Draw a dot or whatever at x,y, it's inside the AH
+                    else
+                        local angle = math.atan(dy,dx) 
+                        local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
+                        local projectedY = centerY + horizonRadius*math.sin(angle)
+                        newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', projectedX, projectedY)
+                    end
                 end
             end
         end

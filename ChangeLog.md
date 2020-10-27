@@ -2,7 +2,7 @@
 
 Version 4.74
 - Changed warp widget to show up if a target is selected and it is more than 2 SU away.
-- Added retrograde red dot to AH while in space.  Smaller dots.
+- Added retrograde red dot to AH while in space.  Smaller dots.  Show prograde dot in atmo when going fast enough for it to matter.
 - Added support for Fuel Tank Handling talen for unslotted fuel tank calculation.  Must use value of person who placed the tank, 1-5 for each type of tank.  This is in addition to Fuel Tank Optimization.  Unslotted fuel tank percentage will closely match slotted if values of Handling and Optimization are correct.
 - Fixed Elemental Damage sometimes reporting 99% when fully healed and no damaged componet total listed.
 - Moved throttle, default position, to right side of AH to make room for Roll value.  Added throttle position x and y user parameters.
