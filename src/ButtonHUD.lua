@@ -4604,7 +4604,11 @@ function script.onFlush()
             Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity, 'airfoil',
                 'ground', '', tolerancePercentToSkipOtherPriorities)
         else
-            Nav:setEngineForceCommand(verticalStrafeEngineTags, vec3(), keepCollinearity)
+            Nav:setEngineForceCommand(verticalStrafeEngineTags, vec3(), keepCollinearity) -- Reset vertical engines but not airfoils or ground
+            Nav:setEngineForceCommand('airfoil vertical', verticalStrafeAcceleration, keepCollinearity, 'airfoil',
+            '', '', tolerancePercentToSkipOtherPriorities)
+            Nav:setEngineForceCommand('ground vertical', verticalStrafeAcceleration, keepCollinearity, 'ground',
+            '', '', tolerancePercentToSkipOtherPriorities)
         end
     elseif (verticalCommandType == axisCommandType.byTargetSpeed) then
         local verticalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromTargetSpeed(
