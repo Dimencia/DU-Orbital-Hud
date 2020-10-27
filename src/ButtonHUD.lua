@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.74
+        VERSION_NUMBER = 4.75
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -3770,7 +3770,7 @@ function script.onTick(timerId)
             if HasSpaceRadar and EmergencyWarp then
                 local id, distance = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
                 if id ~= nil and id ~= "" then
-                    if (math.floor(distance) < EmergencyWarpDistance) and NotTriedEmergencyWarp then
+                    if (math.floor(distance) < EmergencyWarpDistance) and NotTriedEmergencyWarp  and json.decode(warpdrive.getData()).errorMsg ~= "PLANET TOO CLOSE" then
                         InEmergencyWarp = true
                         NotTriedEmergencyWarp = false
                     end
@@ -3832,8 +3832,10 @@ function script.onTick(timerId)
         LastOdometerOutput = table.concat(newContent, "")
         collectgarbage("collect")
     elseif timerId == "reEmergencyWarp" then
-        NotTriedEmergencyWarp = true
-        InEmergencyWarp = true
+        if EmergencyWarp then
+            NotTriedEmergencyWarp = true
+            InEmergencyWarp = true
+        end
         unit.stopTimer("reEmergencyWarp")
     elseif timerId == "msgTick" then
         -- This is used to clear a message on screen after a short period of time and then stop itself
@@ -3849,6 +3851,7 @@ function script.onTick(timerId)
             warpdrive.activateWarp()
             warpdrive.show()
             showWarpWidget = true
+            EmergencyWarp = false
         end
         unit.stopTimer("emergencyWarpTick")
     elseif timerId == "animateTick" then
@@ -4266,8 +4269,10 @@ function script.onTick(timerId)
             autoRoll = true
             
             if Reentry then
-                if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= ReentrySpeed then -- This thing is dumb.
-                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed)
+                local fasterSpeed = ReentrySpeed
+                if CoreAltitude > 15000 and not ReentryMode then fasterSpeed = fasterSpeed * (math.floor(CoreAltitude / 10000)+1) end
+                if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= fasterSpeed then -- This thing is dumb.
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, fasterSpeed)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                 end 
