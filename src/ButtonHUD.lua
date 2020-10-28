@@ -3888,7 +3888,7 @@ function script.onTick(timerId)
         end
         LastIsWarping = isWarping
         if antigrav and ((antigrav.getState() == 1 and not desiredBaseAltitude) or AntigravJustToggledOn) then -- initialise if needed
-            desiredBaseAltitude = antigrav.getBaseAltitude()
+            desiredBaseAltitude = CoreAltitude
             if AntigravJustToggledOn then AntigravJustToggledOn = false end
         end
         if BrakeIsOn then
@@ -4277,7 +4277,7 @@ function script.onTick(timerId)
                 end 
                 if not ReentryMode then
                     targetPitch = -80
-                    if unit.getAtmosphereDensity() > 0.05 then
+                    if unit.getAtmosphereDensity() > 0.02 then
                         MsgText = "PARACHUTE DEPLOYED"
                         Reentry = false
                         BrakeLanding = true
@@ -4409,57 +4409,55 @@ function script.onTick(timerId)
         LastEccentricity = orbit.eccentricity
         -- antigrav by zerofg
         -- it's very rough but get the job done, AGG are weird
-        if antigrav and CoreAltitude < 200000 and antigrav.getState() == 1 then
-            if AntigravTargetAltitude == nil then -- no target : try to stabilize if too far from actual altitude (
-                local AGGtargetDistance = CoreAltitude - antigrav.getBaseAltitude()
-                if CoreAltitude > 800 and AGGtargetDistance < -200 then
-                    desiredBaseAltitude = math.max(CoreAltitude + 100, 1000)
-                elseif AGGtargetDistance > 200 then
-                    desiredBaseAltitude = CoreAltitude - 100
-                end
-
-            else -- I tried using a PID but didn't work that well, so I'm just regulating speed instead
-                local AGGtargetDistance = AntigravTargetAltitude - CoreAltitude
-                -- totaly stole the code from lisa-lionheart for vSpeed
-                local velocity = vec3(core.getWorldVelocity())
-                local up = vec3(core.getWorldVertical()) * -1
-                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-
-                -- this is about as fast as AGG can go, and is conveniently below the atmos burn speed (1044 km/h)
-                local maxVSpeed = 290
-                local minVSpeed = -290
-
-                -- when under "strong" planet influence, you can easily get below you AGG base altitude if not carefull
-                if unit.getClosestPlanetInfluence() > 0.3 then
-                    minVSpeed = -190
-                end
-
-                -- adjust max speed based on distance, but at least 10m/s
-                minVSpeed = math.min(math.max(minVSpeed, -math.abs(AGGtargetDistance) / 20.0), -10)
-                maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
-
-                if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
-                    desiredBaseAltitude = CoreAltitude + 100
-
-                elseif vSpd > maxVSpeed then -- not as bad as going too fast down but still need to slow down or at least stop accelerating
-                    desiredBaseAltitude = math.max(CoreAltitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
-
-                elseif math.abs(AGGtargetDistance) > 150 or math.abs(vSpd) > 15 then
-                    if math.abs(vSpd) > 10 then
-                        desiredBaseAltitude = CoreAltitude +
-                                                  math.max(math.min(AGGtargetDistance - vSpd / 10.0, 100), -100)
-                    else
-                        desiredBaseAltitude = CoreAltitude + math.max(math.min(AGGtargetDistance, 100), -100)
+        if antigrav and CoreAltitude < 200000 then
+            if antigrav.getState() == 1 then
+                if AntigravTargetAltitude == nil then -- no target : try to stabilize if too far from actual altitude (
+                    local AGGtargetDistance = CoreAltitude - antigrav.getBaseAltitude()
+                    if CoreAltitude > 800 and AGGtargetDistance < -200 then
+                        desiredBaseAltitude = math.max(CoreAltitude + 100, 1000)
+                    elseif AGGtargetDistance > 200 then
+                        desiredBaseAltitude = CoreAltitude - 100
                     end
 
-                else -- getting close to the target
-                    desiredBaseAltitude = AntigravTargetAltitude
-                    if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 30 then -- very close and not much speed let's stop there
-                        AntigravTargetAltitude = nil
-                        BrakeIsOn = true
+                else -- I tried using a PID but didn't work that well, so I'm just regulating speed instead
+                    local AGGtargetDistance = AntigravTargetAltitude - CoreAltitude
+                    -- totaly stole the code from lisa-lionheart for vSpeed
+                    local velocity = vec3(core.getWorldVelocity())
+                    local up = vec3(core.getWorldVertical()) * -1
+                    local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                    -- this is about as fast as AGG can go, and is conveniently below the atmos burn speed (1044 km/h)
+                    local maxVSpeed = 290
+                    local minVSpeed = -290
+                    -- when under "strong" planet influence, you can easily get below you AGG base altitude if not carefull
+                    if unit.getClosestPlanetInfluence() > 0.3 then
+                        minVSpeed = -190
                     end
+                    -- adjust max speed based on distance, but at least 10m/s
+                    minVSpeed = math.min(math.max(minVSpeed, -math.abs(AGGtargetDistance) / 20.0), -10)
+                    maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
+                    if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
+                        desiredBaseAltitude = CoreAltitude + 100
 
+                    elseif vSpd > maxVSpeed then -- not as bad as going too fast down but still need to slow down or at least stop accelerating
+                        desiredBaseAltitude = math.max(CoreAltitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
+                    elseif math.abs(AGGtargetDistance) > 150 or math.abs(vSpd) > 15 then
+                        if math.abs(vSpd) > 10 then
+                            desiredBaseAltitude = CoreAltitude +
+                                                    math.max(math.min(AGGtargetDistance - vSpd / 10.0, 100), -100)
+                        else
+                            desiredBaseAltitude = CoreAltitude + math.max(math.min(AGGtargetDistance, 100), -100)
+                        end
+                    else -- getting close to the target
+                        desiredBaseAltitude = AntigravTargetAltitude
+                        if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 30 then -- very close and not much speed let's stop there
+                            AntigravTargetAltitude = nil
+                            BrakeIsOn = true
+                        end
+
+                    end
                 end
+            else
+                desiredBaseAltitude = CoreAltitude
             end
         end
     end
@@ -4671,7 +4669,7 @@ function script.onFlush()
     end
 
     -- antigrav
-    if antigrav and antigrav.getState() == 1 and desiredBaseAltitude ~= antigrav.getBaseAltitude() then
+    if antigrav and desiredBaseAltitude ~= antigrav.getBaseAltitude() then
         antigrav.setBaseAltitude(desiredBaseAltitude)
     end
 end
