@@ -4270,7 +4270,7 @@ function script.onTick(timerId)
             
             if Reentry then
                 local fasterSpeed = ReentrySpeed
-                if CoreAltitude > 15000 and not ReentryMode then fasterSpeed = fasterSpeed * (math.floor(CoreAltitude / 10000)+1) end
+                if CoreAltitude > 15000 and not ReentryMode then fasterSpeed = fasterSpeed * math.floor(CoreAltitude / 10000) end
                 if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= fasterSpeed then -- This thing is dumb.
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, fasterSpeed)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
