@@ -33,7 +33,7 @@ This is a general-purpose HUD for Dual Universe.  It includes a wide array of fe
 
 ## Examples and Tutorials
 
-https://www.twitch.tv/videos/748340916 - Demonstration of Use and Features
+https://www.youtube.com/watch?v=jQSkI0OcATU&feature=emb_logo - Demonstration of Use and Features
 
 ![Example](/ButtonHUD_example_1.png)
 
