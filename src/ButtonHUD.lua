@@ -4456,6 +4456,7 @@ function script.onTick(timerId)
                     desiredBaseAltitude = AntigravTargetAltitude
                     if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 30 then -- very close and not much speed let's stop there
                         AntigravTargetAltitude = nil
+                        BrakeIsOn = true
                     end
 
                 end
@@ -4971,8 +4972,10 @@ function script.onActionLoop(action)
             if AntigravTargetAltitude ~= nil then 
                 AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+                BrakeIsOn = false
             else
                 AntigravTargetAltitude = desiredBaseAltitude + 100
+                BrakeIsOn = false
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
@@ -4985,9 +4988,11 @@ function script.onActionLoop(action)
             if AntigravTargetAltitude ~= nil then
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+                BrakeIsOn = false
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
                 AntigravTargetAltitude = desiredBaseAltitude - 100
+                BrakeIsOn = false
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier

@@ -2,6 +2,7 @@
 
 Version 4.77
 - Fixed AGG button showing wrong state...again, no really.
+- Changed AGG behavior so brake toggles on when you reach target height.  Brake toggles off if you raise or lower target height.  (you can always toggle brake with CTRL like normal)
 
 Version 4.76
 - Slightly reduced multiple for Parachute Re-Entry initial speed when > 15000m
