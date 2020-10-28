@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.75
+        VERSION_NUMBER = 4.76
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -946,7 +946,7 @@ function script.onStart()
             end
             percentDam = mfloor((curShipHP / maxShipHP)*100)
             if currentConstructMass < lastConstructMass then
-                voxelDam = math.floor( ((currentConstructMass - updateMass()) / honeyCombMass) * 100)
+                voxelDam = math.ceil( ((currentConstructMass - updateMass()) / honeyCombMass) * 100)
                 lastConstructMass = currentConstructMass
             end
             if voxelDam < 100 or percentDam < 100 then
@@ -1444,8 +1444,7 @@ function script.onStart()
         end)
         y = y + buttonHeight + 20
         MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
-            return AntigravTargetAltitude ~= nil
-        end, ToggleAntigrav, function()
+            return antigrav.getState() == 0 end, ToggleAntigrav, function()
             return antigrav ~= nil
         end)   
         y = y + buttonHeight + 20

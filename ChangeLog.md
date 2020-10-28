@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.76
+- Slightly reduced multiple for Parachute Re-Entry initial speed when > 15000m
+- Fixed AGG button showing wrong state action.
+- Fix structural integrity 99% flashing, i hope.
+
 Version 4.75
 - Fine tuned emergency warp to not try if PLANET TOO CLOSE error condition. So - Must have Emergency Warp enabled, must not be too close to planet, must have a space radar contact within EmergercyWarpDistance, then it will try to warp if all other conditions met.
 - Parachute Re-Entry now with more butt-clenching goodness.  Starts at higher speed based on initial height if > 20000m.  (Still ends up at Re-Entry speed when you hit atmo)
