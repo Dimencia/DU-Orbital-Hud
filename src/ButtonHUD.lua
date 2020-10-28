@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.77
+        VERSION_NUMBER = 4.78
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -522,6 +522,34 @@ function script.onStart()
             end
         end
 
+        function UpdatePosition()
+            local index = -1
+            local newLocation
+            for k, v in pairs(SavedLocations) do
+                if v.name and v.name == CustomTarget.name then
+                    MsgText = v.name .. " saved location cleared"
+                    index = k
+                    break
+                end
+            end
+            if index ~= -1 then
+                newLocation = SavedLocations[index]
+                newLocation.position = vec3(core.getConstructWorldPos())
+                SavedLocations[index] = newLocation
+                index = -1
+                for k, v in pairs(atlas[0]) do
+                    if v.name and v.name == CustomTarget.name then
+                        index = k
+                    end
+                end
+                if index > -1 then
+                    atlas[0][index] = newLocation
+                end
+                UpdateAtlasLocationsList()
+                MsgText = CustomTarget.name .. " position updated"
+            end
+        end
+
         function ClearCurrentPosition()
             -- So AutopilotTargetIndex is special and not a real index.  We have to do this by hand.
             local index = -1
@@ -1026,7 +1054,9 @@ function script.onStart()
         function CheckButtons()
             for _, v in pairs(Buttons) do
                 if v.hovered then
-                    v.toggleFunction()
+                    if not v.drawCondition or v.drawCondition() then
+                        v.toggleFunction()
+                    end
                     v.hovered = false
                 end
             end
@@ -1368,7 +1398,15 @@ function script.onStart()
         MakeButton("Save Position", "Save Position", 200, apbutton.height, apbutton.x + apbutton.width + 30, apbutton.y,
             function()
                 return false
-            end, AddNewLocation)
+            end, AddNewLocation, function()
+                return AutopilotTargetIndex == 0 or CustomTarget == nil
+            end)
+        MakeButton("Update Position", "Update Position", 200, apbutton.height, apbutton.x + apbutton.width + 30, apbutton.y,
+            function()
+                return false
+            end, UpdatePosition, function()
+                return AutopilotTargetIndex > 0 and CustomTarget ~= nil
+            end)
         MakeButton("Clear Position", "Clear Position", 200, apbutton.height, apbutton.x - 200 - 30, apbutton.y,
             function()
                 return true
@@ -3475,7 +3513,9 @@ function script.onStart()
         end
 
         function GetAutopilotTravelTime()
-            AutopilotDistance = (AutopilotTargetPlanet.center - vec3(core.getConstructWorldPos())):len()
+            if not Autopilot then
+                AutopilotDistance = (AutopilotTargetPlanet.center - vec3(core.getConstructWorldPos())):len() -- This updates elsewhere if we're already piloting
+            end
             local velocity = core.getWorldVelocity()
             local accelDistance, accelTime =
                 Kinematic.computeDistanceAndTime(vec3(velocity):len(), MaxGameVelocity, -- From currently velocity to max
@@ -3676,7 +3716,7 @@ function script.onTick(timerId)
                 system.updateData(interplanetaryHeaderText,
                     '{"label": "Target", "value": "' .. AutopilotTargetName .. '", "unit":""}')
                 travelTime = GetAutopilotTravelTime() -- This also sets AutopilotDistance so we don't have to calc it again
-                Distance = AutopilotDistance
+                Distance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
                 if not TurnBurn then
                     BrakeDistance, BrakeTime = GetAutopilotBrakeDistanceAndTime(velMag)
                     MaxBrakeDistance, MaxBrakeTime = GetAutopilotBrakeDistanceAndTime(MaxGameVelocity)
@@ -4109,8 +4149,9 @@ function script.onTick(timerId)
             end
             -- If we're here, sadly, we really need to calc the distance every update (or tick)
             AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
+            local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
             system.updateData(widgetDistanceText, '{"label": "Distance", "value": "' ..
-                getDistanceDisplayString(AutopilotDistance) .. '", "unit":""}')
+                getDistanceDisplayString(displayDistance) .. '", "unit":""}')
             local aligned = true -- It shouldn't be used if the following condition isn't met, but just in case
 
             local projectedAltitude = (AutopilotTargetPlanet.center -
@@ -4479,9 +4520,9 @@ function script.onFlush()
     turnAssistFactor = math.max(turnAssistFactor, 0.01)
 
     -- final inputs
-    local finalPitchInput = PitchInput + PitchInput2 + system.getControlDeviceForwardInput()
-    local finalRollInput = RollInput + RollInput2 + system.getControlDeviceYawInput()
-    local finalYawInput = (YawInput + YawInput2) - system.getControlDeviceLeftRightInput()
+    local finalPitchInput = utils.clamp(PitchInput + PitchInput2 + system.getControlDeviceForwardInput(),-1,1)
+    local finalRollInput = utils.clamp(RollInput + RollInput2 + system.getControlDeviceYawInput(),-1,1)
+    local finalYawInput = utils.clamp((YawInput + YawInput2) - system.getControlDeviceLeftRightInput(),-1,1)
     local finalBrakeInput = BrakeInput
 
     -- Axis

@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.78
+- Fixed bug where some buttons could trigger while not visible
+- Fixed distance readout for autopilot
+- Improved vectoring to face autopilot targets
+
 Version 4.77
 - Fixed AGG button showing wrong state...again, no really.
 - Changed AGG behavior so brake toggles on when you reach target height.  Brake toggles off if you raise or lower target height.  (you can always toggle brake with CTRL like normal)
