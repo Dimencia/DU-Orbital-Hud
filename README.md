@@ -6,9 +6,6 @@ We've also just added a lua-commissions channel!  Non-scripters can post request
 
 We're also recruting for our in-game lua-focused org (with a bit of PVP focus on the side).  Check the discord for details
 
-## SAVE UPDATE
-> We have changed how saving settings works.  Put a databank on your ship and run (rerun) the autoconf.  Then right click seat, Advanced->Edit Lua Parameters.  Set your parameters.  Saving now occurs when you exit the seat/remote.  Loading occurs when you sit down in the chair.  If you need to override what is on the databank with new changes, toggle on the useTheseSettings parameter in Edit Lua Parameters.  Then when you sit down, it will use the parameters shown in Edit Lua Parameters.  It will still save them when you stand up, but will continue to use the Edit Lua Parameters until you turn off useTheseSettings. Alt-7 is only used to WIPE all parameters/flight status variables.
-
 # Overview
 
 This is a general-purpose HUD for Dual Universe.  It includes a wide array of features including:
@@ -33,7 +30,7 @@ This is a general-purpose HUD for Dual Universe.  It includes a wide array of fe
 
 ## Examples and Tutorials
 
-https://www.twitch.tv/videos/748340916 - Demonstration of Use and Features
+https://www.youtube.com/watch?v=jQSkI0OcATU&feature=emb_logo - Demonstration of Use and Features
 
 ![Example](/ButtonHUD_example_1.png)
 
