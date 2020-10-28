@@ -1444,7 +1444,7 @@ function script.onStart()
         end)
         y = y + buttonHeight + 20
         MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
-            return antigrav.getState() == 0 end, ToggleAntigrav, function()
+            return antigrav.getState() == 1 end, ToggleAntigrav, function()
             return antigrav ~= nil
         end)   
         y = y + buttonHeight + 20

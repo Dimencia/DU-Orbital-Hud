@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.77
+- Fixed AGG button showing wrong state...again, no really.
+
 Version 4.76
 - Slightly reduced multiple for Parachute Re-Entry initial speed when > 15000m
 - Fixed AGG button showing wrong state action.
