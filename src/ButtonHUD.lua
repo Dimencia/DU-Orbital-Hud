@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.77
+        VERSION_NUMBER = 4.78
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -34,16 +34,18 @@ function script.onStart()
         PrimaryR = 130 -- export: Primary HUD color
         PrimaryG = 224 -- export: Primary HUD color
         PrimaryB = 255 -- export: Primary HUD color
-        centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement.
-        centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement. 
+        centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Default 960. Use centerX=700 and centerY=980 for lower left placement.
+        centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Default 540. Use centerX=700 and centerY=980 for lower left placement. 
         throtPosX = 1110 -- export: X position of Throttle Indicator, default 1110 to put it to right of default AH centerX parameter.
         throtPosY = 540 -- export: Y position of Throttle indicator, default is 540 to place it centered on default AH centerY parameter.
         vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
         vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
         altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
         altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
-        fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side
-        fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side
+        fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side, set both fuelX and fuelY to 0 to hide fuel
+        fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side, set both fuelX and fuelY to 0 to hide fuel
+        opacityTop = 0.1 -- export: 0 to 1 for opacity of AH top half, default 0.1
+        opacityBottom = 0.3 -- export: 0 to 1 for opacity of AH bottom, default 0.3
         circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
@@ -150,8 +152,8 @@ function script.onStart()
         RadarMessage = ""
         LastOdometerOutput = ""
         Peris = 0
-        AntigravTargetAltitude = nil
         CoreAltitude = core.getAltitude()
+        AntigravTargetAltitude = CoreAltitude
         ElementsID = core.getElementIdList()
         LastTravelTime = system.getTime()
         TotalFlightTime = 0
@@ -211,7 +213,8 @@ function script.onStart()
                              "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
-                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength"}
+                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
+                            "opacityBottom", "opacityTop"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -260,6 +263,9 @@ function script.onStart()
         brakeToggle = BrakeToggleDefault
         autoRoll = autoRollPreference
         honeyCombMass = lastConstructMass - updateMass()
+        if antigrav and desiredBaseAltitude == nil then 
+                desiredBaseAltitude = CoreAltitude
+        end
         rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) ..
                   [[)]]
         local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
@@ -281,85 +287,87 @@ function script.onStart()
                 end
             end
             eleTotalMaxHp = eleTotalMaxHp + eleMaxHp(ElementsID[k])
-            if (name == "atmospheric fuel-tank" or name == "space fuel-tank" or name == "rocket fuel-tank") then
-                local hp = eleMaxHp(ElementsID[k])
-                local mass = eleMass(ElementsID[k])
-                local curMass = 0
-                local curTime = system.getTime()
-                if (name == "atmospheric fuel-tank") then
-                    local vanillaMaxVolume = 400
-                    local massEmpty = 35.03
-                    if hp > 10000 then
-                        vanillaMaxVolume = 51200 -- volume in kg of L tank
-                        massEmpty = 5480
-                    elseif hp > 1300 then
-                        vanillaMaxVolume = 6400 -- volume in kg of M
-                        massEmpty = 988.67
-                    elseif hp > 150 then
-                        vanillaMaxVolume = 1600 --- volume in kg small
-                        massEmpty = 182.67
+            if (fuelX ~= 0 and fuelY ~= 0) then
+                if (name == "atmospheric fuel-tank" or name == "space fuel-tank" or name == "rocket fuel-tank") then
+                    local hp = eleMaxHp(ElementsID[k])
+                    local mass = eleMass(ElementsID[k])
+                    local curMass = 0
+                    local curTime = system.getTime()
+                    if (name == "atmospheric fuel-tank") then
+                        local vanillaMaxVolume = 400
+                        local massEmpty = 35.03
+                        if hp > 10000 then
+                            vanillaMaxVolume = 51200 -- volume in kg of L tank
+                            massEmpty = 5480
+                        elseif hp > 1300 then
+                            vanillaMaxVolume = 6400 -- volume in kg of M
+                            massEmpty = 988.67
+                        elseif hp > 150 then
+                            vanillaMaxVolume = 1600 --- volume in kg small
+                            massEmpty = 182.67
+                        end
+                        curMass = mass - massEmpty
+                        if fuelTankHandlingAtmo > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
+                        end
+                        if fuelTankOptimizationAtmo > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
+                        end
+                        if curMass > vanillaMaxVolume then
+                            vanillaMaxVolume = curMass
+                        end
+                        atmoTanks[#atmoTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
+                                                    vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
+                    if (name == "rocket fuel-tank") then
+                        local vanillaMaxVolume = 320
+                        local massEmpty = 173.42
+                        if hp > 65000 then
+                            vanillaMaxVolume = 40000 -- volume in kg of L tank
+                            massEmpty = 25740
+                        elseif hp > 6000 then
+                            vanillaMaxVolume = 5120 -- volume in kg of M
+                            massEmpty = 4720
+                        elseif hp > 700 then
+                            vanillaMaxVolume = 640 --- volume in kg small
+                            massEmpty = 886.72
+                        end
+                        curMass = mass - massEmpty
+                        if fuelTankHandlingRocket > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
+                        end
+                        if fuelTankOptimizationRocket > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
+                        end
+                        if curMass > vanillaMaxVolume then
+                            vanillaMaxVolume = curMass
+                        end
+                        rocketTanks[#rocketTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
+                                                        vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    if fuelTankOptimizationAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
+                    if (name == "space fuel-tank") then
+                        local vanillaMaxVolume = 2400
+                        local massEmpty = 182.67
+                        if hp > 10000 then
+                            vanillaMaxVolume = 76800 -- volume in kg of L tank
+                            massEmpty = 5480
+                        elseif hp > 1300 then
+                            vanillaMaxVolume = 9600 -- volume in kg of M
+                            massEmpty = 988.67
+                        end
+                        curMass = mass - massEmpty
+                        if fuelTankHandlingSpace > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
+                        end
+                        if fuelTankOptimizationSpace > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
+                        end
+                        if curMass > vanillaMaxVolume then
+                            vanillaMaxVolume = curMass
+                        end
+                        spaceTanks[#spaceTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
+                                                    vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    if curMass > vanillaMaxVolume then
-                        vanillaMaxVolume = curMass
-                    end
-                    atmoTanks[#atmoTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
-                                                 vanillaMaxVolume, massEmpty, curMass, curTime}
-                end
-                if (name == "rocket fuel-tank") then
-                    local vanillaMaxVolume = 320
-                    local massEmpty = 173.42
-                    if hp > 65000 then
-                        vanillaMaxVolume = 40000 -- volume in kg of L tank
-                        massEmpty = 25740
-                    elseif hp > 6000 then
-                        vanillaMaxVolume = 5120 -- volume in kg of M
-                        massEmpty = 4720
-                    elseif hp > 700 then
-                        vanillaMaxVolume = 640 --- volume in kg small
-                        massEmpty = 886.72
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
-                    end
-                    if fuelTankOptimizationRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
-                    end
-                    if curMass > vanillaMaxVolume then
-                        vanillaMaxVolume = curMass
-                    end
-                    rocketTanks[#rocketTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
-                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
-                end
-                if (name == "space fuel-tank") then
-                    local vanillaMaxVolume = 2400
-                    local massEmpty = 182.67
-                    if hp > 10000 then
-                        vanillaMaxVolume = 76800 -- volume in kg of L tank
-                        massEmpty = 5480
-                    elseif hp > 1300 then
-                        vanillaMaxVolume = 9600 -- volume in kg of M
-                        massEmpty = 988.67
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
-                    end
-                    if fuelTankOptimizationSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
-                    end
-                    if curMass > vanillaMaxVolume then
-                        vanillaMaxVolume = curMass
-                    end
-                    spaceTanks[#spaceTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
-                                                   vanillaMaxVolume, massEmpty, curMass, curTime}
                 end
             end
         end
@@ -923,6 +931,7 @@ function script.onStart()
 
         function checkDamage(newContent)
             local percentDam = 0
+            local speed = vec3(velocity):len()
             damageMessage = ""
             currentConstructMass = constructMass()
             local maxShipHP = eleTotalMaxHp
@@ -975,7 +984,7 @@ function script.onStart()
                 end
             end
             percentDam = mfloor((curShipHP / maxShipHP)*100)
-            if currentConstructMass < lastConstructMass then
+            if speed < 5 and (currentConstructMass < lastConstructMass) then
                 voxelDam = math.ceil( ((currentConstructMass - updateMass()) / honeyCombMass) * 100)
                 lastConstructMass = currentConstructMass
             end
@@ -1649,13 +1658,13 @@ function script.onStart()
                         .hudver {font-size:10px;font-weight:bold;fill:red;text-anchor:end;font-family:Bank}
                         .msg {font-size:40px;fill:red;text-anchor:middle;font-weight:normal}
                         .cursor {stroke:white}
-                        .ah {opacity:0.1;fill:#0083cb;stroke:black;stroke-width:2px}
-                        .ahg {opacity:0.3;fill:#6b5835}
+                        .ah {opacity:%f;fill:#0083cb;stroke:black;stroke-width:2px}
+                        .ahg {opacity:%f;fill:#6b5835}
                     </style>
                 </head>
                 <body>
                     <svg height="100%%" width="100%%" viewBox="0 0 1920 1080">
-                    ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig)
+                    ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig, opacityTop, opacityBottom)
         end
 
         function HUDEpilogue(newContent)
@@ -1855,7 +1864,6 @@ function script.onStart()
                                                   (centerY + horizonRadius * (originalPitch / 20)), (horizonRadius * 9), -- Cover 180 degrees
                                                   (horizonRadius * 2), (-1 * originalRoll), centerX, centerY)
                 newContent[#newContent + 1] = "</g>"
-                -- body
                 newContent[#newContent + 1] = stringf([["
                 <g class="pdim txt txtmid">
                     <text x="%d" y="%d">%s</text>
@@ -4466,61 +4474,14 @@ function script.onTick(timerId)
             end
         end
         LastEccentricity = orbit.eccentricity
-        -- antigrav by zerofg
-        -- it's very rough but get the job done, AGG are weird
+
         if antigrav and CoreAltitude < 200000 then
             if antigrav.getState() == 1 then
-                if AntigravTargetAltitude == nil then -- no target : try to stabilize if too far from actual altitude (
-                    local AGGtargetDistance = CoreAltitude - antigrav.getBaseAltitude()
-                    if CoreAltitude > 800 and AGGtargetDistance < -200 then
-                        desiredBaseAltitude = math.max(CoreAltitude + 100, 1000)
-                    elseif AGGtargetDistance > 200 then
-                        desiredBaseAltitude = CoreAltitude - 100
-                    end
-
-                else -- I tried using a PID but didn't work that well, so I'm just regulating speed instead
-                    local AGGtargetDistance = AntigravTargetAltitude - CoreAltitude
-                    -- totaly stole the code from lisa-lionheart for vSpeed
-                    local velocity = vec3(core.getWorldVelocity())
-                    local up = vec3(core.getWorldVertical()) * -1
-                    local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-                    -- this is about as fast as AGG can go, and is conveniently below the atmos burn speed (1044 km/h)
-                    local maxVSpeed = 290
-                    local minVSpeed = -290
-                    -- when under "strong" planet influence, you can easily get below you AGG base altitude if not carefull
-                    if unit.getClosestPlanetInfluence() > 0.3 then
-                        minVSpeed = -190
-                    end
-                    -- adjust max speed based on distance, but at least 10m/s
-                    minVSpeed = math.min(math.max(minVSpeed, -math.abs(AGGtargetDistance) / 20.0), -10)
-                    maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
-                    if (AntigravTargetAltitude > CoreAltitude and vSpd < 0) or (AntigravTargetAltitude < CoreAltitude and vSpd > 0)  then
-                        BrakeIsOn = true
-                    else
-                        BrakeIsOn = false
-                    end
-                    if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
-                        desiredBaseAltitude = CoreAltitude + 100
-
-                    elseif vSpd > maxVSpeed then -- not as bad as going too fast down but still need to slow down or at least stop accelerating
-                        desiredBaseAltitude = math.max(CoreAltitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
-                    elseif math.abs(AGGtargetDistance) > 150 or math.abs(vSpd) > 15 then
-                        if math.abs(vSpd) > 10 then
-                            desiredBaseAltitude = CoreAltitude +
-                                                    math.max(math.min(AGGtargetDistance - vSpd / 10.0, 100), -100)
-                        else
-                            desiredBaseAltitude = CoreAltitude + math.max(math.min(AGGtargetDistance, 100), -100)
-                        end
-                    else -- getting close to the target
-                        desiredBaseAltitude = AntigravTargetAltitude
-                        if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 10 then -- very close and not much speed let's stop there
-                            AntigravTargetAltitude = nil
-                            BrakeIsOn = true
-                        end
-                    end
+                if AntigravTargetAltitude == nil then 
+                    AntigravTargetAltitude = CoreAltitude
                 end
             else
-                desiredBaseAltitude = CoreAltitude
+                AntigravTargetAltitude = CoreAltitude
             end
         end
     end
@@ -4732,9 +4693,7 @@ function script.onFlush()
     end
 
     -- antigrav
-    if antigrav and desiredBaseAltitude ~= antigrav.getBaseAltitude() then
-        antigrav.setBaseAltitude(desiredBaseAltitude)
-    end
+
 end
 
 function script.onUpdate()
@@ -4749,6 +4708,10 @@ function script.onUpdate()
             system.setScreen(content)
         end
         LastContent = content
+    end
+    if antigrav and desiredBaseAltitude ~= nil and AntigravTargetAltitude ~= desiredBaseAltitude then 
+        antigrav.setBaseAltitude(AntigravTargetAltitude)
+        desiredBaseAltitude = AntigravTargetAltitude
     end
 end
 
@@ -4817,7 +4780,7 @@ function script.onActionStart(action)
             if AntigravTargetAltitude ~= nil  then
                 AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
             else
-                AntigravTargetAltitude = desiredBaseAltitude + 100
+                AntigravTargetAltitude = CoreAltitude
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
@@ -4832,7 +4795,7 @@ function script.onActionStart(action)
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
-                AntigravTargetAltitude = desiredBaseAltitude
+                AntigravTargetAltitude = CoreAltitude
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier
@@ -5035,7 +4998,7 @@ function script.onActionLoop(action)
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
                 BrakeIsOn = false
             else
-                AntigravTargetAltitude = desiredBaseAltitude + 100
+                AntigravTargetAltitude = CoreAltitude + 100
                 BrakeIsOn = false
             end
         elseif AltitudeHold then
@@ -5052,7 +5015,7 @@ function script.onActionLoop(action)
                 BrakeIsOn = false
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
-                AntigravTargetAltitude = desiredBaseAltitude - 100
+                AntigravTargetAltitude = CoreAltitude
                 BrakeIsOn = false
             end
         elseif AltitudeHold then
