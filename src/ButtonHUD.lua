@@ -84,6 +84,7 @@ function script.onStart()
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
+        APThrottleSet = false -- Do not save this, because when they re-enter, throttle won't be set anymore
         ToggleView = true
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
@@ -3540,7 +3541,9 @@ function script.onStart()
             local cruiseTime = 0
             -- So, time is in seconds
             -- If cruising or braking, use real cruise/brake values
-            if brakeDistance + accelDistance < AutopilotDistance then
+            if AutopilotCruising then -- If already cruising, use current speed
+                cruiseTime = Kinematic.computeTravelTime(vec3(velocity):len(), 0, AutopilotDistance)
+            elseif brakeDistance + accelDistance < AutopilotDistance then
                 -- Add any remaining distance
                 cruiseDistance = AutopilotDistance - (brakeDistance + accelDistance)
                 cruiseTime = Kinematic.computeTravelTime(8333.0556, 0, cruiseDistance)
@@ -4167,13 +4170,22 @@ function script.onTick(timerId)
                 aligned = AlignToWorldVector(-vec3(velocity):normalize())
             end
             if AutopilotAccelerating then
-                if not aligned then
+                if not aligned or BrakeIsOn then
                     AutopilotStatus = "Adjusting Trajectory"
                 else
                     AutopilotStatus = "Accelerating"
                 end
-
-                if vec3(core.getVelocity()):len() >= MaxGameVelocity then -- This is 29999 kph
+                if vec3(core.getConstructWorldOrientationForward()):dot(velocity) < 0 and velMag > 300 then
+                    BrakeIsOn = true
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
+                elseif not APThrottleSet then
+                    BrakeIsOn = false
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, AutopilotInterplanetaryThrottle)
+                    APThrottleSet = true
+                end
+                -- Only disengage acceleration if we're within 1km of our target
+                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs((AutopilotProjectedAltitude)-AutopilotTargetOrbit) < 1000)) or unit.getThrottle() == 0 then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
@@ -4218,6 +4230,11 @@ function script.onTick(timerId)
                     AutopilotStatus = "Braking"
                     AutopilotBraking = true
                 end
+                if unit.getThrottle() > 0 then
+                    AutopilotAccelerating = true
+                    AutopilotStatus = "Accelerating"
+                    AutopilotCruising = false
+                end
             else
                 -- It's engaged but hasn't started accelerating yet.
                 if aligned then
@@ -4233,8 +4250,12 @@ function script.onTick(timerId)
                         AutopilotAccelerating = true
                         AutopilotStatus = "Accelerating"
                         -- Set throttle to max
-                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
+                        if not APThrottleSet then
+                            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
                             AutopilotInterplanetaryThrottle)
+                            APThrottleSet = true
+                            BrakeIsOn = false
+                        end
                     end
                 end
                 -- If it's not aligned yet, don't try to burn yet.
