@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.78
+- Changed damage report to show honeycomb damage (structural integrity) only when stopped.  Update rate of construct mass is different timing than element mass, which is only way to get honeycomb mass, so was making it flash.
+
 Version 4.77
 - Fixed AGG button showing wrong state...again, no really.
 - Changed AGG behavior so brake toggles on when you reach target height.  Brake toggles off if you raise or lower target height.  (you can always toggle brake with CTRL like normal)

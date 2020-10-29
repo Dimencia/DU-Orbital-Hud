@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.77
+        VERSION_NUMBER = 4.78
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -923,6 +923,7 @@ function script.onStart()
 
         function checkDamage(newContent)
             local percentDam = 0
+            local speed = vec3(velocity):len()
             damageMessage = ""
             currentConstructMass = constructMass()
             local maxShipHP = eleTotalMaxHp
@@ -975,7 +976,7 @@ function script.onStart()
                 end
             end
             percentDam = mfloor((curShipHP / maxShipHP)*100)
-            if currentConstructMass < lastConstructMass then
+            if speed < 5 and (currentConstructMass < lastConstructMass) then
                 voxelDam = math.ceil( ((currentConstructMass - updateMass()) / honeyCombMass) * 100)
                 lastConstructMass = currentConstructMass
             end
