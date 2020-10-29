@@ -1,6 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.78
+Version 4.78 - Goodbye speedy AGG, we barely knew ye
+- Per official request from NQ, AGG features in DU Orbital Hud now just provide easy method to change target height (Alt-C and Alt-Spacebar).  All other AGG functionality is vanilla.
 - Changed damage report to show honeycomb damage (structural integrity) only when stopped.  Update rate of construct mass is different timing than element mass, which is only way to get honeycomb mass, so was making it flash.
 - If fuelX and fuelY are both set to 0, the HUD will not show fuel tank status.  Use if using an external fuel display system.
 - Added opacityTop (0.1 default) and opacityBottom (0.3 default) to allow control of AH background opacity 0.0 to 1.0

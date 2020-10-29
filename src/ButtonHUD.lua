@@ -152,8 +152,8 @@ function script.onStart()
         RadarMessage = ""
         LastOdometerOutput = ""
         Peris = 0
-        AntigravTargetAltitude = nil
         CoreAltitude = core.getAltitude()
+        AntigravTargetAltitude = CoreAltitude
         ElementsID = core.getElementIdList()
         LastTravelTime = system.getTime()
         TotalFlightTime = 0
@@ -213,7 +213,7 @@ function script.onStart()
                              "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
-                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
+                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                             "opacityBottom", "opacityTop"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
@@ -263,6 +263,9 @@ function script.onStart()
         brakeToggle = BrakeToggleDefault
         autoRoll = autoRollPreference
         honeyCombMass = lastConstructMass - updateMass()
+        if antigrav and desiredBaseAltitude == nil then 
+                desiredBaseAltitude = CoreAltitude
+        end
         rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) ..
                   [[)]]
         local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
@@ -4471,61 +4474,14 @@ function script.onTick(timerId)
             end
         end
         LastEccentricity = orbit.eccentricity
-        -- antigrav by zerofg
-        -- it's very rough but get the job done, AGG are weird
+
         if antigrav and CoreAltitude < 200000 then
             if antigrav.getState() == 1 then
-                if AntigravTargetAltitude == nil then -- no target : try to stabilize if too far from actual altitude (
-                    local AGGtargetDistance = CoreAltitude - antigrav.getBaseAltitude()
-                    if CoreAltitude > 800 and AGGtargetDistance < -200 then
-                        desiredBaseAltitude = math.max(CoreAltitude + 100, 1000)
-                    elseif AGGtargetDistance > 200 then
-                        desiredBaseAltitude = CoreAltitude - 100
-                    end
-
-                else -- I tried using a PID but didn't work that well, so I'm just regulating speed instead
-                    local AGGtargetDistance = AntigravTargetAltitude - CoreAltitude
-                    -- totaly stole the code from lisa-lionheart for vSpeed
-                    local velocity = vec3(core.getWorldVelocity())
-                    local up = vec3(core.getWorldVertical()) * -1
-                    local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-                    -- this is about as fast as AGG can go, and is conveniently below the atmos burn speed (1044 km/h)
-                    local maxVSpeed = 290
-                    local minVSpeed = -290
-                    -- when under "strong" planet influence, you can easily get below you AGG base altitude if not carefull
-                    if unit.getClosestPlanetInfluence() > 0.3 then
-                        minVSpeed = -190
-                    end
-                    -- adjust max speed based on distance, but at least 10m/s
-                    minVSpeed = math.min(math.max(minVSpeed, -math.abs(AGGtargetDistance) / 20.0), -10)
-                    maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
-                    if (AntigravTargetAltitude > CoreAltitude and vSpd < 0) or (AntigravTargetAltitude < CoreAltitude and vSpd > 0)  then
-                        BrakeIsOn = true
-                    else
-                        BrakeIsOn = false
-                    end
-                    if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
-                        desiredBaseAltitude = CoreAltitude + 100
-
-                    elseif vSpd > maxVSpeed then -- not as bad as going too fast down but still need to slow down or at least stop accelerating
-                        desiredBaseAltitude = math.max(CoreAltitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
-                    elseif math.abs(AGGtargetDistance) > 150 or math.abs(vSpd) > 15 then
-                        if math.abs(vSpd) > 10 then
-                            desiredBaseAltitude = CoreAltitude +
-                                                    math.max(math.min(AGGtargetDistance - vSpd / 10.0, 100), -100)
-                        else
-                            desiredBaseAltitude = CoreAltitude + math.max(math.min(AGGtargetDistance, 100), -100)
-                        end
-                    else -- getting close to the target
-                        desiredBaseAltitude = AntigravTargetAltitude
-                        if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 10 then -- very close and not much speed let's stop there
-                            AntigravTargetAltitude = nil
-                            BrakeIsOn = true
-                        end
-                    end
+                if AntigravTargetAltitude == nil then 
+                    AntigravTargetAltitude = CoreAltitude
                 end
             else
-                desiredBaseAltitude = CoreAltitude
+                AntigravTargetAltitude = CoreAltitude
             end
         end
     end
@@ -4737,9 +4693,7 @@ function script.onFlush()
     end
 
     -- antigrav
-    if antigrav and desiredBaseAltitude ~= antigrav.getBaseAltitude() then
-        antigrav.setBaseAltitude(desiredBaseAltitude)
-    end
+
 end
 
 function script.onUpdate()
@@ -4754,6 +4708,11 @@ function script.onUpdate()
             system.setScreen(content)
         end
         LastContent = content
+    end
+    if antigrav and desiredBaseAltitude ~= nil and AntigravTargetAltitude ~= desiredBaseAltitude then 
+        system.print("Setting target to "..AntigravTargetAltitude)
+        antigrav.setBaseAltitude(AntigravTargetAltitude)
+        desiredBaseAltitude = AntigravTargetAltitude
     end
 end
 
@@ -4822,7 +4781,7 @@ function script.onActionStart(action)
             if AntigravTargetAltitude ~= nil  then
                 AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
             else
-                AntigravTargetAltitude = desiredBaseAltitude + 100
+                AntigravTargetAltitude = CoreAltitude
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
@@ -4837,7 +4796,7 @@ function script.onActionStart(action)
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
-                AntigravTargetAltitude = desiredBaseAltitude
+                AntigravTargetAltitude = CoreAltitude
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier
@@ -5040,7 +4999,7 @@ function script.onActionLoop(action)
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
                 BrakeIsOn = false
             else
-                AntigravTargetAltitude = desiredBaseAltitude + 100
+                AntigravTargetAltitude = CoreAltitude + 100
                 BrakeIsOn = false
             end
         elseif AltitudeHold then
@@ -5057,7 +5016,7 @@ function script.onActionLoop(action)
                 BrakeIsOn = false
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
-                AntigravTargetAltitude = desiredBaseAltitude - 100
+                AntigravTargetAltitude = CoreAltitude
                 BrakeIsOn = false
             end
         elseif AltitudeHold then
