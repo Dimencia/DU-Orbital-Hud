@@ -34,16 +34,18 @@ function script.onStart()
         PrimaryR = 130 -- export: Primary HUD color
         PrimaryG = 224 -- export: Primary HUD color
         PrimaryB = 255 -- export: Primary HUD color
-        centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement.
-        centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Use centerX=700 and centerY=980 for lower left placement. 
+        centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Default 960. Use centerX=700 and centerY=980 for lower left placement.
+        centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Default 540. Use centerX=700 and centerY=980 for lower left placement. 
         throtPosX = 1110 -- export: X position of Throttle Indicator, default 1110 to put it to right of default AH centerX parameter.
         throtPosY = 540 -- export: Y position of Throttle indicator, default is 540 to place it centered on default AH centerY parameter.
         vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
         vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
         altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
         altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
-        fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side
-        fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side
+        fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side, set both fuelX and fuelY to 0 to hide fuel
+        fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side, set both fuelX and fuelY to 0 to hide fuel
+        opacityTop = 0.1 -- export: 0 to 1 for opacity of AH top half, default 0.1
+        opacityBottom = 0.3 -- export: 0 to 1 for opacity of AH bottom, default 0.3
         circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
@@ -281,85 +283,87 @@ function script.onStart()
                 end
             end
             eleTotalMaxHp = eleTotalMaxHp + eleMaxHp(ElementsID[k])
-            if (name == "atmospheric fuel-tank" or name == "space fuel-tank" or name == "rocket fuel-tank") then
-                local hp = eleMaxHp(ElementsID[k])
-                local mass = eleMass(ElementsID[k])
-                local curMass = 0
-                local curTime = system.getTime()
-                if (name == "atmospheric fuel-tank") then
-                    local vanillaMaxVolume = 400
-                    local massEmpty = 35.03
-                    if hp > 10000 then
-                        vanillaMaxVolume = 51200 -- volume in kg of L tank
-                        massEmpty = 5480
-                    elseif hp > 1300 then
-                        vanillaMaxVolume = 6400 -- volume in kg of M
-                        massEmpty = 988.67
-                    elseif hp > 150 then
-                        vanillaMaxVolume = 1600 --- volume in kg small
-                        massEmpty = 182.67
+            if (fuelX ~= 0 and fuelY ~= 0) then
+                if (name == "atmospheric fuel-tank" or name == "space fuel-tank" or name == "rocket fuel-tank") then
+                    local hp = eleMaxHp(ElementsID[k])
+                    local mass = eleMass(ElementsID[k])
+                    local curMass = 0
+                    local curTime = system.getTime()
+                    if (name == "atmospheric fuel-tank") then
+                        local vanillaMaxVolume = 400
+                        local massEmpty = 35.03
+                        if hp > 10000 then
+                            vanillaMaxVolume = 51200 -- volume in kg of L tank
+                            massEmpty = 5480
+                        elseif hp > 1300 then
+                            vanillaMaxVolume = 6400 -- volume in kg of M
+                            massEmpty = 988.67
+                        elseif hp > 150 then
+                            vanillaMaxVolume = 1600 --- volume in kg small
+                            massEmpty = 182.67
+                        end
+                        curMass = mass - massEmpty
+                        if fuelTankHandlingAtmo > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
+                        end
+                        if fuelTankOptimizationAtmo > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
+                        end
+                        if curMass > vanillaMaxVolume then
+                            vanillaMaxVolume = curMass
+                        end
+                        atmoTanks[#atmoTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
+                                                    vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
+                    if (name == "rocket fuel-tank") then
+                        local vanillaMaxVolume = 320
+                        local massEmpty = 173.42
+                        if hp > 65000 then
+                            vanillaMaxVolume = 40000 -- volume in kg of L tank
+                            massEmpty = 25740
+                        elseif hp > 6000 then
+                            vanillaMaxVolume = 5120 -- volume in kg of M
+                            massEmpty = 4720
+                        elseif hp > 700 then
+                            vanillaMaxVolume = 640 --- volume in kg small
+                            massEmpty = 886.72
+                        end
+                        curMass = mass - massEmpty
+                        if fuelTankHandlingRocket > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
+                        end
+                        if fuelTankOptimizationRocket > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
+                        end
+                        if curMass > vanillaMaxVolume then
+                            vanillaMaxVolume = curMass
+                        end
+                        rocketTanks[#rocketTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
+                                                        vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    if fuelTankOptimizationAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
+                    if (name == "space fuel-tank") then
+                        local vanillaMaxVolume = 2400
+                        local massEmpty = 182.67
+                        if hp > 10000 then
+                            vanillaMaxVolume = 76800 -- volume in kg of L tank
+                            massEmpty = 5480
+                        elseif hp > 1300 then
+                            vanillaMaxVolume = 9600 -- volume in kg of M
+                            massEmpty = 988.67
+                        end
+                        curMass = mass - massEmpty
+                        if fuelTankHandlingSpace > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
+                        end
+                        if fuelTankOptimizationSpace > 0 then
+                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
+                        end
+                        if curMass > vanillaMaxVolume then
+                            vanillaMaxVolume = curMass
+                        end
+                        spaceTanks[#spaceTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
+                                                    vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    if curMass > vanillaMaxVolume then
-                        vanillaMaxVolume = curMass
-                    end
-                    atmoTanks[#atmoTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
-                                                 vanillaMaxVolume, massEmpty, curMass, curTime}
-                end
-                if (name == "rocket fuel-tank") then
-                    local vanillaMaxVolume = 320
-                    local massEmpty = 173.42
-                    if hp > 65000 then
-                        vanillaMaxVolume = 40000 -- volume in kg of L tank
-                        massEmpty = 25740
-                    elseif hp > 6000 then
-                        vanillaMaxVolume = 5120 -- volume in kg of M
-                        massEmpty = 4720
-                    elseif hp > 700 then
-                        vanillaMaxVolume = 640 --- volume in kg small
-                        massEmpty = 886.72
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
-                    end
-                    if fuelTankOptimizationRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
-                    end
-                    if curMass > vanillaMaxVolume then
-                        vanillaMaxVolume = curMass
-                    end
-                    rocketTanks[#rocketTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
-                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
-                end
-                if (name == "space fuel-tank") then
-                    local vanillaMaxVolume = 2400
-                    local massEmpty = 182.67
-                    if hp > 10000 then
-                        vanillaMaxVolume = 76800 -- volume in kg of L tank
-                        massEmpty = 5480
-                    elseif hp > 1300 then
-                        vanillaMaxVolume = 9600 -- volume in kg of M
-                        massEmpty = 988.67
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
-                    end
-                    if fuelTankOptimizationSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
-                    end
-                    if curMass > vanillaMaxVolume then
-                        vanillaMaxVolume = curMass
-                    end
-                    spaceTanks[#spaceTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
-                                                   vanillaMaxVolume, massEmpty, curMass, curTime}
                 end
             end
         end
@@ -1650,13 +1654,13 @@ function script.onStart()
                         .hudver {font-size:10px;font-weight:bold;fill:red;text-anchor:end;font-family:Bank}
                         .msg {font-size:40px;fill:red;text-anchor:middle;font-weight:normal}
                         .cursor {stroke:white}
-                        .ah {opacity:0.1;fill:#0083cb;stroke:black;stroke-width:2px}
-                        .ahg {opacity:0.3;fill:#6b5835}
+                        .ah {opacity:%f;fill:#0083cb;stroke:black;stroke-width:2px}
+                        .ahg {opacity:%f;fill:#6b5835}
                     </style>
                 </head>
                 <body>
                     <svg height="100%%" width="100%%" viewBox="0 0 1920 1080">
-                    ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig)
+                    ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig, opacityTop, opacityBottom)
         end
 
         function HUDEpilogue(newContent)
@@ -1856,7 +1860,6 @@ function script.onStart()
                                                   (centerY + horizonRadius * (originalPitch / 20)), (horizonRadius * 9), -- Cover 180 degrees
                                                   (horizonRadius * 2), (-1 * originalRoll), centerX, centerY)
                 newContent[#newContent + 1] = "</g>"
-                -- body
                 newContent[#newContent + 1] = stringf([["
                 <g class="pdim txt txtmid">
                     <text x="%d" y="%d">%s</text>
