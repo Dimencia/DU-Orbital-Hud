@@ -4710,7 +4710,6 @@ function script.onUpdate()
         LastContent = content
     end
     if antigrav and desiredBaseAltitude ~= nil and AntigravTargetAltitude ~= desiredBaseAltitude then 
-        system.print("Setting target to "..AntigravTargetAltitude)
         antigrav.setBaseAltitude(AntigravTargetAltitude)
         desiredBaseAltitude = AntigravTargetAltitude
     end
