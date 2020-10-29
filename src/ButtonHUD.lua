@@ -4187,7 +4187,7 @@ function script.onTick(timerId)
                     APThrottleSet = true
                 end
                 -- Only disengage acceleration if we're within 1km of our target
-                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs((AutopilotProjectedAltitude)-AutopilotTargetOrbit) < 1000)) or (unit.getThrottle() == 0 and APThrottleSet) then
+                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs((projectedAltitude)-AutopilotTargetOrbit) < 1000)) or (unit.getThrottle() == 0 and APThrottleSet) then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
