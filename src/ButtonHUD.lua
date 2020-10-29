@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.76
+        VERSION_NUMBER = 4.77
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -27,7 +27,7 @@ function script.onStart()
         -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
         useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
         freeLookToggle = true -- export: Set to false for default free look behavior.
-        BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
+        BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default. Can be adjusted in the button menu
         RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
         userControlScheme = "Virtual Joystick" -- export: Set to "Virtual Joystick", "Mouse", or "Keyboard"
         brightHud = false -- export: Enable to prevent hud dimming when in freelook.
@@ -67,6 +67,7 @@ function script.onStart()
         MouseXSensitivity = 0.003 -- export: For virtual joystick only
         autoRollPreference = false -- export: [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
         turnAssist = true -- export: [Only in atmosphere]<br>When the pilot is rolling, the flight model will try to add yaw and pitch to make the construct turn better<br>The flight model will start by adding more yaw the more horizontal the construct is and more pitch the more vertical it is
+        TrajectoryAlignmentStrength = 0.002 -- export: How strongly AP tries to align your velocity vector to the target when not in orbit, recommend 0.002
         turnAssistFactor = 2 -- export: [Only in atmosphere]<br>This factor will increase/decrease the turnAssist effect<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         pitchSpeedFactor = 0.8 -- export: For keyboard control
         yawSpeedFactor = 1 -- export: For keyboard control
@@ -84,6 +85,7 @@ function script.onStart()
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
+        APThrottleSet = false -- Do not save this, because when they re-enter, throttle won't be set anymore
         ToggleView = true
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
@@ -159,7 +161,6 @@ function script.onStart()
         AutopilotEndSpeed = 0
         SavedLocations = {}
         LandingGearGroundHeight = 0
-        AntigravJustToggledOn = false
 
         -- Local Variables used only within onStart
         local markers = {}
@@ -210,16 +211,15 @@ function script.onStart()
                              "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
-                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight"}
+                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                          "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
-                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo",
-                        "AntigravJustToggledOn"}
-
+                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo"}
+                        
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
         if dbHud then
@@ -519,6 +519,34 @@ function script.onStart()
                 MsgText = "Location saved as " .. name
             else
                 MsgText = "Databank must be installed to save locations"
+            end
+        end
+
+        function UpdatePosition()
+            local index = -1
+            local newLocation
+            for k, v in pairs(SavedLocations) do
+                if v.name and v.name == CustomTarget.name then
+                    MsgText = v.name .. " saved location cleared"
+                    index = k
+                    break
+                end
+            end
+            if index ~= -1 then
+                newLocation = SavedLocations[index]
+                newLocation.position = vec3(core.getConstructWorldPos())
+                SavedLocations[index] = newLocation
+                index = -1
+                for k, v in pairs(atlas[0]) do
+                    if v.name and v.name == CustomTarget.name then
+                        index = k
+                    end
+                end
+                if index > -1 then
+                    atlas[0][index] = newLocation
+                end
+                UpdateAtlasLocationsList()
+                MsgText = CustomTarget.name .. " position updated"
             end
         end
 
@@ -837,11 +865,13 @@ function script.onStart()
                     BrakeLanding = false
                     Reentry = false
                     AutoTakeoff = false
+                    APThrottleSet = false
                 end
             else
                 Autopilot = false
                 AutopilotRealigned = false
                 VectorToTarget = false
+                APThrottleSet = false
             end
         end
 
@@ -1026,7 +1056,9 @@ function script.onStart()
         function CheckButtons()
             for _, v in pairs(Buttons) do
                 if v.hovered then
-                    v.toggleFunction()
+                    if not v.drawCondition or v.drawCondition() then
+                        v.toggleFunction()
+                    end
                     v.hovered = false
                 end
             end
@@ -1285,14 +1317,12 @@ function script.onStart()
                     antigrav.deactivate()
                     AntigravTargetAltitude = nil
                     antigrav.hide()
-                    AntigravJustToggledOn = false
                 else
                     AntigravTargetAltitude = CoreAltitude
                     if AntigravTargetAltitude < 1000 then
                         AntigravTargetAltitude = 1000
                     end
                     antigrav.activate()
-                    AntigravJustToggledOn = true
                     antigrav.show()
                 end
             end
@@ -1368,7 +1398,15 @@ function script.onStart()
         MakeButton("Save Position", "Save Position", 200, apbutton.height, apbutton.x + apbutton.width + 30, apbutton.y,
             function()
                 return false
-            end, AddNewLocation)
+            end, AddNewLocation, function()
+                return AutopilotTargetIndex == 0 or CustomTarget == nil
+            end)
+        MakeButton("Update Position", "Update Position", 200, apbutton.height, apbutton.x + apbutton.width + 30, apbutton.y,
+            function()
+                return false
+            end, UpdatePosition, function()
+                return AutopilotTargetIndex > 0 and CustomTarget ~= nil
+            end)
         MakeButton("Clear Position", "Clear Position", 200, apbutton.height, apbutton.x - 200 - 30, apbutton.y,
             function()
                 return true
@@ -1444,7 +1482,7 @@ function script.onStart()
         end)
         y = y + buttonHeight + 20
         MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
-            return antigrav.getState() == 0 end, ToggleAntigrav, function()
+            return antigrav.getState() == 1 end, ToggleAntigrav, function()
             return antigrav ~= nil
         end)   
         y = y + buttonHeight + 20
@@ -3475,7 +3513,9 @@ function script.onStart()
         end
 
         function GetAutopilotTravelTime()
-            AutopilotDistance = (AutopilotTargetPlanet.center - vec3(core.getConstructWorldPos())):len()
+            if not Autopilot then
+                AutopilotDistance = (AutopilotTargetPlanet.center - vec3(core.getConstructWorldPos())):len() -- This updates elsewhere if we're already piloting
+            end
             local velocity = core.getWorldVelocity()
             local accelDistance, accelTime =
                 Kinematic.computeDistanceAndTime(vec3(velocity):len(), MaxGameVelocity, -- From currently velocity to max
@@ -3500,7 +3540,9 @@ function script.onStart()
             local cruiseTime = 0
             -- So, time is in seconds
             -- If cruising or braking, use real cruise/brake values
-            if brakeDistance + accelDistance < AutopilotDistance then
+            if AutopilotCruising then -- If already cruising, use current speed
+                cruiseTime = Kinematic.computeTravelTime(vec3(velocity):len(), 0, AutopilotDistance)
+            elseif brakeDistance + accelDistance < AutopilotDistance then
                 -- Add any remaining distance
                 cruiseDistance = AutopilotDistance - (brakeDistance + accelDistance)
                 cruiseTime = Kinematic.computeTravelTime(8333.0556, 0, cruiseDistance)
@@ -3676,7 +3718,7 @@ function script.onTick(timerId)
                 system.updateData(interplanetaryHeaderText,
                     '{"label": "Target", "value": "' .. AutopilotTargetName .. '", "unit":""}')
                 travelTime = GetAutopilotTravelTime() -- This also sets AutopilotDistance so we don't have to calc it again
-                Distance = AutopilotDistance
+                Distance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
                 if not TurnBurn then
                     BrakeDistance, BrakeTime = GetAutopilotBrakeDistanceAndTime(velMag)
                     MaxBrakeDistance, MaxBrakeTime = GetAutopilotBrakeDistanceAndTime(MaxGameVelocity)
@@ -3876,7 +3918,6 @@ function script.onTick(timerId)
         local deltaX = system.getMouseDeltaX()
         local deltaY = system.getMouseDeltaY()
         TargetGroundAltitude = Nav:getTargetGroundAltitude()
-        local TrajectoryAlignmentStrength = 0.002 -- How strongly AP tries to align your velocity vector to the target when not in orbit
         local isWarping = (velMag > 8334)
         if not isWarping and LastIsWarping then
             if not BrakeIsOn then
@@ -3887,10 +3928,6 @@ function script.onTick(timerId)
             end
         end
         LastIsWarping = isWarping
-        if antigrav and ((antigrav.getState() == 1 and not desiredBaseAltitude) or AntigravJustToggledOn) then -- initialise if needed
-            desiredBaseAltitude = antigrav.getBaseAltitude()
-            if AntigravJustToggledOn then AntigravJustToggledOn = false end
-        end
         if BrakeIsOn then
             BrakeInput = 1
         else
@@ -4109,8 +4146,9 @@ function script.onTick(timerId)
             end
             -- If we're here, sadly, we really need to calc the distance every update (or tick)
             AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
+            local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
             system.updateData(widgetDistanceText, '{"label": "Distance", "value": "' ..
-                getDistanceDisplayString(AutopilotDistance) .. '", "unit":""}')
+                getDistanceDisplayString(displayDistance) .. '", "unit":""}')
             local aligned = true -- It shouldn't be used if the following condition isn't met, but just in case
 
             local projectedAltitude = (AutopilotTargetPlanet.center -
@@ -4126,17 +4164,27 @@ function script.onTick(timerId)
                 aligned = AlignToWorldVector(-vec3(velocity):normalize())
             end
             if AutopilotAccelerating then
-                if not aligned then
+                if not aligned or BrakeIsOn then
                     AutopilotStatus = "Adjusting Trajectory"
                 else
                     AutopilotStatus = "Accelerating"
                 end
-
-                if vec3(core.getVelocity()):len() >= MaxGameVelocity then -- This is 29999 kph
+                if vec3(core.getConstructWorldOrientationForward()):dot(velocity) < 0 and velMag > 300 then
+                    BrakeIsOn = true
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
+                elseif not APThrottleSet then
+                    BrakeIsOn = false
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, AutopilotInterplanetaryThrottle)
+                    APThrottleSet = true
+                end
+                -- Only disengage acceleration if we're within 1km of our target
+                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs(projectedAltitude-AutopilotTargetOrbit) < 1000)) or (unit.getThrottle() == 0 and APThrottleSet) then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
                 end
                 -- Check if accel needs to stop for braking
                 if AutopilotDistance <= brakeDistance then
@@ -4144,6 +4192,7 @@ function script.onTick(timerId)
                     AutopilotStatus = "Braking"
                     AutopilotBraking = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
                 end
             elseif AutopilotBraking then
                 BrakeIsOn = true
@@ -4169,6 +4218,7 @@ function script.onTick(timerId)
                         DisplayMessage(newContent, "Autopilot completed, orbit established")
                         BrakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        APThrottleSet = false
                     end
                 end
             elseif AutopilotCruising then
@@ -4176,6 +4226,11 @@ function script.onTick(timerId)
                     AutopilotAccelerating = false
                     AutopilotStatus = "Braking"
                     AutopilotBraking = true
+                end
+                if unit.getThrottle() > 0 then
+                    AutopilotAccelerating = true
+                    AutopilotStatus = "Accelerating"
+                    AutopilotCruising = false
                 end
             else
                 -- It's engaged but hasn't started accelerating yet.
@@ -4192,8 +4247,12 @@ function script.onTick(timerId)
                         AutopilotAccelerating = true
                         AutopilotStatus = "Accelerating"
                         -- Set throttle to max
-                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
+                        if not APThrottleSet then
+                            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
                             AutopilotInterplanetaryThrottle)
+                            APThrottleSet = true
+                            BrakeIsOn = false
+                        end
                     end
                 end
                 -- If it's not aligned yet, don't try to burn yet.
@@ -4277,7 +4336,7 @@ function script.onTick(timerId)
                 end 
                 if not ReentryMode then
                     targetPitch = -80
-                    if unit.getAtmosphereDensity() > 0.05 then
+                    if unit.getAtmosphereDensity() > 0.02 then
                         MsgText = "PARACHUTE DEPLOYED"
                         Reentry = false
                         BrakeLanding = true
@@ -4409,56 +4468,59 @@ function script.onTick(timerId)
         LastEccentricity = orbit.eccentricity
         -- antigrav by zerofg
         -- it's very rough but get the job done, AGG are weird
-        if antigrav and CoreAltitude < 200000 and antigrav.getState() == 1 then
-            if AntigravTargetAltitude == nil then -- no target : try to stabilize if too far from actual altitude (
-                local AGGtargetDistance = CoreAltitude - antigrav.getBaseAltitude()
-                if CoreAltitude > 800 and AGGtargetDistance < -200 then
-                    desiredBaseAltitude = math.max(CoreAltitude + 100, 1000)
-                elseif AGGtargetDistance > 200 then
-                    desiredBaseAltitude = CoreAltitude - 100
-                end
+        if antigrav and CoreAltitude < 200000 then
+            if antigrav.getState() == 1 then
+                if AntigravTargetAltitude == nil then -- no target : try to stabilize if too far from actual altitude (
+                    local AGGtargetDistance = CoreAltitude - antigrav.getBaseAltitude()
+                    if CoreAltitude > 800 and AGGtargetDistance < -200 then
+                        desiredBaseAltitude = math.max(CoreAltitude + 100, 1000)
+                    elseif AGGtargetDistance > 200 then
+                        desiredBaseAltitude = CoreAltitude - 100
+                    end
 
-            else -- I tried using a PID but didn't work that well, so I'm just regulating speed instead
-                local AGGtargetDistance = AntigravTargetAltitude - CoreAltitude
-                -- totaly stole the code from lisa-lionheart for vSpeed
-                local velocity = vec3(core.getWorldVelocity())
-                local up = vec3(core.getWorldVertical()) * -1
-                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-
-                -- this is about as fast as AGG can go, and is conveniently below the atmos burn speed (1044 km/h)
-                local maxVSpeed = 290
-                local minVSpeed = -290
-
-                -- when under "strong" planet influence, you can easily get below you AGG base altitude if not carefull
-                if unit.getClosestPlanetInfluence() > 0.3 then
-                    minVSpeed = -190
-                end
-
-                -- adjust max speed based on distance, but at least 10m/s
-                minVSpeed = math.min(math.max(minVSpeed, -math.abs(AGGtargetDistance) / 20.0), -10)
-                maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
-
-                if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
-                    desiredBaseAltitude = CoreAltitude + 100
-
-                elseif vSpd > maxVSpeed then -- not as bad as going too fast down but still need to slow down or at least stop accelerating
-                    desiredBaseAltitude = math.max(CoreAltitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
-
-                elseif math.abs(AGGtargetDistance) > 150 or math.abs(vSpd) > 15 then
-                    if math.abs(vSpd) > 10 then
-                        desiredBaseAltitude = CoreAltitude +
-                                                  math.max(math.min(AGGtargetDistance - vSpd / 10.0, 100), -100)
+                else -- I tried using a PID but didn't work that well, so I'm just regulating speed instead
+                    local AGGtargetDistance = AntigravTargetAltitude - CoreAltitude
+                    -- totaly stole the code from lisa-lionheart for vSpeed
+                    local velocity = vec3(core.getWorldVelocity())
+                    local up = vec3(core.getWorldVertical()) * -1
+                    local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                    -- this is about as fast as AGG can go, and is conveniently below the atmos burn speed (1044 km/h)
+                    local maxVSpeed = 290
+                    local minVSpeed = -290
+                    -- when under "strong" planet influence, you can easily get below you AGG base altitude if not carefull
+                    if unit.getClosestPlanetInfluence() > 0.3 then
+                        minVSpeed = -190
+                    end
+                    -- adjust max speed based on distance, but at least 10m/s
+                    minVSpeed = math.min(math.max(minVSpeed, -math.abs(AGGtargetDistance) / 20.0), -10)
+                    maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
+                    if (AntigravTargetAltitude > CoreAltitude and vSpd < 0) or (AntigravTargetAltitude < CoreAltitude and vSpd > 0)  then
+                        BrakeIsOn = true
                     else
-                        desiredBaseAltitude = CoreAltitude + math.max(math.min(AGGtargetDistance, 100), -100)
+                        BrakeIsOn = false
                     end
+                    if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
+                        desiredBaseAltitude = CoreAltitude + 100
 
-                else -- getting close to the target
-                    desiredBaseAltitude = AntigravTargetAltitude
-                    if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 30 then -- very close and not much speed let's stop there
-                        AntigravTargetAltitude = nil
+                    elseif vSpd > maxVSpeed then -- not as bad as going too fast down but still need to slow down or at least stop accelerating
+                        desiredBaseAltitude = math.max(CoreAltitude - 100, 1000) -- I would be pretty hard for the math.max to matter but I kept it for good measure
+                    elseif math.abs(AGGtargetDistance) > 150 or math.abs(vSpd) > 15 then
+                        if math.abs(vSpd) > 10 then
+                            desiredBaseAltitude = CoreAltitude +
+                                                    math.max(math.min(AGGtargetDistance - vSpd / 10.0, 100), -100)
+                        else
+                            desiredBaseAltitude = CoreAltitude + math.max(math.min(AGGtargetDistance, 100), -100)
+                        end
+                    else -- getting close to the target
+                        desiredBaseAltitude = AntigravTargetAltitude
+                        if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 10 then -- very close and not much speed let's stop there
+                            AntigravTargetAltitude = nil
+                            BrakeIsOn = true
+                        end
                     end
-
                 end
+            else
+                desiredBaseAltitude = CoreAltitude
             end
         end
     end
@@ -4478,9 +4540,9 @@ function script.onFlush()
     turnAssistFactor = math.max(turnAssistFactor, 0.01)
 
     -- final inputs
-    local finalPitchInput = PitchInput + PitchInput2 + system.getControlDeviceForwardInput()
-    local finalRollInput = RollInput + RollInput2 + system.getControlDeviceYawInput()
-    local finalYawInput = (YawInput + YawInput2) - system.getControlDeviceLeftRightInput()
+    local finalPitchInput = utils.clamp(PitchInput + PitchInput2 + system.getControlDeviceForwardInput(),-1,1)
+    local finalRollInput = utils.clamp(RollInput + RollInput2 + system.getControlDeviceYawInput(),-1,1)
+    local finalYawInput = utils.clamp((YawInput + YawInput2) - system.getControlDeviceLeftRightInput(),-1,1)
     local finalBrakeInput = BrakeInput
 
     -- Axis
@@ -4670,7 +4732,7 @@ function script.onFlush()
     end
 
     -- antigrav
-    if antigrav and antigrav.getState() == 1 and desiredBaseAltitude ~= antigrav.getBaseAltitude() then
+    if antigrav and desiredBaseAltitude ~= antigrav.getBaseAltitude() then
         antigrav.setBaseAltitude(desiredBaseAltitude)
     end
 end
@@ -4971,8 +5033,10 @@ function script.onActionLoop(action)
             if AntigravTargetAltitude ~= nil then 
                 AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+                BrakeIsOn = false
             else
                 AntigravTargetAltitude = desiredBaseAltitude + 100
+                BrakeIsOn = false
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
@@ -4985,9 +5049,11 @@ function script.onActionLoop(action)
             if AntigravTargetAltitude ~= nil then
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
+                BrakeIsOn = false
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
                 AntigravTargetAltitude = desiredBaseAltitude - 100
+                BrakeIsOn = false
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier
