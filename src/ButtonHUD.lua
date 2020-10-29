@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.78
+        VERSION_NUMBER = 4.77
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -159,7 +159,6 @@ function script.onStart()
         AutopilotEndSpeed = 0
         SavedLocations = {}
         LandingGearGroundHeight = 0
-        AntigravJustToggledOn = false
 
         -- Local Variables used only within onStart
         local markers = {}
@@ -217,9 +216,8 @@ function script.onStart()
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                          "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
-                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo",
-                        "AntigravJustToggledOn"}
-
+                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo"}
+                        
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
         if dbHud then
@@ -1315,14 +1313,12 @@ function script.onStart()
                     antigrav.deactivate()
                     AntigravTargetAltitude = nil
                     antigrav.hide()
-                    AntigravJustToggledOn = false
                 else
                     AntigravTargetAltitude = CoreAltitude
                     if AntigravTargetAltitude < 1000 then
                         AntigravTargetAltitude = 1000
                     end
                     antigrav.activate()
-                    AntigravJustToggledOn = true
                     antigrav.show()
                 end
             end
@@ -3927,10 +3923,6 @@ function script.onTick(timerId)
             end
         end
         LastIsWarping = isWarping
-        if antigrav and ((antigrav.getState() == 1 and not desiredBaseAltitude) or AntigravJustToggledOn) then -- initialise if needed
-            desiredBaseAltitude = CoreAltitude
-            if AntigravJustToggledOn then AntigravJustToggledOn = false end
-        end
         if BrakeIsOn then
             BrakeInput = 1
         else
@@ -4476,6 +4468,11 @@ function script.onTick(timerId)
                     -- adjust max speed based on distance, but at least 10m/s
                     minVSpeed = math.min(math.max(minVSpeed, -math.abs(AGGtargetDistance) / 20.0), -10)
                     maxVSpeed = math.max(math.min(maxVSpeed, math.abs(AGGtargetDistance) / 20.0), 10)
+                    if (AntigravTargetAltitude > CoreAltitude and vSpd < 0) or (AntigravTargetAltitude < CoreAltitude and vSpd > 0)  then
+                        BrakeIsOn = true
+                    else
+                        BrakeIsOn = false
+                    end
                     if vSpd < minVSpeed then -- oh sh*t! oh sh*t! oh sh*t!
                         desiredBaseAltitude = CoreAltitude + 100
 
@@ -4490,11 +4487,10 @@ function script.onTick(timerId)
                         end
                     else -- getting close to the target
                         desiredBaseAltitude = AntigravTargetAltitude
-                        if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 30 then -- very close and not much speed let's stop there
+                        if math.abs(vSpd) < 10 and math.abs(AGGtargetDistance) < 10 then -- very close and not much speed let's stop there
                             AntigravTargetAltitude = nil
                             BrakeIsOn = true
                         end
-
                     end
                 end
             else
