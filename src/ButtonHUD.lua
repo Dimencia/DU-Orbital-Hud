@@ -25,6 +25,7 @@ function script.onStart()
         local isRemote = Nav.control.isRemoteControlled
 
         -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
+        TrajectoryAlignmentStrength = 0.002 -- export: How strongly AP tries to align your velocity vector to the target when not in orbit, recommend 0.002
         useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
         freeLookToggle = true -- export: Set to false for default free look behavior.
         BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
@@ -211,7 +212,7 @@ function script.onStart()
                              "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
-                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight"}
+                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -866,11 +867,13 @@ function script.onStart()
                     BrakeLanding = false
                     Reentry = false
                     AutoTakeoff = false
+                    APThrottleSet = false
                 end
             else
                 Autopilot = false
                 AutopilotRealigned = false
                 VectorToTarget = false
+                APThrottleSet = false
             end
         end
 
@@ -3919,7 +3922,6 @@ function script.onTick(timerId)
         local deltaX = system.getMouseDeltaX()
         local deltaY = system.getMouseDeltaY()
         TargetGroundAltitude = Nav:getTargetGroundAltitude()
-        local TrajectoryAlignmentStrength = 0.002 -- How strongly AP tries to align your velocity vector to the target when not in orbit
         local isWarping = (velMag > 8334)
         if not isWarping and LastIsWarping then
             if not BrakeIsOn then
@@ -4185,11 +4187,12 @@ function script.onTick(timerId)
                     APThrottleSet = true
                 end
                 -- Only disengage acceleration if we're within 1km of our target
-                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs((AutopilotProjectedAltitude)-AutopilotTargetOrbit) < 1000)) or unit.getThrottle() == 0 then
+                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs((AutopilotProjectedAltitude)-AutopilotTargetOrbit) < 1000)) or (unit.getThrottle() == 0 and APThrottleSet) then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
                 end
                 -- Check if accel needs to stop for braking
                 if AutopilotDistance <= brakeDistance then
@@ -4197,6 +4200,7 @@ function script.onTick(timerId)
                     AutopilotStatus = "Braking"
                     AutopilotBraking = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
                 end
             elseif AutopilotBraking then
                 BrakeIsOn = true
@@ -4222,6 +4226,7 @@ function script.onTick(timerId)
                         DisplayMessage(newContent, "Autopilot completed, orbit established")
                         BrakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        APThrottleSet = false
                     end
                 end
             elseif AutopilotCruising then
