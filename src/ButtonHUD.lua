@@ -25,6 +25,7 @@ function script.onStart()
         local isRemote = Nav.control.isRemoteControlled
 
         -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
+        TrajectoryAlignmentStrength = 0.002 -- export: How strongly AP tries to align your velocity vector to the target when not in orbit, recommend 0.002
         useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
         freeLookToggle = true -- export: Set to false for default free look behavior.
         BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default.  Can be adjusted in the button menu
@@ -84,6 +85,7 @@ function script.onStart()
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
+        APThrottleSet = false -- Do not save this, because when they re-enter, throttle won't be set anymore
         ToggleView = true
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
@@ -209,7 +211,7 @@ function script.onStart()
                              "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
-                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight"}
+                             "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -863,11 +865,13 @@ function script.onStart()
                     BrakeLanding = false
                     Reentry = false
                     AutoTakeoff = false
+                    APThrottleSet = false
                 end
             else
                 Autopilot = false
                 AutopilotRealigned = false
                 VectorToTarget = false
+                APThrottleSet = false
             end
         end
 
@@ -3536,7 +3540,9 @@ function script.onStart()
             local cruiseTime = 0
             -- So, time is in seconds
             -- If cruising or braking, use real cruise/brake values
-            if brakeDistance + accelDistance < AutopilotDistance then
+            if AutopilotCruising then -- If already cruising, use current speed
+                cruiseTime = Kinematic.computeTravelTime(vec3(velocity):len(), 0, AutopilotDistance)
+            elseif brakeDistance + accelDistance < AutopilotDistance then
                 -- Add any remaining distance
                 cruiseDistance = AutopilotDistance - (brakeDistance + accelDistance)
                 cruiseTime = Kinematic.computeTravelTime(8333.0556, 0, cruiseDistance)
@@ -3912,7 +3918,6 @@ function script.onTick(timerId)
         local deltaX = system.getMouseDeltaX()
         local deltaY = system.getMouseDeltaY()
         TargetGroundAltitude = Nav:getTargetGroundAltitude()
-        local TrajectoryAlignmentStrength = 0.002 -- How strongly AP tries to align your velocity vector to the target when not in orbit
         local isWarping = (velMag > 8334)
         if not isWarping and LastIsWarping then
             if not BrakeIsOn then
@@ -4159,17 +4164,27 @@ function script.onTick(timerId)
                 aligned = AlignToWorldVector(-vec3(velocity):normalize())
             end
             if AutopilotAccelerating then
-                if not aligned then
+                if not aligned or BrakeIsOn then
                     AutopilotStatus = "Adjusting Trajectory"
                 else
                     AutopilotStatus = "Accelerating"
                 end
-
-                if vec3(core.getVelocity()):len() >= MaxGameVelocity then -- This is 29999 kph
+                if vec3(core.getConstructWorldOrientationForward()):dot(velocity) < 0 and velMag > 300 then
+                    BrakeIsOn = true
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
+                elseif not APThrottleSet then
+                    BrakeIsOn = false
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, AutopilotInterplanetaryThrottle)
+                    APThrottleSet = true
+                end
+                -- Only disengage acceleration if we're within 1km of our target
+                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs((AutopilotProjectedAltitude)-AutopilotTargetOrbit) < 1000)) or (unit.getThrottle() == 0 and APThrottleSet) then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
                 end
                 -- Check if accel needs to stop for braking
                 if AutopilotDistance <= brakeDistance then
@@ -4177,6 +4192,7 @@ function script.onTick(timerId)
                     AutopilotStatus = "Braking"
                     AutopilotBraking = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    APThrottleSet = false
                 end
             elseif AutopilotBraking then
                 BrakeIsOn = true
@@ -4202,6 +4218,7 @@ function script.onTick(timerId)
                         DisplayMessage(newContent, "Autopilot completed, orbit established")
                         BrakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        APThrottleSet = false
                     end
                 end
             elseif AutopilotCruising then
@@ -4209,6 +4226,11 @@ function script.onTick(timerId)
                     AutopilotAccelerating = false
                     AutopilotStatus = "Braking"
                     AutopilotBraking = true
+                end
+                if unit.getThrottle() > 0 then
+                    AutopilotAccelerating = true
+                    AutopilotStatus = "Accelerating"
+                    AutopilotCruising = false
                 end
             else
                 -- It's engaged but hasn't started accelerating yet.
@@ -4225,8 +4247,12 @@ function script.onTick(timerId)
                         AutopilotAccelerating = true
                         AutopilotStatus = "Accelerating"
                         -- Set throttle to max
-                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
+                        if not APThrottleSet then
+                            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
                             AutopilotInterplanetaryThrottle)
+                            APThrottleSet = true
+                            BrakeIsOn = false
+                        end
                     end
                 end
                 -- If it's not aligned yet, don't try to burn yet.
