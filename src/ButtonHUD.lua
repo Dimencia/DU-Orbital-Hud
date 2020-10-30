@@ -811,7 +811,7 @@ function script.onStart()
                     OldGearExtended = GearExtended
                     GearExtended = false
                     Nav.control.retractLandingGears()
-                    Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard-set this for auto-follow
+                    Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
                 else
                     BrakeIsOn = true
                     autoRoll = autoRollPreference
