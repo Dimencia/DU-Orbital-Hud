@@ -3,6 +3,7 @@
 Version 4.791 - Bugfixes and adjustments
 - Added parameter to show full HUD while in Remote Controller
 - Adjusted 'Update Position' to update planet and atmo levels
+- Fixed follow mode hover height to use parameter
 
 Version 4.79 - AGG Performance cleanup (no more yoyo)
 - Removed fuelTankOptimization from user parameters since we dont care about it anymore when calculating unslotted tanks.
