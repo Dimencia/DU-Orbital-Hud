@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.78
+        VERSION_NUMBER = 4.79
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -78,9 +78,6 @@ function script.onStart()
         brakeFlatFactor = 1 -- export: When braking, this factor will increase the brake force by a flat brakeFlatFactor * velocity direction><br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         autoRollFactor = 2 -- export: [Only in atmosphere]<br>When autoRoll is engaged, this factor will increase to strength of the roll back to 0<br>Valid values: Superior or equal to 0.01
         DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
-        fuelTankOptimizationAtmo = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        fuelTankOptimizationSpace = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
-        fuelTankOptimizationRocket = 0 -- export: For accurate estimates, set this to the fuel tank optimization level of the person who placed the element. Ignored for slotted tanks.
         fuelTankHandlingAtmo = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         fuelTankHandlingSpace = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         fuelTankHandlingRocket = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
@@ -208,8 +205,7 @@ function script.onStart()
                              "pitchSpeedFactor", "yawSpeedFactor", "rollSpeedFactor", "brakeSpeedFactor",
                              "brakeFlatFactor", "autoRollFactor", "turnAssistFactor", "torqueFactor",
                              "AutoTakeoffAltitude", "TargetHoverHeight", "AutopilotInterplanetaryThrottle",
-                             "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankOptimizationAtmo",
-                             "fuelTankOptimizationSpace", "fuelTankOptimizationRocket", "fuelTankHandlingAtmo",
+                             "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo",
                              "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
@@ -221,7 +217,7 @@ function script.onStart()
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                          "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
-                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo"}
+                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo", "AntigravTargetAltitude"}
                         
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
@@ -263,8 +259,11 @@ function script.onStart()
         brakeToggle = BrakeToggleDefault
         autoRoll = autoRollPreference
         honeyCombMass = lastConstructMass - updateMass()
-        if antigrav and desiredBaseAltitude == nil then 
-                desiredBaseAltitude = CoreAltitude
+        if antigrav then
+            if AntigravTargetAltitude == nil then 
+                AntigravTargetAltitude = CoreAltitude
+            end
+            antigrav.setBaseAltitude(AntigravTargetAltitude)
         end
         rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) ..
                   [[)]]
@@ -310,9 +309,6 @@ function script.onStart()
                         if fuelTankHandlingAtmo > 0 then
                             vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
                         end
-                        if fuelTankOptimizationAtmo > 0 then
-                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationAtmo * 0.05))
-                        end
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
                         end
@@ -336,9 +332,6 @@ function script.onStart()
                         if fuelTankHandlingRocket > 0 then
                             vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
                         end
-                        if fuelTankOptimizationRocket > 0 then
-                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationRocket * 0.05))
-                        end
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
                         end
@@ -358,9 +351,6 @@ function script.onStart()
                         curMass = mass - massEmpty
                         if fuelTankHandlingSpace > 0 then
                             vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
-                        end
-                        if fuelTankOptimizationSpace > 0 then
-                            vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankOptimizationSpace * 0.05))
                         end
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
@@ -1324,10 +1314,9 @@ function script.onStart()
             if antigrav then
                 if antigrav.getState() == 1 then
                     antigrav.deactivate()
-                    AntigravTargetAltitude = nil
                     antigrav.hide()
                 else
-                    AntigravTargetAltitude = CoreAltitude
+                    if AntigravTargetAltitude == nil then AntigravTargetAltitude = CoreAltitude end
                     if AntigravTargetAltitude < 1000 then
                         AntigravTargetAltitude = 1000
                     end
@@ -2075,9 +2064,15 @@ function script.onStart()
             if IsBoosting then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">ROCKET BOOST ENABLED</text>]],
                                                   warningX, ewarpY+20)
-            end                  if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
-                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Target AGG Altitude: %s</text>]],
-                    warningX, apY, getDistanceDisplayString2(AntigravTargetAltitude))
+            end                  
+            if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
+                if math.abs(CoreAltitude - antigrav.getBaseAltitude()) < 501 then
+                    newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">AGG On - Target Altitude: %d Singluarity Altitude: %d</text>]],
+                        warningX, apY+20, mfloor(AntigravTargetAltitude), mfloor(antigrav.getBaseAltitude()))
+                else
+                    newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">AGG On - Target Altitude: %d Singluarity Altitude: %d</text>]],
+                        warningX, apY+20, mfloor(AntigravTargetAltitude), mfloor(antigrav.getBaseAltitude()))
+                end
             elseif Autopilot and AutopilotTargetName ~= "None" then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Autopilot %s</text>]],
                                                   warningX, apY, AutopilotStatus)
@@ -3809,8 +3804,10 @@ function script.onTick(timerId)
                 showWarpWidget = false
             end
         end        
+    
     elseif timerId == "oneSecond" then
         -- Timer for evaluation every 1 second
+
         refreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
         updateDistance()
         if (radar_1 and #radar_1.getEntries() > 0) then
@@ -4477,11 +4474,27 @@ function script.onTick(timerId)
 
         if antigrav and CoreAltitude < 200000 then
             if antigrav.getState() == 1 then
-                if AntigravTargetAltitude == nil then 
-                    AntigravTargetAltitude = CoreAltitude
+                local singularityAltitude = antigrav.getBaseAltitude()
+                if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
+                local cc_speed = unit.getThrottle()
+                if Nav.axisCommandManager:getAxisCommandType(0) == 1 then -- Cruise control 
+                    cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
                 end
+                local singularRange = math.abs(CoreAltitude - singularityAltitude) 
+                if cc_speed > -1 and cc_speed < 1 and  singularRange > 10 and singularRange < 501 then
+                    if (CoreAltitude > antigrav.getBaseAltitude() and AntigravTargetAltitude > CoreAltitude) or (CoreAltitude < antigrav.getBaseAltitude() and AntigravTargetAltitude < CoreAltitude) then 
+                        BrakeIsOn = true
+                    else 
+                        BrakeIsOn = false
+                    end
+                end
+                desiredBaseAltitude = AntigravTargetAltitude
             else
-                AntigravTargetAltitude = CoreAltitude
+                if AntigravTargetAltitude == nil then
+                    desiredBaseAltitude = CoreAltitude
+                else
+                    desiredBaseAltitude = AntigravTargetAltitude
+                end
             end
         end
     end
@@ -4692,8 +4705,6 @@ function script.onFlush()
         end
     end
 
-    -- antigrav
-
 end
 
 function script.onUpdate()
@@ -4709,6 +4720,7 @@ function script.onUpdate()
         end
         LastContent = content
     end
+    -- antigrav
     if antigrav and desiredBaseAltitude ~= nil and AntigravTargetAltitude ~= desiredBaseAltitude then 
         antigrav.setBaseAltitude(AntigravTargetAltitude)
         desiredBaseAltitude = AntigravTargetAltitude
@@ -4780,7 +4792,7 @@ function script.onActionStart(action)
             if AntigravTargetAltitude ~= nil  then
                 AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
             else
-                AntigravTargetAltitude = CoreAltitude
+                AntigravTargetAltitude = desiredBaseAltitude + 100
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + HoldAltitudeButtonModifier
@@ -4795,7 +4807,7 @@ function script.onActionStart(action)
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
-                AntigravTargetAltitude = CoreAltitude
+                AntigravTargetAltitude = desiredBaseAltitude
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - HoldAltitudeButtonModifier
@@ -4998,7 +5010,7 @@ function script.onActionLoop(action)
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
                 BrakeIsOn = false
             else
-                AntigravTargetAltitude = CoreAltitude + 100
+                AntigravTargetAltitude = desiredBaseAltitude + 100
                 BrakeIsOn = false
             end
         elseif AltitudeHold then
@@ -5015,7 +5027,7 @@ function script.onActionLoop(action)
                 BrakeIsOn = false
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
-                AntigravTargetAltitude = CoreAltitude
+                AntigravTargetAltitude = desiredBaseAltitude - 100
                 BrakeIsOn = false
             end
         elseif AltitudeHold then
