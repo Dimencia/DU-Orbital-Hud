@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.791 - Bugfixes and adjustments
+- Added parameter to show full HUD while in Remote Controller
+- Adjusted 'Update Position' to update planet and atmo levels
+
 Version 4.79 - AGG Performance cleanup (no more yoyo)
 - Removed fuelTankOptimization from user parameters since we dont care about it anymore when calculating unslotted tanks.
 - Fixed AGG to prevent yoyo'ing while going up or going down. Brakes will toggle to prevent passing the singularity unless under throttle power or outside range of singularity.
