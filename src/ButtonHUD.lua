@@ -532,10 +532,9 @@ function script.onStart()
                 end
             end
             if index ~= -1 then
-                newLocation = SavedLocations[index]
                 newLocation = {
-                    position = position,
-                    name = name,
+                    position = core.getConstructWorldPos(),
+                    name = SavedLocations[index].name,
                     atmosphere = unit.getAtmosphereDensity(),
                     planetname = planet.name,
                     gravity = unit.getClosestPlanetInfluence()
