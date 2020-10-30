@@ -1,5 +1,22 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.79 - AGG Performance cleanup (no more yoyo)
+- Removed fuelTankOptimization from user parameters since we dont care about it anymore when calculating unslotted tanks.
+- Fixed AGG to prevent yoyo'ing while going up or going down. Brakes will toggle to prevent passing the singularity unless under throttle power or outside range of singularity.
+- Changed displayed message while AGG is on to show both target height and singularity height.  Message will be red if outside singularity range of attraction (5oom) (meaning no support from AGG)
+
+An Explanation - The way the AGG works is by creating a singularity at a certain height.  Once it is created at that height, it can only be moved up or down at a set pace from its current height.  During normal vanilla operation
+the ship will begin moving towards the singularity, but if it passes it, it will then slow, stop, and reverse, creating a yo-yo effect as you go up or down using the AGG.  In order to make this cleaner, the HUD will now apply
+brakes IF you are not using throttle or cruise control and if your ship starts to pass the current singluarity height in the direction the sigularity is heading.  This will result in motion dropping to 0, but will prevent reversing.
+Rate of change is: 3.7m/s going up.  Note: It is faster to go down via gravity unless using the AGG for high mass loads.
+
+
+Version 4.78 - Goodbye speedy AGG, we barely knew ye
+- Per official request from NQ, AGG features in DU Orbital Hud now just provide easy method to change target height (Alt-C and Alt-Spacebar).  All other AGG functionality is vanilla.
+- Changed damage report to show honeycomb damage (structural integrity) only when stopped.  Update rate of construct mass is different timing than element mass, which is only way to get honeycomb mass, so was making it flash.
+- If fuelX and fuelY are both set to 0, the HUD will not show fuel tank status.  Use if using an external fuel display system.
+- Added opacityTop (0.1 default) and opacityBottom (0.3 default) to allow control of AH background opacity 0.0 to 1.0
+
 Version 4.77
 - Fixed AGG button showing wrong state...again, no really.
 - Changed AGG behavior so brake toggles on when you reach target height.  Brake toggles off if you raise or lower target height.  (you can always toggle brake with CTRL like normal)
