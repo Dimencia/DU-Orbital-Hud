@@ -533,7 +533,7 @@ function script.onStart()
             end
             if index ~= -1 then
                 newLocation = {
-                    position = core.getConstructWorldPos(),
+                    position = vec3(core.getConstructWorldPos()),
                     name = SavedLocations[index].name,
                     atmosphere = unit.getAtmosphereDensity(),
                     planetname = planet.name,
