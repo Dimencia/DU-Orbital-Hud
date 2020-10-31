@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.79
+        VERSION_NUMBER = 4.791
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -29,6 +29,7 @@ function script.onStart()
         freeLookToggle = true -- export: Set to false for default free look behavior.
         BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default. Can be adjusted in the button menu
         RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
+        RemoteHud = false -- export: Whether you want full HUD while in remote mode
         userControlScheme = "Virtual Joystick" -- export: Set to "Virtual Joystick", "Mouse", or "Keyboard"
         brightHud = false -- export: Enable to prevent hud dimming when in freelook.
         PrimaryR = 130 -- export: Primary HUD color
@@ -210,7 +211,7 @@ function script.onStart()
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                            "opacityBottom", "opacityTop"}
+                            "opacityBottom", "opacityTop", "RemoteHud"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -525,14 +526,20 @@ function script.onStart()
             local newLocation
             for k, v in pairs(SavedLocations) do
                 if v.name and v.name == CustomTarget.name then
-                    MsgText = v.name .. " saved location cleared"
+                    --MsgText = v.name .. " saved location cleared"
                     index = k
                     break
                 end
             end
             if index ~= -1 then
-                newLocation = SavedLocations[index]
-                newLocation.position = vec3(core.getConstructWorldPos())
+                newLocation = {
+                    position = core.getConstructWorldPos(),
+                    name = SavedLocations[index].name,
+                    atmosphere = unit.getAtmosphereDensity(),
+                    planetname = planet.name,
+                    gravity = unit.getClosestPlanetInfluence()
+                }
+                
                 SavedLocations[index] = newLocation
                 index = -1
                 for k, v in pairs(atlas[0]) do
@@ -803,7 +810,7 @@ function script.onStart()
                     OldGearExtended = GearExtended
                     GearExtended = false
                     Nav.control.retractLandingGears()
-                    Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard-set this for auto-follow
+                    Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
                 else
                     BrakeIsOn = true
                     autoRoll = autoRollPreference
@@ -1140,7 +1147,7 @@ function script.onStart()
 
             local y1 = fuelY
             local y2 = fuelY+10
-            if isRemote() == 1 then
+            if isRemote() == 1 and not RemoteHud then
                 y1 = y1 - 50
                 y2 = y2 - 50
             end
@@ -1565,7 +1572,7 @@ function script.onStart()
             DrawVerticalSpeed(newContent, altitude, atmos) -- Weird this is draw during remote control...?
 
 
-            if isRemote() == 0 then
+            if isRemote() == 0 or RemoteHud then
                 -- Don't even draw this in freelook
                if not IsInFreeLook() or brightHud then
                     if unit.getClosestPlanetInfluence() > 0 then
@@ -1664,7 +1671,7 @@ function script.onStart()
             local ys2 = altMeterY + 40
             local x1 = altMeterX
             newContent[#newContent + 1] = [[<g class="pdim txt txtend">]]
-            if isRemote() == 1 then
+            if isRemote() == 1 and not RemoteHud then
                 ys2 = 75
             end
             newContent[#newContent + 1] = stringf([[
@@ -1691,7 +1698,7 @@ function script.onStart()
                 maxMass = maxThrust / gravity
             end
             newContent[#newContent + 1] = [[<g class="pdim txt txtend">]]
-            if isRemote() == 1 then
+            if isRemote() == 1 and not RemoteHud then
                 xg = 1120
                 yg1 = 55
                 yg2 = 65
@@ -1711,7 +1718,7 @@ function script.onStart()
                 ]], xg, yg1, xg, yg2, (gravity / 9.80665), xg, yg1 + 20, xg, yg2 + 20, accel)
             newContent[#newContent + 1] = [[<g class="pbright txt">
                     <path class="linethick" d="M 660 0 L 700 35 Q 960 55 1240 35 L 1280 0"/>]]
-            if isRemote() == 0 then
+            if isRemote() == 0 or RemoteHud then
                 newContent[#newContent + 1] = stringf([[
                     <text class="txtstart" x="700" y="20" >Trip: %.2f km</text>
                     <text class="txtstart" x="700" y="30">Lifetime: %.2f Mm</text>
@@ -1746,7 +1753,7 @@ function script.onStart()
 
             local y1 = throtPosY+65
             local y2 = throtPosY+75
-            if isRemote() == 1 then
+            if isRemote() == 1 and not RemoteHud then
                 y1 = 55
                 y2 = 65
             end
@@ -2032,7 +2039,7 @@ function script.onStart()
             local apY = 200
             local turnBurnY = 150
             local gyroY = 960
-            if isRemote() == 1 then
+            if isRemote() == 1 and not RemoteHud then
                 brakeY = 135
                 gearY = 155
                 hoverY = 175
@@ -4474,6 +4481,9 @@ function script.onTick(timerId)
 
         if antigrav and CoreAltitude < 200000 then
             if antigrav.getState() == 1 then
+                local velocity = vec3(core.getWorldVelocity())
+                local up = vec3(core.getWorldVertical()) * -1
+                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                 local singularityAltitude = antigrav.getBaseAltitude()
                 if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
                 local cc_speed = unit.getThrottle()
@@ -4481,14 +4491,17 @@ function script.onTick(timerId)
                     cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
                 end
                 local singularRange = math.abs(CoreAltitude - singularityAltitude) 
-                if cc_speed > -1 and cc_speed < 1 and  singularRange > 10 and singularRange < 501 then
-                    if (CoreAltitude > antigrav.getBaseAltitude() and AntigravTargetAltitude > CoreAltitude) or (CoreAltitude < antigrav.getBaseAltitude() and AntigravTargetAltitude < CoreAltitude) then 
+                if cc_speed > -1 and cc_speed < 1 and singularRange > 10 and singularRange < 501 and unit.getAtmosphereDensity() < 0.01 then
+                    if (CoreAltitude > antigrav.getBaseAltitude() and AntigravTargetAltitude > CoreAltitude and vSpd < 0) or (CoreAltitude < antigrav.getBaseAltitude() and AntigravTargetAltitude < CoreAltitude and vSpd > 0) then 
                         BrakeIsOn = true
                     else 
                         BrakeIsOn = false
                     end
                 end
-                desiredBaseAltitude = AntigravTargetAltitude
+                if desiredBaseAltitude ~= AntigravTargetAltitude then
+                    desiredBaseAltitude = AntigravTargetAltitude
+                    antigrav.setBaseAltitude(desiredBaseAltitude)
+                end
             else
                 if AntigravTargetAltitude == nil then
                     desiredBaseAltitude = CoreAltitude
@@ -4720,11 +4733,6 @@ function script.onUpdate()
         end
         LastContent = content
     end
-    -- antigrav
-    if antigrav and desiredBaseAltitude ~= nil and AntigravTargetAltitude ~= desiredBaseAltitude then 
-        antigrav.setBaseAltitude(AntigravTargetAltitude)
-        desiredBaseAltitude = AntigravTargetAltitude
-    end
 end
 
 function script.onActionStart(action)
@@ -4732,7 +4740,7 @@ function script.onActionStart(action)
         GearExtended = not GearExtended
         if GearExtended then
             VectorToTarget = false
-            if (vBooster or hover) and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
+            if (vBooster or hover) and hoverDetectGround() == -1 and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
                     MsgText = "WARNING: Insufficient Brakes - Attempting landing anyway"
