@@ -4481,6 +4481,9 @@ function script.onTick(timerId)
 
         if antigrav and CoreAltitude < 200000 then
             if antigrav.getState() == 1 then
+                local velocity = vec3(core.getWorldVelocity())
+                local up = vec3(core.getWorldVertical()) * -1
+                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                 local singularityAltitude = antigrav.getBaseAltitude()
                 if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
                 local cc_speed = unit.getThrottle()
@@ -4488,14 +4491,17 @@ function script.onTick(timerId)
                     cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
                 end
                 local singularRange = math.abs(CoreAltitude - singularityAltitude) 
-                if cc_speed > -1 and cc_speed < 1 and  singularRange > 10 and singularRange < 501 then
-                    if (CoreAltitude > antigrav.getBaseAltitude() and AntigravTargetAltitude > CoreAltitude) or (CoreAltitude < antigrav.getBaseAltitude() and AntigravTargetAltitude < CoreAltitude) then 
+                if cc_speed > -1 and cc_speed < 1 and singularRange > 10 and singularRange < 501 and unit.getAtmosphereDensity() < 0.01 then
+                    if (CoreAltitude > antigrav.getBaseAltitude() and AntigravTargetAltitude > CoreAltitude and vSpd < 0) or (CoreAltitude < antigrav.getBaseAltitude() and AntigravTargetAltitude < CoreAltitude and vSpd > 0) then 
                         BrakeIsOn = true
                     else 
                         BrakeIsOn = false
                     end
                 end
-                desiredBaseAltitude = AntigravTargetAltitude
+                if desiredBaseAltitude ~= AntigravTargetAltitude then
+                    desiredBaseAltitude = AntigravTargetAltitude
+                    antigrav.setBaseAltitude(desiredBaseAltitude)
+                end
             else
                 if AntigravTargetAltitude == nil then
                     desiredBaseAltitude = CoreAltitude
@@ -4727,11 +4733,6 @@ function script.onUpdate()
         end
         LastContent = content
     end
-    -- antigrav
-    if antigrav and desiredBaseAltitude ~= nil and AntigravTargetAltitude ~= desiredBaseAltitude then 
-        antigrav.setBaseAltitude(AntigravTargetAltitude)
-        desiredBaseAltitude = AntigravTargetAltitude
-    end
 end
 
 function script.onActionStart(action)
@@ -4739,7 +4740,7 @@ function script.onActionStart(action)
         GearExtended = not GearExtended
         if GearExtended then
             VectorToTarget = false
-            if (vBooster or hover) and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
+            if (vBooster or hover) and hoverDetectGround() == -1 and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
                     MsgText = "WARNING: Insufficient Brakes - Attempting landing anyway"

@@ -1,6 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
 Version 4.791 - Bugfixes and adjustments
+- Fixed hitting G not making you go  up to max height if you are already within hover/vBooster range and not landed.  G now performs:  If on ground, takes you up to max hover height (TargetHoverHeight).
+If in air and within hover range, lands, if in air and above hover range, brake lands
+- More cleanup of AGG.  Will not worry about yoyo in atmosphere (doesnt tend to happen).  setBaseAltitude called during change of target height if it changes.  While off, singularity will progress to last set target height.
 - Added parameter to show full HUD while in Remote Controller
 - Adjusted 'Update Position' to update planet and atmo levels
 - Fixed follow mode hover height to use parameter
