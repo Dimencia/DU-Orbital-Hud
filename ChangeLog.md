@@ -2,6 +2,7 @@
 
 Version 4.792
 - Fixed Update Position
+    If you used Update Position previously, you need to clear your databank.  Thus... 
 - Alt+7 now fully clears the databank, since it's not really used anymore and databanks don't clear when you pick up and replace them anymore
     **Important** This means that pressing alt+7 is always a databank clear, not a save.  Check the 'useTheseSettings' checkbox to save settings
 
