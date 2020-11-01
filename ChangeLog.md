@@ -1,5 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.792
+- Fixed Update Position
+    If you used Update Position previously, you need to clear your databank.  Thus... 
+- Alt+7 now fully clears the databank, since it's not really used anymore and databanks don't clear when you pick up and replace them anymore
+    **Important** This means that pressing alt+7 is always a databank clear, not a save.  Check the 'useTheseSettings' checkbox to save settings
+
 Version 4.791 - Bugfixes and adjustments
 - Fixed hitting G not making you go  up to max height if you are already within hover/vBooster range and not landed.  G now performs:  If on ground, takes you up to max hover height (TargetHoverHeight).
 If in air and within hover range, lands, if in air and above hover range, brake lands

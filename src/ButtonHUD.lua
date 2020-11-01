@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.791
+        VERSION_NUMBER = 4.792
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -533,7 +533,7 @@ function script.onStart()
             end
             if index ~= -1 then
                 newLocation = {
-                    position = core.getConstructWorldPos(),
+                    position = vec3(core.getConstructWorldPos()),
                     name = SavedLocations[index].name,
                     atmosphere = unit.getAtmosphereDensity(),
                     planetname = planet.name,
@@ -1037,15 +1037,18 @@ function script.onStart()
                 MsgText =
                     "No Databank Found, unable to wipe. \nYou must have a Databank attached to ship prior to running the HUD autoconfigure"
                 MsgTimer = 5
-            elseif valuesAreSet then
+            else--if valuesAreSet then
                 if doubleCheck then
                     -- If any values are set, wipe them all
+                    --[[
                     for k, v in pairs(SaveableVariables) do
                         dbHud.setStringValue(v, jencode(nil))
                     end
                     for k, v in pairs(AutoVariables) do
                         if v ~= "SavedLocations" then dbHud.setStringValue(v, jencode(nil)) end
                     end
+                    ]]
+                    dbHud.clear()
                     MsgText =
                         "Databank wiped. New variables will save after re-enter seat and exit"
                     MsgTimer = 5
@@ -1053,7 +1056,7 @@ function script.onStart()
                     valuesAreSet = false
                     WipedDatabank = true
                 else
-                    MsgText = "Press ALT-7 again to confirm wipe"
+                    MsgText = "Press ALT-7 again to confirm wipe of ALL data"
                     doubleCheck = true
                 end
             end
