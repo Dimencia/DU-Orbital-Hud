@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.792
+        VERSION_NUMBER = 4.793
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -246,10 +246,10 @@ function script.onStart()
                     end
                 end
             end
-            if valuesAreSet then
-                MsgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
-            elseif useTheseSettings then
+            if useTheseSettings then
                 MsgText = "Updated user preferences used.  Will be saved when you exit seat.  Toggle off useTheseSettings to use saved values"
+            elseif valuesAreSet then
+                MsgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
             else
                 MsgText = "No Saved Variables Found - Stand up / leave remote to save settings"
             end
@@ -1040,15 +1040,13 @@ function script.onStart()
             else--if valuesAreSet then
                 if doubleCheck then
                     -- If any values are set, wipe them all
-                    --[[
                     for k, v in pairs(SaveableVariables) do
                         dbHud.setStringValue(v, jencode(nil))
                     end
                     for k, v in pairs(AutoVariables) do
                         if v ~= "SavedLocations" then dbHud.setStringValue(v, jencode(nil)) end
                     end
-                    ]]
-                    dbHud.clear()
+                    --dbHud.clear()
                     MsgText =
                         "Databank wiped. New variables will save after re-enter seat and exit"
                     MsgTimer = 5
