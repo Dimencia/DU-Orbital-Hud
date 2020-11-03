@@ -1937,7 +1937,7 @@ function script.onStart()
                     <text x="%d" y="%d">%s</text>
                     <text x="%d" y="%d">%d deg</text>
                 </g>
-                ]], centerX-horizonRadius-15, centerY, bottomText, centerX-horizonRadius-15, centerY+10, rollC)
+                ]], centerX-horizonRadius, centerY, bottomText, centerX-horizonRadius, centerY+10, rollC)
             end
         end
 
