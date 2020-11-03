@@ -1,7 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.80
-- Reformat HUD for a cleaner experience (F-16 style)
+Version 4.80 - Updated HUD, now with a compass
+- Reformat HUD for a cleaner experience (F-16 style).  cirleRad now sizeable from 100 to 400 with different looks < or > 200
 
 Version 4.793 
 - Reverted save change.  ALT-7 will only wipe databank of saved variables.  To fully wipe a databank, pick it up, right click it, Remove Dynamic Properties, then put it back down.  
