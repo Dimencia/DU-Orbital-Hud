@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.793
+        VERSION_NUMBER = 4.80
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -1577,6 +1577,7 @@ function script.onStart()
                 -- Don't even draw this in freelook
                if not IsInFreeLook() or brightHud then
                     if unit.getClosestPlanetInfluence() > 0 then
+                        DrawRollLines (newContent, centerX, centerY, originalRoll, originalPitch)
                         DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, "ROLL")
                         DrawPrograde(newContent, atmos, velocity, speed, centerX, centerY)
                         DrawAltitudeDisplay(newContent, altitude, atmos)
@@ -1817,10 +1818,80 @@ function script.onStart()
                 ]], vSpdMeterX, vSpdMeterY, mfloor(vSpd), mfloor(angle))
             end
         end
+        
+        function getYaw(vector)
+            velocity = vec3(vector):normalize()
+            local forward = vec3(core.getConstructWorldOrientationForward())
+            local up = -vec3(core.getWorldVertical())
+            local angle = math.atan((velocity:cross(forward)):dot(up), velocity:dot(forward))
+            angle = math.deg(angle) 
+            angle = -angle
+            if angle < 0 then angle = angle + 360 end
+            return angle
+        end
+
+        function DrawRollLines (newContent, centerX, centerY, originalRoll, originalPitch)
+            local rollC = mfloor(originalRoll)
+            local horizonRadius = circleRad -- Aliased global
+            local OFFSET = 100
+            for i = -45, 45, 5 do
+                local rot = i
+                newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,%d,%d)">]], rot, centerX, centerY)
+                len = 5
+                if (i % 15 == 0) then
+                    len = 15
+                elseif (i % 10 == 0) then
+                    len = 10
+                end
+                newContent[#newContent + 1] = stringf([[<line x1=%d y1=%d x2=%d y2="%d"/></g>]], centerX, centerY + horizonRadius + OFFSET - len, centerX, centerY + horizonRadius + OFFSET)
+            end 
+            if rollC > 45 then rollC = 45 elseif rollC < -45 then rollC = -45 end
+            
+            local northVector = vec3({0,0,1})
+            local surfaceNorth = planet.center + planet.radius*northVector
+            local vectorToNorth = surfaceNorth-vec3(core.getConstructWorldPos())
+            local yaw = getYaw(vectorToNorth)
+            local range = 20
+            local yawC = mfloor(yaw) 
+            system.print ("Hdg: "..yawC)
+            local yawlen = 0
+            local yawy = (centerY + horizonRadius + 20)
+            local tickerPath = [[<path class="txttick line" d="]]
+            
+            for i = mfloor(yawC - (range+10) - yawC % 5 + 0.5), mfloor(yawC + (range+10) + yawC % 5 + 0.5), 5 do
+                local x = centerX + (-i * 5 + yaw * 5)
+                if (i % 10 == 0) then
+                    yawlen = 10
+                    local num = i
+                    if num == 360 then 
+                        num = 0
+                    elseif num  > 360 then  
+                        num = num - 360 
+                    elseif num < 0 then
+                        num = num + 360
+                    end
+                    newContent[#newContent + 1] = stringf([[
+                            <text x="%f" y="%f">%d</text>]],x,yawy-12, num)
+                elseif (i % 5 == 0) then
+                    yawlen = 5
+                end
+                if yawlen == 10 then
+                    tickerPath = stringf([[%s M %f %f v %d]], tickerPath, x, yawy-5, yawlen)
+                else
+                    tickerPath = stringf([[%s M %f %f v %d]], tickerPath, x, yawy-2.5, yawlen)
+                end
+            end
+            newContent[#newContent + 1] = tickerPath .. [["/>]]
+            newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,%d,%d)">]], -rollC, centerX, centerY)
+            newContent[#newContent + 1] = stringf([[<<polygon points="%d,%d %d,%d %d,%d"/>]],
+                centerX-5, centerY+horizonRadius+OFFSET-20, centerX+5, centerY+horizonRadius+OFFSET-20, centerX, centerY+horizonRadius+OFFSET-15)
+            newContent[#newContent +1] = "</g>"
+        end
 
         function DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, bottomText)
             -- ** CIRCLE ALTIMETER  - Base Code from Discord @Rainsome = Youtube CaptainKilmar** 
             local horizonRadius = circleRad -- Aliased global
+            local pitchX = math.floor(horizonRadius * 3 / 5)
             if horizonRadius > 0 then
                 local pitchC = mfloor(originalPitch)
                 local rollC = mfloor(originalRoll)
@@ -1836,9 +1907,13 @@ function script.onStart()
                     end
                     local y = centerY + (-i * 5 + originalPitch * 5)
                     if len == 30 then
-                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-15, y, len)
+                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-pitchX-len, y, len)
+                        newContent[#newContent + 1] = stringf([[<g path transform="rotate(%f,%d,%d)" class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]],(-1 * originalRoll), centerX, centerY, centerX-pitchX+5, y, i)
+                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX+pitchX, y, len)
+                        newContent[#newContent + 1] = stringf([[<g path transform="rotate(%f,%d,%d)" class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]],(-1 * originalRoll), centerX, centerY, centerX+pitchX-5, y, i)
                     else
-                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-10, y, len)
+                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-pitchX-len, y, len)
+                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX+pitchX, y, len)
                     end
                 end
                 newContent[#newContent + 1] = tickerPath .. [["/>]]
@@ -1853,13 +1928,6 @@ function script.onStart()
                 end
                 newContent[#newContent + 1] = stringf([[<path d="m %d,%d 35,0 15,15 15,-15 35,0" stroke-width="2" style="fill:none;stroke:#F5B800;" />]],
                     centerX-50, centerY)
-                newContent[#newContent + 1] = stringf([[
-                    <circle class="ah" r="%f" cx="%d" cy="%d"/>
-                        
-                        <rect class="ahg" x="%f" y="%f" height="%f" width="%f" transform="rotate(%f %d %d)"/>]],
-                                                  horizonRadius, centerX, centerY, (centerX - horizonRadius),
-                                                  (centerY + horizonRadius * (originalPitch / 20)), (horizonRadius * 9), -- Cover 180 degrees
-                                                  (horizonRadius * 2), (-1 * originalRoll), centerX, centerY)
                 newContent[#newContent + 1] = "</g>"
                 newContent[#newContent + 1] = stringf([["
                 <g class="pdim txt txtmid">
@@ -1872,7 +1940,7 @@ function script.onStart()
                     <text x="%d" y="%d">%s</text>
                     <text x="%d" y="%d">%d deg</text>
                 </g>
-                ]], centerX-horizonRadius-20, centerY, bottomText, centerX-horizonRadius-20, centerY+10, rollC)
+                ]], centerX-horizonRadius-30, centerY, bottomText, centerX-horizonRadius-30, centerY+10, rollC)
             end
         end
 

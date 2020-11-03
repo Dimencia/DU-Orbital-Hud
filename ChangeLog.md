@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.80
+- Reformat HUD for a cleaner experience (F-16 style)
+
 Version 4.793 
 - Reverted save change.  ALT-7 will only wipe databank of saved variables.  To fully wipe a databank, pick it up, right click it, Remove Dynamic Properties, then put it back down.  
 This way you can wipe variables without wiping save location.  Note:  useTheseSettings button in Edit Lua Parameters makes the hud use the parameters vice what is on the databank.
