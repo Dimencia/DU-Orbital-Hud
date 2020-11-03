@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.792
+        VERSION_NUMBER = 4.80
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -37,17 +37,17 @@ function script.onStart()
         PrimaryB = 255 -- export: Primary HUD color
         centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Default 960. Use centerX=700 and centerY=980 for lower left placement.
         centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Default 540. Use centerX=700 and centerY=980 for lower left placement. 
-        throtPosX = 1110 -- export: X position of Throttle Indicator, default 1110 to put it to right of default AH centerX parameter.
+        throtPosX = 1300 -- export: X position of Throttle Indicator, default 1300 to put it to right of default AH centerX parameter.
         throtPosY = 540 -- export: Y position of Throttle indicator, default is 540 to place it centered on default AH centerY parameter.
         vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
         vSpdMeterY = 250 -- export: Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
-        altMeterX = 712  -- export: X postion of Vertical Speed Meter.  Default 712 (use 1920x1080, it will scale)
-        altMeterY = 520 -- export: Y postion of Vertical Speed Meter.  Default 520 (use 1920x1080, it will scale)
+        altMeterX = 550  -- export: X postion of Altimeter.  Default 550 (use 1920x1080, it will scale)
+        altMeterY = 540 -- export: Y postion of Altimeter.  Default 500 (use 1920x1080, it will scale)
         fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side, set both fuelX and fuelY to 0 to hide fuel
         fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side, set both fuelX and fuelY to 0 to hide fuel
         opacityTop = 0.1 -- export: 0 to 1 for opacity of AH top half, default 0.1
         opacityBottom = 0.3 -- export: 0 to 1 for opacity of AH bottom, default 0.3
-        circleRad = 100 -- export: The size of the artifical horizon circle, set to 0 to remove.
+        circleRad = 400 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
         hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
@@ -246,10 +246,10 @@ function script.onStart()
                     end
                 end
             end
-            if valuesAreSet then
-                MsgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
-            elseif useTheseSettings then
+            if useTheseSettings then
                 MsgText = "Updated user preferences used.  Will be saved when you exit seat.  Toggle off useTheseSettings to use saved values"
+            elseif valuesAreSet then
+                MsgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
             else
                 MsgText = "No Saved Variables Found - Stand up / leave remote to save settings"
             end
@@ -1040,15 +1040,13 @@ function script.onStart()
             else--if valuesAreSet then
                 if doubleCheck then
                     -- If any values are set, wipe them all
-                    --[[
                     for k, v in pairs(SaveableVariables) do
                         dbHud.setStringValue(v, jencode(nil))
                     end
                     for k, v in pairs(AutoVariables) do
                         if v ~= "SavedLocations" then dbHud.setStringValue(v, jencode(nil)) end
                     end
-                    ]]
-                    dbHud.clear()
+                    --dbHud.clear()
                     MsgText =
                         "Databank wiped. New variables will save after re-enter seat and exit"
                     MsgTimer = 5
@@ -1529,6 +1527,7 @@ function script.onStart()
             local spd = speed * 3.6
             local flightValue = unit.getAxisCommandValue(0)
             local flightStyle = GetFlightStyle()
+            local bottomText = "ROLL"
 
             if (atmos == 0) then
                 if (speed > 5) then
@@ -1578,14 +1577,15 @@ function script.onStart()
             if isRemote() == 0 or RemoteHud then
                 -- Don't even draw this in freelook
                if not IsInFreeLook() or brightHud then
-                    if unit.getClosestPlanetInfluence() > 0 then
-                        DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, "ROLL")
-                        DrawPrograde(newContent, atmos, velocity, speed, centerX, centerY)
+                    if unit.getClosestPlanetInfluence() > 0 then -- use real pitch, roll, and heading
+                        DrawRollLines (newContent, centerX, centerY, originalRoll, bottomText, true)
+                        DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, bottomText)
                         DrawAltitudeDisplay(newContent, altitude, atmos)
-                    else
-                        DrawArtificialHorizon(newContent, pitch, roll, atmos, centerX, centerY, "YAW")
-                        DrawPrograde(newContent, atmos, velocity, speed, centerX, centerY)
+                    else -- use Relative Pitch and Relative Yaw
+                        DrawRollLines (newContent, centerX, centerY, roll, bottomText, false)
+                        DrawArtificialHorizon(newContent, pitch, roll, atmos, centerX, centerY, bottomText)
                     end
+                    DrawPrograde(newContent, atmos, velocity, speed, centerX, centerY)
                 end
             end
             DrawThrottle(newContent, flightStyle, throt, flightValue)
@@ -1671,17 +1671,17 @@ function script.onStart()
         end
 
         function DrawSpeed(newContent, spd)
-            local ys2 = altMeterY + 40
-            local x1 = altMeterX
+            local ys = throtPosY-10 
+            local x1 = throtPosX + 10
             newContent[#newContent + 1] = [[<g class="pdim txt txtend">]]
             if isRemote() == 1 and not RemoteHud then
-                ys2 = 75
+                ys = 75
             end
             newContent[#newContent + 1] = stringf([[
                 <g class="pbright txtstart">
                     <text class="txtbig" x="%d" y="%d">%d km/h</text>
                 </g>
-            </g>]], x1, ys2, mfloor(spd))
+            </g>]], x1, ys, mfloor(spd))
         end
 
         function DrawOdometer(newContent, TotalDistanceTrip, TotalDistanceTravelled, flightStyle, flightTime)
@@ -1730,7 +1730,7 @@ function script.onStart()
                     <text class="txtstart" x="970" y="20">Mass: %.2f Tons</text>
                     <text class="txtend" x="1240" y="10">Max Brake: %.2f kN</text>
                     <text class="txtend" x="1240" y="30">Max Thrust: %.2f kN</text>
-                    <text class="txtbig txtmid" x="960" y="130">%s</text>
+                    <text class="txtbig txtmid" x="960" y="150">%s</text>
                 ]], TotalDistanceTrip, (TotalDistanceTravelled / 1000), FormatTimeString(flightTime),
                                                   FormatTimeString(TotalFlightTime), (totalMass / 1000),
                                                   (LastMaxBrake / 1000), (maxThrust / 1000), flightStyle)
@@ -1754,8 +1754,8 @@ function script.onStart()
 
         function DrawThrottle(newContent, flightStyle, throt, flightValue)
 
-            local y1 = throtPosY+65
-            local y2 = throtPosY+75
+            local y1 = throtPosY+10
+            local y2 = throtPosY+20
             if isRemote() == 1 and not RemoteHud then
                 y1 = 55
                 y2 = 65
@@ -1777,14 +1777,14 @@ function script.onStart()
                     <g transform="translate(0 %d)">
                         <polygon points="%d,%d %d,%d %d,%d"/>
                     </g>]], throtclass, throtPosX-7, throtPosY-50, throtPosX, throtPosY-50, throtPosX, throtPosY+50, throtPosX-7, throtPosY+50, (1 - math.abs(throt)), 
-                    throtPosX-20, throtPosY+50, throtPosX-25, throtPosY+53, throtPosX-25, throtPosY+47)
+                    throtPosX-10, throtPosY+50, throtPosX-15, throtPosY+53, throtPosX-15, throtPosY+47)
             end
             newContent[#newContent + 1] = stringf([[
                 <g class="pbright txtstart">
                         <text x="%d" y="%d">%s</text>
                         <text x="%d" y="%d">%d %s</text>
                 </g>
-            </g>]], throtPosX, y1, label, throtPosX, y2, value, unit)
+            </g>]], throtPosX+10, y1, label, throtPosX+10, y2, value, unit)
         end
 
         -- Draw vertical speed indicator - Code by lisa-lionheart 
@@ -1819,15 +1819,101 @@ function script.onStart()
                 ]], vSpdMeterX, vSpdMeterY, mfloor(vSpd), mfloor(angle))
             end
         end
+        
+        function getHeading(forward)
+            local up = -vec3(core.getWorldVertical())
+            forward = forward - forward:project_on(up)
+            local north = vec3(0, 0, 1)
+            north = north - north:project_on(up)
+            local east = north:cross(up)
+            local angle = north:angle_between(forward) * constants.rad2deg
+            if forward:dot(east) < 0 then
+                angle = 360-angle
+            end
+            return angle
+        end
+
+        function DrawRollLines (newContent, centerX, centerY, originalRoll, bottomText, nearPlanet)
+            local horizonRadius = circleRad -- Aliased global
+            local OFFSET = 100
+            local rollC = mfloor(originalRoll)
+            if nearPlanet then 
+                for i = -45, 45, 5 do
+                    local rot = i
+                    newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,%d,%d)">]], rot, centerX, centerY)
+                    len = 5
+                    if (i % 15 == 0) then
+                        len = 15
+                    elseif (i % 10 == 0) then
+                        len = 10
+                    end
+                    newContent[#newContent + 1] = stringf([[<line x1=%d y1=%d x2=%d y2="%d"/></g>]], centerX, centerY + horizonRadius + OFFSET - len, centerX, centerY + horizonRadius + OFFSET)
+                end 
+                if rollC > 45 then rollC = 45 elseif rollC < -45 then rollC = -45 end
+                newContent[#newContent + 1] = stringf([["
+                    <g class="pdim txt txtmid">
+                        <text x="%d" y="%d">%s</text>
+                        <text x="%d" y="%d">%d deg</text>
+                    </g>
+                    ]], centerX, centerY+horizonRadius+OFFSET-35, bottomText, centerX, centerY+horizonRadius+OFFSET-25, rollC)
+                newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,%d,%d)">]], -originalRoll, centerX, centerY)
+                newContent[#newContent + 1] = stringf([[<<polygon points="%d,%d %d,%d %d,%d"/>]],
+                    centerX-5, centerY+horizonRadius+OFFSET-20, centerX+5, centerY+horizonRadius+OFFSET-20, centerX, centerY+horizonRadius+OFFSET-15)
+                newContent[#newContent +1] = "</g>"
+            end
+            yaw = rollC
+            if nearPlanet then yaw = getHeading(vec3(core.getConstructWorldOrientationForward())) end
+            local range = 20
+            local yawC = mfloor(yaw) 
+            local yawlen = 0
+            local yawy = (centerY + horizonRadius)
+            local tickerPath = [[<path class="txttick line" d="]]
+                        for i = mfloor(yawC - (range+10) - yawC % 5 + 0.5), mfloor(yawC + (range+10) + yawC % 5 + 0.5), 5 do
+                local x = centerX + (-i * 5 + yaw * 5)
+                if (i % 10 == 0) then
+                    yawlen = 10
+                    local num = i
+                    if num == 360 then 
+                        num = 0
+                    elseif num  > 360 then  
+                        num = num - 360 
+                    elseif num < 0 then
+                        num = num + 360
+                    end
+                    newContent[#newContent + 1] = stringf([[
+                            <text x="%f" y="%f">%d</text>]],x+5,yawy-12, num)
+                elseif (i % 5 == 0) then
+                    yawlen = 5
+                end
+                if yawlen == 10 then
+                    tickerPath = stringf([[%s M %f %f v %d]], tickerPath, x, yawy-5, yawlen)
+                else
+                    tickerPath = stringf([[%s M %f %f v %d]], tickerPath, x, yawy-2.5, yawlen)
+                end
+            end
+            newContent[#newContent + 1] = tickerPath .. [["/>]]
+            newContent[#newContent + 1] = stringf([[<<polygon points="%d,%d %d,%d %d,%d"/>]],
+                centerX-5, yawy+10, centerX+5, yawy+10, centerX, yawy+5)
+            if nearPlanet then bottomText = "HDG" end
+            newContent[#newContent + 1] = stringf([["
+                <g class="pdim txt txtmid">
+                <text x="%d" y="%d">%d deg</text>
+                <text x="%d" y="%d">%s</text>
+                </g>
+                ]], centerX, yawy+25, yawC, centerX, yawy+35, bottomText)
+        end
 
         function DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, bottomText)
             -- ** CIRCLE ALTIMETER  - Base Code from Discord @Rainsome = Youtube CaptainKilmar** 
             local horizonRadius = circleRad -- Aliased global
+            local pitchX = math.floor(horizonRadius * 3 / 5)
             if horizonRadius > 0 then
                 local pitchC = mfloor(originalPitch)
-                local rollC = mfloor(originalRoll)
                 local len = 0
                 local tickerPath = stringf([[<path transform="rotate(%f,%d,%d)" class="dim line" d="]], (-1 * originalRoll), centerX, centerY)
+                if bottomText == "YAW" then
+                    tickerPath = stringf([[<path transform="rotate(0,%d,%d)" class="dim line" d="]], centerX, centerY)
+                end
                 newContent[#newContent + 1] = stringf([[<clipPath id="cut"><circle r="%f" cx="%d" cy="%d"/></clipPath>]],(horizonRadius - 1), centerX, centerY)
                 newContent[#newContent + 1] = [[<g class="dim txttick" clip-path="url(#cut)">]]
                 for i = mfloor(pitchC - 30 - pitchC % 5 + 0.5), mfloor(pitchC + 30 + pitchC % 5 + 0.5), 5 do
@@ -1838,9 +1924,18 @@ function script.onStart()
                     end
                     local y = centerY + (-i * 5 + originalPitch * 5)
                     if len == 30 then
-                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-15, y, len)
+                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-pitchX-len, y, len)
+                        if bottomText ~= "YAW" then
+                            newContent[#newContent + 1] = stringf([[<g path transform="rotate(%f,%d,%d)" class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]],(-1 * originalRoll), centerX, centerY, centerX-pitchX+10, y, i)
+                            newContent[#newContent + 1] = stringf([[<g path transform="rotate(%f,%d,%d)" class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]],(-1 * originalRoll), centerX, centerY, centerX+pitchX-10, y, i)
+                        else
+                            newContent[#newContent + 1] = stringf([[<g class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]], centerX-pitchX+10, y, i)
+                            newContent[#newContent + 1] = stringf([[<g class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]], centerX+pitchX-10, y, i)
+                        end                            
+                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX+pitchX, y, len)
                     else
-                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-10, y, len)
+                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-pitchX-len, y, len)
+                        tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX+pitchX, y, len)
                     end
                 end
                 newContent[#newContent + 1] = tickerPath .. [["/>]]
@@ -1853,28 +1948,29 @@ function script.onStart()
                 elseif originalPitch < -90 and atmos == 0 then
                     originalPitch = -90 - (originalPitch + 90)
                 end
+                if horizonRadius > 200 then
+                    if bottomText ~= "YAW" then
+                        newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,%d,%d)">]], -originalRoll, centerX, centerY)
+                    else
+                        newContent[#newContent + 1] = stringf([[<g transform="rotate(0,%d,%d)">]], centerX, centerY)
+                    end
+                    newContent[#newContent + 1] = stringf([[<<polygon points="%d,%d %d,%d %d,%d"/> class="pdim txtend"><text x="%d" y="%f">%d</text>]],
+                    centerX-pitchX+25, centerY-5, centerX-pitchX+20, centerY, centerX-pitchX+25, centerY+5, centerX-pitchX+50, centerY+4, pitchC)
+                    newContent[#newContent + 1] = stringf([[<<polygon points="%d,%d %d,%d %d,%d"/> class="pdim txtend"><text x="%d" y="%f">%d</text>]],
+                    centerX+pitchX-25, centerY-5, centerX+pitchX-20, centerY, centerX+pitchX-25, centerY+5, centerX+pitchX-30, centerY+4, pitchC)
+                    newContent[#newContent +1] = "</g>"
+                end
                 newContent[#newContent + 1] = stringf([[<path d="m %d,%d 35,0 15,15 15,-15 35,0" stroke-width="2" style="fill:none;stroke:#F5B800;" />]],
                     centerX-50, centerY)
-                newContent[#newContent + 1] = stringf([[
-                    <circle class="ah" r="%f" cx="%d" cy="%d"/>
-                        
-                        <rect class="ahg" x="%f" y="%f" height="%f" width="%f" transform="rotate(%f %d %d)"/>]],
-                                                  horizonRadius, centerX, centerY, (centerX - horizonRadius),
-                                                  (centerY + horizonRadius * (originalPitch / 20)), (horizonRadius * 9), -- Cover 180 degrees
-                                                  (horizonRadius * 2), (-1 * originalRoll), centerX, centerY)
                 newContent[#newContent + 1] = "</g>"
-                newContent[#newContent + 1] = stringf([["
-                <g class="pdim txt txtmid">
+                if horizonRadius < 200 then
+                    newContent[#newContent + 1] = stringf([["
+                    <g class="pdim txt txtmid">
                     <text x="%d" y="%d">%s</text>
                     <text x="%d" y="%d">%d deg</text>
-                </g>
-                ]], centerX, centerY-horizonRadius-20, pitchstring, centerX, centerY-horizonRadius-10, pitchC)
-                newContent[#newContent + 1] = stringf([["
-                <g class="pdim txt txtmid">
-                    <text x="%d" y="%d">%s</text>
-                    <text x="%d" y="%d">%d deg</text>
-                </g>
-                ]], centerX-horizonRadius-20, centerY, bottomText, centerX-horizonRadius-20, centerY+10, rollC)
+                    </g>
+                    ]], centerX, centerY+horizonRadius-40, pitchstring, centerX, centerY+horizonRadius-30, pitchC)
+                end
             end
         end
 
@@ -2036,8 +2132,8 @@ function script.onStart()
             end
             local warningX = 960
             local brakeY = 860
-            local gearY = 900
-            local hoverY = 930
+            local gearY = 880
+            local hoverY = 900
             local ewarpY = 960
             local apY = 200
             local turnBurnY = 150
