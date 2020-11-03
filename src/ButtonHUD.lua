@@ -1819,14 +1819,16 @@ function script.onStart()
             end
         end
         
-        function getYaw(vector)
-            velocity = vec3(vector):normalize()
-            local forward = vec3(core.getConstructWorldOrientationForward())
+        function getHeading(forward)
             local up = -vec3(core.getWorldVertical())
-            local angle = math.atan((velocity:cross(forward)):dot(up), velocity:dot(forward))
-            angle = math.deg(angle) 
-            angle = -angle
-            if angle < 0 then angle = angle + 360 end
+            forward = forward - forward:project_on(up)
+            local north = vec3(0, 0, 1)
+            north = north - north:project_on(up)
+            local east = north:cross(up)
+            local angle = north:angle_between(forward) * constants.rad2deg
+            if forward:dot(east) < 0 then
+                angle = 360-angle
+            end
             return angle
         end
 
@@ -1846,14 +1848,9 @@ function script.onStart()
                 newContent[#newContent + 1] = stringf([[<line x1=%d y1=%d x2=%d y2="%d"/></g>]], centerX, centerY + horizonRadius + OFFSET - len, centerX, centerY + horizonRadius + OFFSET)
             end 
             if rollC > 45 then rollC = 45 elseif rollC < -45 then rollC = -45 end
-            
-            local northVector = vec3({0,0,1})
-            local surfaceNorth = planet.center + planet.radius*northVector
-            local vectorToNorth = surfaceNorth-vec3(core.getConstructWorldPos())
-            local yaw = getYaw(vectorToNorth)
+            local yaw = getHeading(vec3(core.getConstructWorldOrientationForward()))
             local range = 20
             local yawC = mfloor(yaw) 
-            system.print ("Hdg: "..yawC)
             local yawlen = 0
             local yawy = (centerY + horizonRadius + 20)
             local tickerPath = [[<path class="txttick line" d="]]
@@ -1871,7 +1868,7 @@ function script.onStart()
                         num = num + 360
                     end
                     newContent[#newContent + 1] = stringf([[
-                            <text x="%f" y="%f">%d</text>]],x,yawy-12, num)
+                            <text x="%f" y="%f">%d</text>]],x+5,yawy-12, num)
                 elseif (i % 5 == 0) then
                     yawlen = 5
                 end
@@ -1940,7 +1937,7 @@ function script.onStart()
                     <text x="%d" y="%d">%s</text>
                     <text x="%d" y="%d">%d deg</text>
                 </g>
-                ]], centerX-horizonRadius-30, centerY, bottomText, centerX-horizonRadius-30, centerY+10, rollC)
+                ]], centerX-horizonRadius-15, centerY, bottomText, centerX-horizonRadius-15, centerY+10, rollC)
             end
         end
 
