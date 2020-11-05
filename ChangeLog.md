@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.811 - Change brake behavior
+- When you hit G already within hover distance, brake is applied assuming  you want to extend gear and land.  if you just want gear down, hit CTRL to toggle off brake.
+
 Version 4.81 - Cleanup of hud performance in space
 - Hud now behaves/looks different in atmosphere, out of atmosphere but within planetary influence, and outside of planetary influence.
 
