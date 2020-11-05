@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.81 - Cleanup of hud performance in space
+- Hud now behaves/looks different in atmosphere, out of atmosphere but within planetary influence, and outside of planetary influence.
+
 Version 4.80 - Updated HUD, now with a compass
 - Reformat HUD for a cleaner experience (F-16 style).  cirleRad now sizeable from 100 to 400 with different looks < or > 200
 
