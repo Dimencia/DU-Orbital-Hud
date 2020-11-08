@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.811
+        VERSION_NUMBER = 4.82
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -45,8 +45,6 @@ function script.onStart()
         altMeterY = 540 -- export: Y postion of Altimeter.  Default 500 (use 1920x1080, it will scale)
         fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side, set both fuelX and fuelY to 0 to hide fuel
         fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side, set both fuelX and fuelY to 0 to hide fuel
-        opacityTop = 0.1 -- export: 0 to 1 for opacity of AH top half, default 0.1
-        opacityBottom = 0.3 -- export: 0 to 1 for opacity of AH bottom, default 0.3
         circleRad = 400 -- export: The size of the artifical horizon circle, set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
@@ -59,6 +57,8 @@ function script.onStart()
         ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
         ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
         EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
+        IgnoreEmergencyWarpDistance = 500 -- export: Any targets within this distance are ignored for emergency warp.
+        RequireLock = false -- export: Set to true to require a target lock on you before starting an emergency warp.
         AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
         LandingGearGroundHeight = 0 --export: Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear,
@@ -194,8 +194,6 @@ function script.onStart()
         local fuelTimeLeft = {}
         local fuelPercent = {}
         local updateTanks = false
-        local honeyCombMass = 0
-        local lastConstructMass = constructMass()
         local coreOffset = 16
         local UpdateCount = 0
 
@@ -211,7 +209,7 @@ function script.onStart()
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                            "opacityBottom", "opacityTop", "RemoteHud"}
+                            "RemoteHud", "RequireLock"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -259,7 +257,6 @@ function script.onStart()
        -- Loading saved vars is hard on it
         brakeToggle = BrakeToggleDefault
         autoRoll = autoRollPreference
-        honeyCombMass = lastConstructMass - updateMass()
         if antigrav then
             if AntigravTargetAltitude == nil then 
                 AntigravTargetAltitude = CoreAltitude
@@ -928,12 +925,9 @@ function script.onStart()
 
         function checkDamage(newContent)
             local percentDam = 0
-            local speed = vec3(velocity):len()
             damageMessage = ""
-            currentConstructMass = constructMass()
             local maxShipHP = eleTotalMaxHp
             local curShipHP = 0
-            local voxelDam = 100
             local damagedElements = 0
             local disabledElements = 0
             local colorMod = 0
@@ -981,19 +975,8 @@ function script.onStart()
                 end
             end
             percentDam = mfloor((curShipHP / maxShipHP)*100)
-            if speed < 5 and (currentConstructMass < lastConstructMass) then
-                voxelDam = math.ceil( ((currentConstructMass - updateMass()) / honeyCombMass) * 100)
-                lastConstructMass = currentConstructMass
-            end
-            if voxelDam < 100 or percentDam < 100 then
+            if percentDam < 100 then
                 newContent[#newContent + 1] = [[<g class="pbright txt">]]
-                if voxelDam < 100 then
-                    colorMod = mfloor(voxelDam * 2.55)
-                    color = stringf("rgb(%d,%d,%d)", 255 - colorMod, colorMod, 0)
-                    newContent[#newContent + 1] = stringf(
-                                                      [[<text class="txtbig txtmid" x=50%% y="1015" style="fill:%s">Structural Integrity: %i %%</text>]],
-                                                      color, voxelDam)
-                end
                 colorMod = mfloor(percentDam * 2.55)
                 color = stringf("rgb(%d,%d,%d)", 255 - colorMod, colorMod, 0)
                 if percentDam < 100 then
@@ -1658,13 +1641,11 @@ function script.onStart()
                         .hudver {font-size:10px;font-weight:bold;fill:red;text-anchor:end;font-family:Bank}
                         .msg {font-size:40px;fill:red;text-anchor:middle;font-weight:normal}
                         .cursor {stroke:white}
-                        .ah {opacity:%f;fill:#0083cb;stroke:black;stroke-width:2px}
-                        .ahg {opacity:%f;fill:#6b5835}
                     </style>
                 </head>
                 <body>
                     <svg height="100%%" width="100%%" viewBox="0 0 1920 1080">
-                    ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig, opacityTop, opacityBottom)
+                    ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig)
         end
 
         function HUDEpilogue(newContent)
@@ -1731,7 +1712,7 @@ function script.onStart()
                     <text class="txtstart" x="970" y="20">Mass: %.2f Tons</text>
                     <text class="txtend" x="1240" y="10">Max Brake: %.2f kN</text>
                     <text class="txtend" x="1240" y="30">Max Thrust: %.2f kN</text>
-                    <text class="txtbig txtmid" x="960" y="190">%s</text>
+                    <text class="txtbig txtmid" x="960" y="185">%s</text>
                 ]], TotalDistanceTrip, (TotalDistanceTravelled / 1000), FormatTimeString(flightTime),
                                                   FormatTimeString(TotalFlightTime), (totalMass / 1000),
                                                   (LastMaxBrake / 1000), (maxThrust / 1000), flightStyle)
@@ -3776,7 +3757,83 @@ function script.onStart()
                              max, samples))
         end
 
-    
+        function updateRadar()
+            if (radar_1) then
+                local radarContacts = radar_1.getEntries()
+                local radarData = radar_1.getData()
+                if #radarContacts > 0 then
+                    if HasSpaceRadar and EmergencyWarp then
+                        local data = radarData:gmatch('{"constructId[^}]*}[^}]*}') -- Gets each construct's entry in full
+                        for v in data do
+                            local id, distance = v:match([[{"constructId":"([%d%.]*)","distance":([%d%.]*)]])
+                            if id ~= nil and id ~= "" then
+                                distance = math.floor(distance)
+                                if (distance < EmergencyWarpDistance) and ( distance > IgnoreEmergencyWarpDistance) then
+                                    if NotTriedEmergencyWarp and json.decode(warpdrive.getData()).errorMsg ~= "PLANET TOO CLOSE" then
+                                        if radar_1.hasMatchingTransponder(id) ~= 1 then
+                                            if RequireLock then
+                                                if not v:find('targetThreatState":0') then
+                                                    InEmergencyWarp = true
+                                                    NotTriedEmergencyWarp = false
+                                                    break                                                    
+                                                end
+                                            else
+                                                InEmergencyWarp = true
+                                                NotTriedEmergencyWarp = false
+                                                break
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    local target = radarData:find('identifiedConstructs":%[%]')
+                    if target == nil and perisPanelID == nil then
+                        Peris = 1
+                        ToggleRadarPanel()
+                    end
+                    if target ~= nil and perisPanelID ~= nil then
+                        ToggleRadarPanel()
+                    end
+                    if radarPanelID == nil then
+                        ToggleRadarPanel()
+                    end
+                    RadarMessage = string.format(
+                                    [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: %i contacts</text>]],
+                                    #radarContacts)
+                    local friendlies = {}
+                    for k, v in pairs(radarContacts) do
+                        if radar_1.hasMatchingTransponder(v) == 1 then
+                            friendlies[#friendlies + 1] = v
+                        end
+                    end
+                    if #friendlies > 0 then
+                        local y = 15
+                        RadarMessage = string.format(
+                                        [[%s<text class="pbright txtbig txtmid" x="1370" y="%s">Friendlies In Range</text>]],
+                                        RadarMessage, y)
+                        for k, v in pairs(friendlies) do
+                            y = y + 20
+                            RadarMessage = string.format([[%s<text class="pdim txtmid" x="1370" y="%s">%s</text>]],
+                                            RadarMessage, y, radar_1.getConstructName(v))
+                        end
+                    end
+                else
+                    local data
+                    data = radarData:find('worksInEnvironment":false')
+                    if data then
+                        RadarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: Jammed</text>]]
+                    else
+                        RadarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: No Contacts</text>]]
+                    end
+                    if radarPanelID ~= nil then
+                        Peris = 0
+                        ToggleRadarPanel()
+                    end
+                end
+            end
+        end
 
         Animating = false
         Animated = false
@@ -3930,66 +3987,7 @@ function script.onTick(timerId)
 
         refreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
         updateDistance()
-        if (radar_1 and #radar_1.getEntries() > 0) then
-            local target
-            target = radar_1.getData():find('identifiedConstructs":%[%]')
-            if HasSpaceRadar and EmergencyWarp then
-                local id, distance = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
-                if id ~= nil and id ~= "" then
-                    if (math.floor(distance) < EmergencyWarpDistance) and NotTriedEmergencyWarp  and json.decode(warpdrive.getData()).errorMsg ~= "PLANET TOO CLOSE" then
-                        InEmergencyWarp = true
-                        NotTriedEmergencyWarp = false
-                    end
-                end
-            end
-            if target == nil and perisPanelID == nil then
-                Peris = 1
-                ToggleRadarPanel()
-            end
-            if target ~= nil and perisPanelID ~= nil then
-                ToggleRadarPanel()
-            end
-            if radarPanelID == nil then
-                ToggleRadarPanel()
-            end
-
-            local radarContacts = radar_1.getEntries()
-            RadarMessage = string.format(
-                               [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: %i contacts</text>]],
-                               #radarContacts)
-
-            local friendlies = {}
-            for k, v in pairs(radarContacts) do
-                if radar_1.hasMatchingTransponder(v) == 1 then
-                    friendlies[#friendlies + 1] = v
-                end
-            end
-            if #friendlies > 0 then
-                local y = 15
-                RadarMessage = string.format(
-                                   [[%s<text class="pbright txtbig txtmid" x="1370" y="%s">Friendlies In Range</text>]],
-                                   RadarMessage, y)
-                for k, v in pairs(friendlies) do
-                    y = y + 20
-                    RadarMessage = string.format([[%s<text class="pdim txtmid" x="1370" y="%s">%s</text>]],
-                                       RadarMessage, y, radar_1.getConstructName(v))
-                end
-            end
-
-        elseif radar_1 then
-            local data
-            data = radar_1.getData():find('worksInEnvironment":false')
-            if data then
-                RadarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: Jammed</text>]]
-            else
-                RadarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: No Contacts</text>]]
-            end
-            if radarPanelID ~= nil then
-                Peris = 0
-                ToggleRadarPanel()
-            end
-        end
-
+        updateRadar()
         -- Update odometer output string
         local newContent = {}
         local flightStyle = GetFlightStyle()
@@ -5198,14 +5196,6 @@ function updateDistance()
     TotalFlightTime = TotalFlightTime + elapsedTime
     LastTravelTime = curTime
 end
-
-function updateMass()
-    local totMass = 0
-    for k in pairs(ElementsID) do
-        totMass = totMass + core.getElementMassById(ElementsID[k])
-    end
-    return totMass
-end    
 
 script.onStart()
 
