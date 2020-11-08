@@ -1,5 +1,12 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.82 
+- Removed structural integrity - Too hard to caclulate due to how ships mass vs elements is updated, makes it think voxel damage when none.
+- Updated Emergency Warp to ignore any contact that is < IgnoreEmergencyWarpDistance
+- Updated Emergency Warp to ignore a target with a transponder that matches your transponder.
+- Added user option (IgnoreEmergencyWarpDistance) where targets within this distance are ignored for emergency warp purposes (500 by default)
+- Added user option (RequireLock) to only Emergency Warp if someone is within EmergencyWarpRange and has target lock on you (off by default) - NOT TESTED BUT SHOULD WORK.  ANYONE WHO TESTS PLEASE TELL ME.
+
 Version 4.811 - Change brake behavior
 - When you hit G already within hover distance, brake is applied assuming  you want to extend gear and land.  if you just want gear down, hit CTRL to toggle off brake.
 
