@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.82
+        VERSION_NUMBER = 4.821
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -1512,6 +1512,7 @@ function script.onStart()
             local flightStyle = GetFlightStyle()
             local bottomText = "ROLL"
             local nearPlanet = unit.getClosestPlanetInfluence() > 0
+            if throt == nil then throt = 0 end
 
             if (not nearPlanet) then
                 if (speed > 5) then
@@ -5049,17 +5050,17 @@ end
 
 function script.onActionStop(action)
     if action == "forward" then
-        PitchInput = PitchInput + 1
+        PitchInput = 0
     elseif action == "backward" then
-        PitchInput = PitchInput - 1
+        PitchInput = 0
     elseif action == "left" then
-        RollInput = RollInput + 1
+        RollInput = 0
     elseif action == "right" then
-        RollInput = RollInput - 1
+        RollInput = 0
     elseif action == "yawright" then
-        YawInput = YawInput + 1
+        YawInput = 0
     elseif action == "yawleft" then
-        YawInput = YawInput - 1
+        YawInput = 0
     elseif action == "straferight" then
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.lateral, -1.0)
     elseif action == "strafeleft" then

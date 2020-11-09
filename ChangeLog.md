@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.821
+- Fixed DrawThrottle bug not receiving throttle value if just starting up.
+- First try on fixing roll/pitch/yaw getting stuck on.
+
 Version 4.82 
 - Removed structural integrity - Too hard to caclulate due to how ships mass vs elements is updated, makes it think voxel damage when none.
 - Updated Emergency Warp to ignore any contact that is < IgnoreEmergencyWarpDistance
