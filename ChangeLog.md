@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.822
+- Re-add currentGroundAltitudeStabilization back to up and down to see if fixes anything :)
+- Attempt to let vertical engines autofire in atmosphere like vanilla so they work to assist hover if installed.
+
 Version 4.821
 - Fixed DrawThrottle bug not receiving throttle value if just starting up.
 - First try on fixing roll/pitch/yaw getting stuck on.
