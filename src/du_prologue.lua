@@ -53,6 +53,8 @@ unit = ControlUnit
 library = Library
 system = System
 
+currentGroundAltitudeStabilization = 0
+
 --
 -- BEGIN DU-generated Prologue
 --

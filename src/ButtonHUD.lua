@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.821
+        VERSION_NUMBER = 4.822
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -4767,7 +4767,7 @@ function script.onFlush()
     if (verticalCommandType == axisCommandType.byThrottle) then
         local verticalStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
                                                verticalStrafeEngineTags, axisCommandId.vertical)
-        if UpAmount ~= 0 or BrakeLanding then
+        if UpAmount ~= 0 or BrakeLanding or atmosphere > 0 then
             Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity, 'airfoil',
                 'ground', '', tolerancePercentToSkipOtherPriorities)
         else
@@ -4852,13 +4852,14 @@ function script.onActionStart(action)
         GearExtended = not GearExtended
         if GearExtended then
             VectorToTarget = false
+            if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
+                Nav.control.cancelCurrentControlMasterMode()
+            end
+            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             if (vBooster or hover) and hoverDetectGround() == -1 and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
                     MsgText = "WARNING: Insufficient Brakes - Attempting landing anyway"
-                end
-                if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
-                    Nav.control.cancelCurrentControlMasterMode()
                 end
                 Reentry = false
                 AutoTakeoff = false
@@ -4866,11 +4867,9 @@ function script.onActionStart(action)
                 BrakeLanding = true
                 autoRoll = true
                 GearExtended = false -- Don't actually do it
-                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             else
                 BrakeIsOn = true
                 Nav.control.extendLandingGears()
-                Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
             end
         else
             Nav.control.retractLandingGears()
@@ -5066,13 +5065,13 @@ function script.onActionStop(action)
     elseif action == "strafeleft" then
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.lateral, 1.0)
     elseif action == "up" then
-        UpAmount = UpAmount - 1
+        UpAmount = 0
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
+        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
     elseif action == "down" then
-        UpAmount = UpAmount + 1
+        UpAmount = 0
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
-        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
+        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
     elseif action == "groundaltitudeup" then
         if antigrav and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
