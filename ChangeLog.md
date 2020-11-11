@@ -1,5 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.824
+- Credit for heading code to tomisunlucky
+- Change vSpd calculation, same results.
+- Removed 5 second delay on activation of Emergency Warp.  If you turn it on, you want it to activate when any of the conditions are met.
+- Changed tilt on Follow Mode to 20 deg to allow better following.  Note: Very light or single hover ships cannot utilize Follow Mode.
+
 Version 4.823
 - Fix wrong landing height when hitting G
 

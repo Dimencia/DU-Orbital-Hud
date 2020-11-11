@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.823
+        VERSION_NUMBER = 4.824
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -1773,9 +1773,7 @@ function script.onStart()
         -- Draw vertical speed indicator - Code by lisa-lionheart 
         function DrawVerticalSpeed(newContent, altitude, atmos)
             if (altitude < 200000 and atmos == 0) or (altitude and atmos > 0) then
-                local velocity = vec3(core.getWorldVelocity())
-                local up = vec3(core.getWorldVertical()) * -1
-                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                local vSpd = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
                 local angle = 0
                 if math.abs(vSpd) > 1 then
                     angle = 45 * math.log(math.abs(vSpd), 10)
@@ -1803,7 +1801,7 @@ function script.onStart()
             end
         end
         
-        function getHeading(forward)
+        function getHeading(forward) -- code provided by tomisunlucky   
             local up = -vec3(core.getWorldVertical())
             forward = forward - forward:project_on(up)
             local north = vec3(0, 0, 1)
@@ -3962,9 +3960,12 @@ function script.onTick(timerId)
         if warpdrive ~= nil then
             if InEmergencyWarp then
                 if json.decode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
-                    MsgText = "EMERGENCY WARP IN 5 SECONDS - PRESS ALT-J to CANCEL"
+                    MsgText = "EMERGENCY WARP ACTIVATED"
                     MsgTimer = 5
-                    unit.setTimer("emergencyWarpTick", 5)
+                    warpdrive.activateWarp()
+                    warpdrive.show()
+                    showWarpWidget = true
+                    EmergencyWarp = false
                     InEmergencyWarp = false
                 else
                     MsgText = "Emergency Warp Condition Met - Cannot Warp, will retry in 1 second\n" ..
@@ -4009,16 +4010,6 @@ function script.onTick(timerId)
         MsgText = "empty"
         unit.stopTimer("msgTick")
         MsgTimer = 3
-    elseif timerId == "emergencyWarpTick" then
-        if EmergencyWarp then 
-            MsgText = "EMERGENCY WARP ACTIVATED"
-            MsgTimer = 5
-            warpdrive.activateWarp()
-            warpdrive.show()
-            showWarpWidget = true
-            EmergencyWarp = false
-        end
-        unit.stopTimer("emergencyWarpTick")
     elseif timerId == "animateTick" then
         Animated = true
         Animating = false
@@ -4412,7 +4403,7 @@ function script.onTick(timerId)
                 -- if not onShip then -- Don't mess with brake if they're on ship
                 BrakeIsOn = false
                 -- end
-                targetPitch = -10
+                targetPitch = -20
             else
                 -- if not onShip then
                 BrakeIsOn = true
@@ -5039,7 +5030,6 @@ function script.onActionStart(action)
                     showWarpWidget = true
                 end
             else
-                unit.stopTimer("emergencyWarpTick")
                 InEmergencyWarp = false -- lower case is IN situation
                 EmergencyWarp = false -- upper case is if to monitor for situation
                 MsgText = "Emergency Warp Cancelled"
