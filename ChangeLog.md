@@ -3,6 +3,7 @@
 Version 4.822
 - Re-add currentGroundAltitudeStabilization back to up and down to see if fixes anything :)
 - Attempt to let vertical engines autofire in atmosphere like vanilla so they work to assist hover if installed.
+- Change G key to turn off throttle if pressed regardless if in hover height or not. (i.e. press it when landing) 
 
 Version 4.821
 - Fixed DrawThrottle bug not receiving throttle value if just starting up.

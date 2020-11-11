@@ -4852,13 +4852,14 @@ function script.onActionStart(action)
         GearExtended = not GearExtended
         if GearExtended then
             VectorToTarget = false
+            if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
+                Nav.control.cancelCurrentControlMasterMode()
+            end
+            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             if (vBooster or hover) and hoverDetectGround() == -1 and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
                     MsgText = "WARNING: Insufficient Brakes - Attempting landing anyway"
-                end
-                if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
-                    Nav.control.cancelCurrentControlMasterMode()
                 end
                 Reentry = false
                 AutoTakeoff = false
@@ -4866,11 +4867,9 @@ function script.onActionStart(action)
                 BrakeLanding = true
                 autoRoll = true
                 GearExtended = false -- Don't actually do it
-                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             else
                 BrakeIsOn = true
                 Nav.control.extendLandingGears()
-                Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
             end
         else
             Nav.control.retractLandingGears()
