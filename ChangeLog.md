@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.823
+- Fix wrong landing height when hitting G
+
 Version 4.822
 - Re-add currentGroundAltitudeStabilization back to up and down to see if fixes anything :)
 - Attempt to let vertical engines autofire in atmosphere like vanilla so they work to assist hover if installed.
