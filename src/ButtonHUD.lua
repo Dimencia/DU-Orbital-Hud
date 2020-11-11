@@ -4870,6 +4870,7 @@ function script.onActionStart(action)
             else
                 BrakeIsOn = true
                 Nav.control.extendLandingGears()
+                Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
             end
         else
             Nav.control.retractLandingGears()
