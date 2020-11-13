@@ -1,10 +1,27 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.824
+Version 4.83
+- Autopilot to another planet now works starting from ground.
+- Autopilot to saved location on another planet now works starting ground or space.
+For both cases:  Pick target like normal, hit autopilot (button or alt-4).  
+Ship will tilt up at preset max angle (30 by default) and fly to 100km then engage autopilot to selected planet. 
+Once it arrives it will establish orbit and align prograde.  If saved location chosen, it will glide entry in and
+then autopilot to location. NOTE: It does not check to see if anything is in front of you on ground (like normal) nor 
+if your target planet is behind current planet even 100km in space.  DO NOT USE if your ship cannot power out of 
+atmosphere at 30 deg with 100% engines. USE WITH CAUTION FIRST TIME.
+Tested Alioth to Sanct and Sanct to Alioth repeatedly.
+- Added check to help prevent autopilot to saved location in atmosphere causing stall if facing too many degrees out at start.
+- Added Stall Warning if your alignment drops below StallAngle (35 by default) - EVERY SHIP WILL BE DIFFERENT
+- Changed end of Autopilot to turn on Align to Prograde by default.
 - Credit for heading code to tomisunlucky
 - Change vSpd calculation, same results.
 - Removed 5 second delay on activation of Emergency Warp.  If you turn it on, you want it to activate when any of the conditions are met.
 - Changed tilt on Follow Mode to 20 deg to allow better following.  Note: Very light or single hover ships cannot utilize Follow Mode.
+- Changed default max pitch to 30 (most ships will handle this fine, change if needed, recommend not less than 20)
+- Added user variable StallAngle = 35 --export: Determines how much Autopilot is allowed to make you yaw/pitch in atmosphere.  Also gives a stall warning.  (default 35, higher = more tolerance for yaw/pitch/roll)
+Lower this value (or raise it) based on how well your ship handles yaw/roll/pitch without stalling.
+- Changed default Orbit Height to 50km (from 100km)
+
 
 Version 4.823
 - Fix wrong landing height when hitting G

@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.824
+        VERSION_NUMBER = 4.83
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -50,10 +50,11 @@ function script.onStart()
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
         hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
         ShiftShowsRemoteButtons = true -- export: Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
+        StallAngle = 35 --export: Determines how much Autopilot is allowed to make you yaw/pitch in atmosphere.  Also gives a stall warning.  (default 35, higher = more tolerance for yaw/pitch/roll)
         speedChangeLarge = 5 -- export: The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change). 
         speedChangeSmall = 1 -- export: the speed change that occurs while you hold speed up/down, default is 1 (5% throttle change).
         brakeLandingRate = 30 -- export: Max loss of altitude speed in m/s when doing a brake landing, default 30.  This is to prevent "bouncing" as hover/boosters catch you.  Do not use negative number.
-        MaxPitch = 20 -- export: Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  Default is 20 deg.  You can set higher or lower depending on your ships capabilities.
+        MaxPitch = 30 -- export: Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  Default is 20 deg.  You can set higher or lower depending on your ships capabilities.
         ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
         ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
         EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
@@ -63,7 +64,7 @@ function script.onStart()
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
         LandingGearGroundHeight = 0 --export: Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear,
         MaxGameVelocity = 8333.00 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
-        AutopilotTargetOrbit = 100000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU
+        AutopilotTargetOrbit = 50000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU (Default 50000)
         AutopilotInterplanetaryThrottle = 1.0 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
         warmup = 32 -- export: How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
         MouseYSensitivity = 0.003 --export:1 For virtual joystick only
@@ -161,6 +162,9 @@ function script.onStart()
         AutopilotEndSpeed = 0
         SavedLocations = {}
         LandingGearGroundHeight = 0
+        SpaceLand = false
+        SpaceLaunch = false
+        FinalLand = false
 
         -- Local Variables used only within onStart
         local markers = {}
@@ -209,7 +213,7 @@ function script.onStart()
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                            "RemoteHud", "RequireLock"}
+                            "RemoteHud", "RequireLock", "StallAngle"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -256,6 +260,7 @@ function script.onStart()
         end
        -- Loading saved vars is hard on it
         brakeToggle = BrakeToggleDefault
+        MinimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
         autoRoll = autoRollPreference
         if antigrav then
             if AntigravTargetAltitude == nil then 
@@ -772,7 +777,7 @@ function script.onStart()
                 if (not GearExtended and not BrakeIsOn) or atmosphere() == 0 then -- Never autotakeoff in space
                     AutoTakeoff = false
                     HoldAltitude = CoreAltitude
-                    if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+                   if not SpaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
                 else
@@ -783,6 +788,7 @@ function script.onStart()
                     Nav.axisCommandManager:setTargetGroundAltitude(500)
                     BrakeIsOn = true -- Engage brake for warmup
                 end
+                if SpaceLaunch then HoldAltitude = 100000 end
             else
                 autoRoll = autoRollPreference
                 AutoTakeoff = false
@@ -837,25 +843,35 @@ function script.onStart()
                 -- e. If our velocity vector is lined up to go over the target position, calculate our brake distance at current speed in atmo
                 -- f. If our distance to the target (ignoring altitude) is within our current brakeDistance, engage brake-landing
                 -- f2. Should we even try to let this happen on ships with bad brakes.  Eventually, try that.  For now just don't let them use this
-
                 if CustomTarget ~= nil then
-                    StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
-                    if not StrongBrakes and velMag > MinAutopilotSpeed then
-                        MsgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
-                    end
-                    -- Going to need to add all those conditions here.  Let's start with the easiest.
-                    if unit.getAtmosphereDensity() > 0 then
-                        if not AltitudeHold then
-                            -- Autotakeoff gets engaged inside the toggle if conditions are met
-                            if not VectorToTarget then
-                                ToggleVectorToTarget()
-                            end
+                    if planet.name  == CustomTarget.planetname then 
+                        StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
+                        if not StrongBrakes and velMag > MinAutopilotSpeed then
+                            MsgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
+                        end
+                        -- Going to need to add all those conditions here.  Let's start with the easiest.
+                        if unit.getAtmosphereDensity() > 0 then
+                            if not AltitudeHold then
+                                -- Autotakeoff gets engaged inside the toggle if conditions are met
+                                if not VectorToTarget then
+                                    ToggleVectorToTarget()
+                                end
+                            else
+                                -- Vector to target
+                                if not VectorToTarget then
+                                    ToggleVectorToTarget()
+                                end
+                            end -- TBH... this is the only thing we need to do, make sure Alt Hold is on.  
                         else
-                            -- Vector to target
-                            if not VectorToTarget then
-                                ToggleVectorToTarget()
-                            end
-                        end -- TBH... this is the only thing we need to do, make sure Alt Hold is on.  
+                            SpaceLand = true
+                        end
+                    else
+                        SpaceLaunch = true
+                        if unit.getAtmosphereDensity() ~= 0 then 
+                            ToggleAltitudeHold() 
+                        else
+                            Autopilot = true
+                        end
                     end
                 elseif unit.getAtmosphereDensity() == 0 then -- Planetary autopilot
                     Autopilot = true
@@ -868,6 +884,9 @@ function script.onStart()
                     Reentry = false
                     AutoTakeoff = false
                     APThrottleSet = false
+                else
+                    SpaceLaunch = true
+                    ToggleAltitudeHold()
                 end
             else
                 Autopilot = false
@@ -1257,25 +1276,28 @@ function script.onStart()
         function AlignToWorldVector(vector, tolerance)
             -- Sets inputs to attempt to point at the autopilot target
             -- Meant to be called from Update or Tick repeatedly
-            if tolerance == nil then
-                tolerance = alignmentTolerance
-            end
-            vector = vec3(vector):normalize()
-            local targetVec = (vec3(core.getConstructWorldOrientationForward()) - vector)
-            local yawAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationRight()) *
-                                  AutopilotStrength
-            local pitchAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationUp()) *
+            if atmosphere() == 0 or RateOfChange > (MinimumRateOfChange+0.05) then
+                if tolerance == nil then
+                    tolerance = alignmentTolerance
+                end
+                vector = vec3(vector):normalize()
+                local targetVec = (vec3(core.getConstructWorldOrientationForward()) - vector)
+                local yawAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationRight()) *
                                     AutopilotStrength
-
-            YawInput2 = YawInput2 - (yawAmount + (yawAmount - PreviousYawAmount) * DampingMultiplier)
-            PitchInput2 = PitchInput2 + (pitchAmount + (pitchAmount - PreviousPitchAmount) * DampingMultiplier)
-            PreviousYawAmount = yawAmount
-            PreviousPitchAmount = pitchAmount
-            -- Return true or false depending on whether or not we're aligned
-            if math.abs(yawAmount) < tolerance and math.abs(pitchAmount) < tolerance then
-                return true
+                local pitchAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationUp()) *
+                                        AutopilotStrength
+                if PreviousYawAmount == 0 then PreviousYawAmount = yawAmount / 2 end
+                if PreviousPitchAmount == 0 then PreviousPitchAmount = pitchAmount / 2 end
+                YawInput2 = YawInput2 - (yawAmount + (yawAmount - PreviousYawAmount) * DampingMultiplier)
+                PitchInput2 = PitchInput2 + (pitchAmount + (pitchAmount - PreviousPitchAmount) * DampingMultiplier)
+                PreviousYawAmount = yawAmount
+                PreviousPitchAmount = pitchAmount
+                -- Return true or false depending on whether or not we're aligned
+                if math.abs(yawAmount) < tolerance and math.abs(pitchAmount) < tolerance then
+                    return true
+                end
+                return false
             end
-            return false
         end
 
         function getAPEnableName()
@@ -1335,7 +1357,7 @@ function script.onStart()
                     if Nav.axisCommandManager:getAxisCommandType(0) ~= controlMasterModeId.cruise then
                         Nav.control.cancelCurrentControlMasterMode()
                     end                
-                    autoroll = true
+                    autoRoll = true
                     BrakeIsOn = false
                     MsgText = "Beginning Parachute Re-Entry - Strap In.  Target speed: " .. ReentrySpeed
                 end
@@ -1345,7 +1367,7 @@ function script.onStart()
                     Nav.control.cancelCurrentControlMasterMode()
                 end
                 AltitudeHold = true
-                autoroll = true
+                autoRoll = true
                 BrakeIsOn = false
                 HoldAltitude = ReentryAltitude
                 MsgText = "Beginning Re-entry.  Target speed: " .. ReentrySpeed .. " Target Altitude: " ..
@@ -1713,7 +1735,7 @@ function script.onStart()
                     <text class="txtstart" x="970" y="20">Mass: %.2f Tons</text>
                     <text class="txtend" x="1240" y="10">Max Brake: %.2f kN</text>
                     <text class="txtend" x="1240" y="30">Max Thrust: %.2f kN</text>
-                    <text class="txtbig txtmid" x="960" y="185">%s</text>
+                    <text class="txtbig txtmid" x="960" y="180">%s</text>
                 ]], TotalDistanceTrip, (TotalDistanceTravelled / 1000), FormatTimeString(flightTime),
                                                   FormatTimeString(TotalFlightTime), (totalMass / 1000),
                                                   (LastMaxBrake / 1000), (maxThrust / 1000), flightStyle)
@@ -2142,6 +2164,9 @@ function script.onStart()
             if BrakeIsOn then
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Brake Engaged</text>]], warningX, brakeY)
             end
+            if atmosphere() ~= 0 and RateOfChange < MinimumRateOfChange and velMag > brakeLandingRate+5 then
+                newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+25)
+            end
             if GyroIsOn then
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Gyro Enabled</text>]], warningX, gyroY)
             end
@@ -2202,6 +2227,14 @@ function script.onStart()
                 else
                     newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Coast-Landing</text>]], warningX, apY)
                 end
+            end
+            if ProgradeIsOn then
+                newContent[#newContent + 1] = stringf([[<text class="crit" x="%d" y="%d">Prograde Alignment</text>]],
+                                                  warningX, apY)
+            end
+            if RetrogradeIsOn then
+                newContent[#newContent + 1] = stringf([[<text class="crit" x="%d" y="%d">Retrograde Alignment</text>]],
+                                                  warningX, apY)
             end
             if TurnBurn then
                 newContent[#newContent + 1] = stringf([[<text class="crit" x="%d" y="%d">Turn & Burn Braking</text>]],
@@ -3468,8 +3501,6 @@ function script.onStart()
         Kinematic = Kinematics()
         Kep = Keplers()
 
-
-
         function getDistanceDisplayString(distance)
             local su = distance > 100000
             local result = ""
@@ -3547,18 +3578,6 @@ function script.onStart()
             if autopilotEntry.center then -- Is a real atlas entry
                 AutopilotTargetName = autopilotEntry.name
                 AutopilotTargetPlanet = galaxyReference[0][atlasIndex]
-                AutopilotTargetCoords = vec3(AutopilotTargetPlanet.center) -- Aim center until we align
-                -- Determine the end speed
-                _, AutopilotEndSpeed = Kep(AutopilotTargetPlanet):escapeAndOrbitalSpeed(AutopilotTargetOrbit)
-                -- AutopilotEndSpeed = 0
-                -- AutopilotPlanetGravity = AutopilotTargetPlanet:getGravity(AutopilotTargetPlanet.center + vec3({1,0,0}) * AutopilotTargetOrbit):len() -- Any direction, at our orbit height
-                AutopilotPlanetGravity = 0 -- This is inaccurate unless we integrate and we're not doing that.  
-                AutopilotAccelerating = false
-                AutopilotBraking = false
-                AutopilotCruising = false
-                Autoilot = false
-                AutopilotRealigned = false
-                AutopilotStatus = "Aligning"
                 if CustomTarget ~= nil then
                     if unit.getAtmosphereDensity() == 0 then
                         if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
@@ -3578,14 +3597,29 @@ function script.onStart()
                         system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
                 end
                 CustomTarget = nil
-                return true
-            else -- Is one of our fake locations with a .name, .position, and .atmosphere
-                -- AutopilotTargetName = "None"
-                AutopilotTargetPlanet = nil
-                AutopilotTargetName = nil
+            else
                 CustomTarget = autopilotEntry
+                for _, v in pairs(galaxyReference[0]) do
+                    if v.name == CustomTarget.planetname then
+                        AutopilotTargetPlanet = v
+                        AutopilotTargetName = nil
+                        break
+                    end
+                end
             end
-            return false
+            AutopilotTargetCoords = vec3(AutopilotTargetPlanet.center) -- Aim center until we align
+            -- Determine the end speed
+            _, AutopilotEndSpeed = Kep(AutopilotTargetPlanet):escapeAndOrbitalSpeed(AutopilotTargetOrbit)
+            -- AutopilotEndSpeed = 0
+            -- AutopilotPlanetGravity = AutopilotTargetPlanet:getGravity(AutopilotTargetPlanet.center + vec3({1,0,0}) * AutopilotTargetOrbit):len() -- Any direction, at our orbit height
+            AutopilotPlanetGravity = 0 -- This is inaccurate unless we integrate and we're not doing that.  
+            AutopilotAccelerating = false
+            AutopilotBraking = false
+            AutopilotCruising = false
+            Autopilot = false
+            AutopilotRealigned = false
+            AutopilotStatus = "Aligning"
+            return true
         end
 
         function IncrementAutopilotTargetIndex()
@@ -4019,7 +4053,7 @@ function script.onTick(timerId)
     elseif timerId == "apTick" then
         -- Localized Functions
         local isRemote = Nav.control.isRemoteControlled
-
+        RateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
         YawInput2 = 0
         RollInput2 = 0
         PitchInput2 = 0
@@ -4206,16 +4240,41 @@ function script.onTick(timerId)
             system.logInfo(LastContent)
             DidLogOutput = true
         end
-
-       if ProgradeIsOn then
+        if ProgradeIsOn then
             if velMag > MinAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
-                AlignToWorldVector(vec3(velocity))
+                local align = AlignToWorldVector(vec3(velocity),0.01) 
+                if SpaceLand then 
+                    autoRoll = true
+                    if align then 
+                        ProgradeIsOn = false
+                        ReentryMode = true
+                        BeginReentry()
+                        SpaceLand = false   
+                        FinalLand = true
+                        autoRoll = autoRollPreference   
+                    end
+                end
             end
         end
         if RetrogradeIsOn then
             if velMag > MinAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
                 AlignToWorldVector(-(vec3(velocity)))
             end
+        end
+        if not ProgradeIsOn and SpaceLand then 
+            if unit.getAtmosphereDensity() == 0 then 
+                ReentryMode = true
+                BeginReentry()
+                SpaceLand = false
+                FinalLand = true
+            else
+                SpaceLand = false
+                ToggleAutopilot()
+            end
+        end
+        if FinalLand and CoreAltitude < ReentryAltitude + 100 and (velMag*3.6) > (ReentrySpeed-100) then
+            ToggleAutopilot()
+            FinalLand = false
         end
         if Autopilot and unit.getAtmosphereDensity() == 0 then
             -- Planetary autopilot engaged, we are out of atmo, and it has a target
@@ -4330,10 +4389,14 @@ function script.onTick(timerId)
                         Autopilot = false
                         AutopilotStatus = "Aligning" -- Disable autopilot and reset
                         -- TODO: This is being added to newContent *after* we already drew the screen, so it'll never get displayed
-                        DisplayMessage(newContent, "Autopilot completed, orbit established")
+                        MsgText = "Autopilot completed, orbit established"
                         BrakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
                         APThrottleSet = false
+                        ProgradeIsOn = true
+                        if CustomTarget ~= nil then
+                            SpaceLand = true
+                        end
                     end
                 end
             elseif AutopilotCruising then
@@ -4443,7 +4506,7 @@ function script.onTick(timerId)
             
             if Reentry then
                 local fasterSpeed = ReentrySpeed
-                if CoreAltitude > 15000 and not ReentryMode then fasterSpeed = fasterSpeed * math.floor(CoreAltitude / 10000) end
+                if CoreAltitude > 15000 then fasterSpeed = fasterSpeed * math.floor(CoreAltitude / 10000) end
                 if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= fasterSpeed then -- This thing is dumb.
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, fasterSpeed)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
@@ -4456,10 +4519,12 @@ function script.onTick(timerId)
                         Reentry = false
                         BrakeLanding = true
                         targetPitch = 0
+                        autoRoll = autoRollPreference
                     end
                 elseif Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == ReentrySpeed then
                     ReentryMode = false
                     Reentry = false
+                    autoRoll = autoRollPreference
                 end    
             end
 
@@ -4562,11 +4627,30 @@ function script.onTick(timerId)
                     BrakeIsOn = false
                 end
             end
-            if AutoTakeoff then
+            if AutoTakeoff or SpaceLaunch then
                 if targetPitch < 20 then
                     AutoTakeoff = false -- No longer in ascent
+                    if not SpaceLaunch then 
+                        if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+                            Nav.control.cancelCurrentControlMasterMode()
+                        end
+                    else
+                        Autopilot = true
+                        SpaceLaunch = false
+                        AltitudeHold = false
+                        if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
+                            Nav.control.cancelCurrentControlMasterMode()
+                        end
+                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    end
+                elseif SpaceLaunch and unit.getAtmosphereDensity() == 0 and CoreAltitude > 50000 then
                     if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                         Nav.control.cancelCurrentControlMasterMode()
+                    end
+                    if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= 5000 then -- This thing is dumb.
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 5000)
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                     end
                 end
             end
@@ -4653,8 +4737,8 @@ function script.onFlush()
         finalPitchInput * pitchSpeedFactor * constructRight + finalRollInput * rollSpeedFactor * constructForward +
             finalYawInput * yawSpeedFactor * constructUp
 
-    -- In atmosphere?
-    if worldVertical:len() > 0.01 and atmosphere > 0.0 then
+    -- In atmosphere or aligning prograde with orbit?
+    if (worldVertical:len() > 0.01 and atmosphere > 0.0) or ProgradeIsOn then
         local autoRollRollThreshold = 1.0
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
         if autoRoll == true and currentRollDegAbs > autoRollRollThreshold and finalRollInput == 0 then
@@ -4667,6 +4751,8 @@ function script.onFlush()
 
             targetAngularVelocity = targetAngularVelocity + autoRollInput * constructForward
         end
+    end
+    if worldVertical:len() > 0.01 and atmosphere > 0.0 then
         local turnAssistRollThreshold = 20.0
         -- turnAssist AND currentRollDeg is big enough AND player is not pitching or yawing
         if turnAssist == true and currentRollDegAbs > turnAssistRollThreshold and finalPitchInput == 0 and finalYawInput ==
