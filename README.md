@@ -1,32 +1,33 @@
-## We now have a [Discord](https://discord.gg/sRaqzmS)!  
+## [Discord](https://discord.gg/sRaqzmS)!  
 
 We have tons of code snippets, help channels, a github feed, and we focus on everything LUA and open source.  It's also a centralized place to get tech support: https://discord.gg/sRaqzmS
 
-We've also just added a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
+There is a lua-commissions channel!  Non-scripters can post requests here, and scripters can freelance those requests for pay (or not)
 
-We're also recruting for our in-game lua-focused org (with a bit of PVP focus on the side).  Check the discord for details
+Discord also supports recruiting for in-game lua-focused org (with a bit of PVP focus on the side).  Check the discord for details
 
 # Overview
+(No Autopilot features version available at https://github.com/Archaegeo/DU-Orbital-HUD-NO-AP)
+
+## COCKPITS ARE NOT SUPPORTED
 
 This is a general-purpose HUD for Dual Universe.  It includes a wide array of features including:
 
-* Heads-up display with artificial horizon, pitch, roll/yaw, altimeter, vertical speed, and more... (originally based on Rezoix's pitch/roll HUD)
-* Auto-pilot features including transit-to-orbit, inter-planetary transit routes, orbital insertion, automatic braking, autopilot to saved location in atmosphere and more...
-* Emergency Warp if target too close
+* Heads-up display with artificial horizon, pitch, roll/yaw, altimeter, vertical speed, and more...
+* Auto-pilot features including transit-to-orbit, inter-planetary transit routes, orbital insertion, automatic braking, autopilot to saved locations and more...
+* Emergency Warp if target too close or has lock on you
+* Parachute Re-Entry or Glide Re-Entry
 * Trip odometers and information display.
 * Fuel level displays for all types of fuel tanks.  Ability to unslot fuel tanks to save slots.
 * Brake hold, altitude hold, auto-landing and takeoff functionality
 * Brake Landing if strong brakes, else Coast Landing.
-* Warp Engine widget hide if not meeting requirements to warp unless toggled on.
+* Intelligent widgets that only show up when needed
 * Orbital alignment and maneuver assistants
 * Radar and periscope for situational awareness
 * Ability to hide the built-in display windows to keep your flight aesthetic clean and focused
 * Free-look mode
-* User Parameters for customizing to your flight preference and ship capabilities.
+* User Parameters for customizing to your HUD and your flight preference to your ship capabilities.
 * Save parameters between HUD version updates
-
-> NOTE: The HUD works with all control units, but Cockpit support is experimental and may cause more FPS loss than normal.  Use the Cockpit branch if you wish to use this anyway
-
 
 ## Examples and Tutorials
 
@@ -34,7 +35,7 @@ https://www.youtube.com/watch?v=jQSkI0OcATU&feature=emb_logo - Demonstration of 
 
 ![Example](/ButtonHUD_example_1.png)
 
-**Donations are accepted!**  We have a Donation Station in Sanctuary District 3 and more to come, or you can always contact us and do a VR trade.    Basically I keep running into problems where I can't afford the cool stuff I want to play with next because I spent all my time writing stuff.  You saw what happened when I finally got a remote controller.  So, a few people were asking, and I figured why not offer.  And of course, Arche gets a cut too.  **Just make sure that for any Donation Station you see, that the owner is Dimencia or Archaegeo.**  I fully expect to see fake ones out there.
+**Donations are accepted!**  We have a Donation Station in Sanctuary District 3 and more to come or you can always contact us and do a VR trade. We do not spend any time mining or building so our funds to test features are limited.
 
 ## Version Information
 
