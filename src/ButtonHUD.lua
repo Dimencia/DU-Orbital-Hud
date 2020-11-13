@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.83
+        VERSION_NUMBER = 4.831
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -394,7 +394,6 @@ function script.onStart()
                 v.deactivate()
             end
         end
-        _autoconf.displayCategoryPanel(weapon, weapon_size, L_TEXT("ui_lua_widget_weapon", "Weapons"), "weapon", true)
         if antigrav ~= nil then
             if(antigrav.getState() == 1) then
                 antigrav.show()
@@ -652,7 +651,6 @@ function script.onStart()
                     system.destroyWidgetPanel(rocketfuelPanelID)
                     rocketfuelPanelID = nil
                 end
-
                 UnitHidden = true
             end
         end
@@ -1276,7 +1274,7 @@ function script.onStart()
         function AlignToWorldVector(vector, tolerance)
             -- Sets inputs to attempt to point at the autopilot target
             -- Meant to be called from Update or Tick repeatedly
-            if atmosphere() == 0 or RateOfChange > (MinimumRateOfChange+0.05) then
+            if atmosphere() == 0 or RateOfChange > (MinimumRateOfChange+0.08) then
                 if tolerance == nil then
                     tolerance = alignmentTolerance
                 end
@@ -3789,6 +3787,18 @@ function script.onStart()
             system.print(string.format("SUM: %.4f AVG: %.4f MIN: %.4f MAX: %.4f CNT: %d", totalTime, averageTime, min,
                              max, samples))
         end
+        
+        function updateWeapons()
+            if weapon then
+                if  WeaponPanelID==nil and (radarPanelID ~= nil or GearExtended)  then
+                    _autoconf.displayCategoryPanel(weapon, weapon_size, L_TEXT("ui_lua_widget_weapon", "Weapons"), "weapon", true)
+                    WeaponPanelID = _autoconf.panels[_autoconf.panels_size]
+                elseif WeaponPanelID ~= nil and radarPanelID == nil and not GearExtended then
+                    system.destroyWidgetPanel(WeaponPanelID)
+                    WeaponPanelID = nil
+                end
+            end
+        end
 
         function updateRadar()
             if (radar_1) then
@@ -4024,6 +4034,7 @@ function script.onTick(timerId)
         refreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
         updateDistance()
         updateRadar()
+        updateWeapons()
         -- Update odometer output string
         local newContent = {}
         local flightStyle = GetFlightStyle()

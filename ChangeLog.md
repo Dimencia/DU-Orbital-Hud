@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.831
+- Only show weapons panel if radar is not jammed or if you have gear extended (landed) otherwise hide for clean screen.
+
 Version 4.83
 - Autopilot to another planet now works starting from ground.
 - Autopilot to saved location on another planet now works starting ground or space.
