@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.831
+        VERSION_NUMBER = 4.832
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -165,18 +165,19 @@ function script.onStart()
         SpaceLand = false
         SpaceLaunch = false
         FinalLand = false
+        HovGndDet = -1
 
         -- Local Variables used only within onStart
         local markers = {}
-        local PreviousYawAmount = 0
-        local PreviousPitchAmount = 0
+        local previousYawAmount = 0
+        local previousPitchAmount = 0
         local damageMessage = ""
         local UnitHidden = true
         local Buttons = {}
-        local AutopilotStrength = 1 -- How strongly autopilot tries to point at a target
+        local autopilotStrength = 1 -- How strongly autopilot tries to point at a target
         local alignmentTolerance = 0.001 -- How closely it must align to a planet before accelerating to it
-        local ResolutionWidth = 2560
-        local ResolutionHeight = 1440
+        local resolutionWidth = 2560
+        local resolutionHeight = 1440
         local minAtlasX = nil
         local maxAtlasX = nil
         local minAtlasY = nil
@@ -189,17 +190,17 @@ function script.onStart()
         local spaceTanks = {}
         local rocketTanks = {}
         local eleTotalMaxHp = 0
-        local RepairArrows = false
+        local repairArrows = false
         local fuelTimeLeftR = {}
         local fuelPercentR = {}
-        local FuelUpdateDelay = mfloor(1 / apTickRate) * 2
+        local fuelUpdateDelay = mfloor(1 / apTickRate) * 2
         local fuelTimeLeftS = {}
         local fuelPercentS = {}
         local fuelTimeLeft = {}
         local fuelPercent = {}
         local updateTanks = false
         local coreOffset = 16
-        local UpdateCount = 0
+        local updateCount = 0
 
         -- VARIABLES TO BE SAVED GO HERE
         SaveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -962,7 +963,7 @@ function script.onStart()
                         damagedElements = damagedElements + 1
                     end
                     -- Thanks to Jerico for the help and code starter for arrow markers!
-                    if RepairArrows and #markers == 0 then
+                    if repairArrows and #markers == 0 then
                         position = vec3(core.getElementPositionById(ElementsID[k]))
                         local x = position.x - coreOffset
                         local y = position.y - coreOffset
@@ -984,7 +985,7 @@ function script.onStart()
                         core.rotateSticker(markers[10], -90, 0, 90)
                         table.insert(markers, ElementsID[k])
                     end
-                elseif RepairArrows and #markers > 0 and markers[11] == ElementsID[k] then
+                elseif repairArrows and #markers > 0 and markers[11] == ElementsID[k] then
                     for j in pairs(markers) do
                         core.deleteSticker(markers[j])
                     end
@@ -1015,7 +1016,7 @@ function script.onStart()
         end
 
         function DrawCursorLine(newContent)
-            local strokeColor = mfloor(utils.clamp((Distance / (ResolutionWidth / 4)) * 255, 0, 255))
+            local strokeColor = mfloor(utils.clamp((Distance / (resolutionWidth / 4)) * 255, 0, 255))
             newContent[#newContent + 1] = stringf(
                                               "<line x1='0' y1='0' x2='%fpx' y2='%fpx' style='stroke:rgb(%d,%d,%d);stroke-width:2;transform:translate(50%%, 50%%)' />",
                                               SimulatedX, SimulatedY, mfloor(PrimaryR + 0.5) + strokeColor,
@@ -1072,8 +1073,8 @@ function script.onStart()
         end
 
         function SetButtonContains()
-            local x = SimulatedX + ResolutionWidth / 2
-            local y = SimulatedY + ResolutionHeight / 2
+            local x = SimulatedX + resolutionWidth / 2
+            local y = SimulatedY + resolutionHeight / 2
             for _, v in pairs(Buttons) do
                 -- enableName, disableName, width, height, x, y, toggleVar, toggleFunction, drawCondition
                 v.hovered = Contains(x, y, v.x, v.y, v.width, v.height)
@@ -1281,15 +1282,15 @@ function script.onStart()
                 vector = vec3(vector):normalize()
                 local targetVec = (vec3(core.getConstructWorldOrientationForward()) - vector)
                 local yawAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationRight()) *
-                                    AutopilotStrength
+                                    autopilotStrength
                 local pitchAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationUp()) *
-                                        AutopilotStrength
-                if PreviousYawAmount == 0 then PreviousYawAmount = yawAmount / 2 end
-                if PreviousPitchAmount == 0 then PreviousPitchAmount = pitchAmount / 2 end
-                YawInput2 = YawInput2 - (yawAmount + (yawAmount - PreviousYawAmount) * DampingMultiplier)
-                PitchInput2 = PitchInput2 + (pitchAmount + (pitchAmount - PreviousPitchAmount) * DampingMultiplier)
-                PreviousYawAmount = yawAmount
-                PreviousPitchAmount = pitchAmount
+                                        autopilotStrength
+                if previousYawAmount == 0 then previousYawAmount = yawAmount / 2 end
+                if previousPitchAmount == 0 then previousPitchAmount = pitchAmount / 2 end
+                YawInput2 = YawInput2 - (yawAmount + (yawAmount - previousYawAmount) * DampingMultiplier)
+                PitchInput2 = PitchInput2 + (pitchAmount + (pitchAmount - previousPitchAmount) * DampingMultiplier)
+                previousYawAmount = yawAmount
+                previousPitchAmount = pitchAmount
                 -- Return true or false depending on whether or not we're aligned
                 if math.abs(yawAmount) < tolerance and math.abs(pitchAmount) < tolerance then
                     return true
@@ -1378,7 +1379,7 @@ function script.onStart()
         local buttonHeight = 50
         local buttonWidth = 260 -- Defaults
         local brake = MakeButton("Enable Brake Toggle", "Disable Brake Toggle", buttonWidth, buttonHeight,
-                          ResolutionWidth / 2 - buttonWidth / 2, ResolutionHeight / 2 + 350, function()
+                          resolutionWidth / 2 - buttonWidth / 2, resolutionHeight / 2 + 350, function()
                 return brakeToggle
             end, function()
                 brakeToggle = not brakeToggle
@@ -1389,19 +1390,19 @@ function script.onStart()
                 end
             end)
         MakeButton("Align Prograde", "Disable Prograde", buttonWidth, buttonHeight,
-            ResolutionWidth / 2 - buttonWidth / 2 - 50 - brake.width, ResolutionHeight / 2 - buttonHeight + 380,
+            resolutionWidth / 2 - buttonWidth / 2 - 50 - brake.width, resolutionHeight / 2 - buttonHeight + 380,
             function()
                 return ProgradeIsOn
             end, ProgradeToggle)
         MakeButton("Align Retrograde", "Disable Retrograde", buttonWidth, buttonHeight,
-            ResolutionWidth / 2 - buttonWidth / 2 + brake.width + 50, ResolutionHeight / 2 - buttonHeight + 380,
+            resolutionWidth / 2 - buttonWidth / 2 + brake.width + 50, resolutionHeight / 2 - buttonHeight + 380,
             function()
                 return RetrogradeIsOn
             end, RetrogradeToggle, function()
                 return unit.getAtmosphereDensity() == 0
             end) -- Hope this works
-        local apbutton = MakeButton(getAPEnableName, getAPDisableName, 600, 60, ResolutionWidth / 2 - 600 / 2,
-                             ResolutionHeight / 2 - 60 / 2 - 400, function()
+        local apbutton = MakeButton(getAPEnableName, getAPDisableName, 600, 60, resolutionWidth / 2 - 600 / 2,
+                             resolutionHeight / 2 - 60 / 2 - 400, function()
                 return Autopilot
             end, ToggleAutopilot)
         MakeButton("Save Position", "Save Position", 200, apbutton.height, apbutton.x + apbutton.width + 30, apbutton.y,
@@ -1426,7 +1427,7 @@ function script.onStart()
         buttonHeight = 60
         buttonWidth = 300
         local x = 10
-        local y = ResolutionHeight / 2 - 300
+        local y = resolutionHeight / 2 - 300
         MakeButton("Enable Turn and Burn", "Disable Turn and Burn", buttonWidth, buttonHeight, x, y, function()
             return TurnBurn
         end, ToggleTurnBurn)
@@ -1478,10 +1479,10 @@ function script.onStart()
             return isRemote() == 1
         end)
         MakeButton("Enable Repair Arrows", "Disable Repair Arrows", buttonWidth, buttonHeight, x + buttonWidth + 20, y, function()
-            return RepairArrows
+            return repairArrows
         end, function()
-            RepairArrows = not RepairArrows
-            if (RepairArrows) then
+            repairArrows = not repairArrows
+            if (repairArrows) then
                 MsgText = "Repair Arrows Enabled"
             else
                 MsgText = "Repair Arrows Diabled"
@@ -1559,7 +1560,7 @@ function script.onStart()
 
             -- FUEL TANKS
 
-            if (UpdateCount % FuelUpdateDelay == 0) then
+            if (updateCount % fuelUpdateDelay == 0) then
                 updateTanks = true
             end
             if (fuelX ~= 0 and fuelY ~= 0) then
@@ -1570,9 +1571,9 @@ function script.onStart()
 
             if updateTanks then
                 updateTanks = false
-                UpdateCount = 0
+                updateCount = 0
             end
-            UpdateCount = UpdateCount + 1
+            updateCount = updateCount + 1
 
             -- PRIMARY FLIGHT INSTRUMENTS
 
@@ -4075,6 +4076,7 @@ function script.onTick(timerId)
         planet = sys:closestBody(core.getConstructWorldPos())
         kepPlanet = Kep(planet)
         orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
+        HovGndDet = hoverDetectGround() 
         local deltaX = system.getMouseDeltaX()
         local deltaY = system.getMouseDeltaY()
         TargetGroundAltitude = Nav:getTargetGroundAltitude()
@@ -4404,8 +4406,8 @@ function script.onTick(timerId)
                         BrakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
                         APThrottleSet = false
-                        ProgradeIsOn = true
                         if CustomTarget ~= nil then
+                            ProgradeIsOn = true
                             SpaceLand = true
                         end
                     end
@@ -4614,7 +4616,7 @@ function script.onTick(timerId)
                 Nav.axisCommandManager:setTargetGroundAltitude(500)
                 Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(500)
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-                groundDistance = hoverDetectGround()
+                groundDistance = HovGndDet
                 if groundDistance > -1 then
                     if math.abs(targetPitch - pitch) < autoPitchThreshold then
                         autoRoll = autoRollPreference
@@ -4855,7 +4857,7 @@ function script.onFlush()
     if (verticalCommandType == axisCommandType.byThrottle) then
         local verticalStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
                                                verticalStrafeEngineTags, axisCommandId.vertical)
-        if UpAmount ~= 0 or BrakeLanding or atmosphere > 0 then
+        if UpAmount ~= 0 or (BrakeLanding and BrakeIsOn) or (atmosphere > 0 and (HovGndDet ~= -1 and HovGndDet > LandingGearGroundHeight+5)) then
             Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity, 'airfoil',
                 'ground', '', tolerancePercentToSkipOtherPriorities)
         else
@@ -4944,7 +4946,7 @@ function script.onActionStart(action)
                 Nav.control.cancelCurrentControlMasterMode()
             end
             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-            if (vBooster or hover) and hoverDetectGround() == -1 and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
+            if (vBooster or hover) and HovGndDet == -1 and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
                 StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
                     MsgText = "WARNING: Insufficient Brakes - Attempting landing anyway"
