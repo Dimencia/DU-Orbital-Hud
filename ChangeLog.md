@@ -1,5 +1,14 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.832
+- Clean up some variable naming\
+- Autopilot on arrival to orbit at new planet will only align prograde if proceeding to land
+- Vertically mounted engine performance (no gyro activated) changed (NOTE: For the moment, if in cruise control (ALT-Hold turns this on too) vertical engines will fire to help maintain altitude)
+1) Will always fire (or stop) if you hit spacebar/c (as appropriate for up/down mounted engines)
+2) If not in atmosphere, they will not fire unless you hit spacebar/c (this helps prevent them from autofiring in space and wrecking orbit)
+3) If in atmosphere, they will fire automagically if BrakeLanding and Brakes are on (assist brake landing) OR if < detectible hover height but > landinggear height +5 (assist landing)
+
+
 Version 4.831
 - Only show weapons panel if radar is not jammed or if you have gear extended (landed) otherwise hide for clean screen.
 
