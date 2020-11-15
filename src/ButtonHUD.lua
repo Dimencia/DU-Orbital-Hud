@@ -26,17 +26,17 @@ function script.onStart()
 
         -- USER DEFINABLE GLOBAL AND LOCAL VARIABLES THAT SAVE
         useTheseSettings = false -- export: Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
-        freeLookToggle = true -- export: Set to false for default free look behavior.
-        BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default. Can be adjusted in the button menu
+        freeLookToggle = true -- export: Set to false for vanilla DU free look behavior.
+        BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default. Can be adjusted in the button menu.  Of is vanilla DU brakes.
         RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
-        RemoteHud = false -- export: Whether you want full HUD while in remote mode
-        userControlScheme = "Virtual Joystick" -- export: Set to "Virtual Joystick", "Mouse", or "Keyboard"
+        RemoteHud = false -- export: Whether you want full HUD while in remote mode, experimental, might not look right.
+        userControlScheme = "virtual joystick" -- export: Set to "virtual joystick", "mouse", or "keyboard"
         brightHud = false -- export: Enable to prevent hud dimming when in freelook.
         PrimaryR = 130 -- export: Primary HUD color
         PrimaryG = 224 -- export: Primary HUD color
         PrimaryB = 255 -- export: Primary HUD color
-        centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Default 960. Use centerX=700 and centerY=980 for lower left placement.
-        centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), also determines placement of throttle. (use 1920x1080, it will scale) Default 540. Use centerX=700 and centerY=980 for lower left placement. 
+        centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), (use 1920x1080, it will scale) Default 960. Use centerX=700 and centerY=880 for lower left placement.
+        centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), (use 1920x1080, it will scale) Default 540. Use centerX=700 and centerY=880 for lower left placement. 
         throtPosX = 1300 -- export: X position of Throttle Indicator, default 1300 to put it to right of default AH centerX parameter.
         throtPosY = 540 -- export: Y position of Throttle indicator, default is 540 to place it centered on default AH centerY parameter.
         vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
@@ -45,12 +45,12 @@ function script.onStart()
         altMeterY = 540 -- export: Y postion of Altimeter.  Default 500 (use 1920x1080, it will scale)
         fuelX = 100 -- export: X position of fuel tanks, default is 100 for left side, set both fuelX and fuelY to 0 to hide fuel
         fuelY = 350 -- export: Y position of fuel tanks, default 350 for left side, set both fuelX and fuelY to 0 to hide fuel
-        circleRad = 400 -- export: The size of the artifical horizon circle, set to 0 to remove.
+        circleRad = 400 -- export: The size of the artifical horizon circle, recommended minimum 100, maximum 400.  Looks different > 200. Set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
         hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
         ShiftShowsRemoteButtons = true -- export: Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
-        StallAngle = 35 --export: Determines how much Autopilot is allowed to make you yaw/pitch in atmosphere.  Also gives a stall warning.  (default 35, higher = more tolerance for yaw/pitch/roll)
+        StallAngle = 35 --export: Determines how much Autopilot is allowed to make you yaw/pitch in atmosphere.  Also gives a stall warning when not autopilot.  (default 35, higher = more tolerance for yaw/pitch/roll)
         speedChangeLarge = 5 -- export: The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change). 
         speedChangeSmall = 1 -- export: the speed change that occurs while you hold speed up/down, default is 1 (5% throttle change).
         brakeLandingRate = 30 -- export: Max loss of altitude speed in m/s when doing a brake landing, default 30.  This is to prevent "bouncing" as hover/boosters catch you.  Do not use negative number.
@@ -59,8 +59,8 @@ function script.onStart()
         ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
         EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
         IgnoreEmergencyWarpDistance = 500 -- export: Any targets within this distance are ignored for emergency warp.
-        RequireLock = false -- export: Set to true to require a target lock on you before starting an emergency warp.
-        AutoTakeoffAltitude = 1000 -- export: How high above your starting position AutoTakeoff tries to put you
+        RequireLock = false -- export: Set to true to require a target to lock onto you before starting an emergency warp.
+        AutoTakeoffAltitude = 1000 -- export: How high above your ground starting position AutoTakeoff tries to put you
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
         LandingGearGroundHeight = 0 --export: Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear,
         MaxGameVelocity = 8333.00 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
@@ -70,15 +70,15 @@ function script.onStart()
         MouseYSensitivity = 0.003 --export:1 For virtual joystick only
         MouseXSensitivity = 0.003 -- export: For virtual joystick only
         autoRollPreference = false -- export: [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
+        autoRollFactor = 2 -- export: [Only in atmosphere]<br>When autoRoll is engaged, this factor will increase to strength of the roll back to 0<br>Valid values: Superior or equal to 0.01
+        rollSpeedFactor = 1.5 -- export: This factor will increase/decrease the player input along the roll axis<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         turnAssist = true -- export: [Only in atmosphere]<br>When the pilot is rolling, the flight model will try to add yaw and pitch to make the construct turn better<br>The flight model will start by adding more yaw the more horizontal the construct is and more pitch the more vertical it is
-        TrajectoryAlignmentStrength = 0.002 -- export: How strongly AP tries to align your velocity vector to the target when not in orbit, recommend 0.002
         turnAssistFactor = 2 -- export: [Only in atmosphere]<br>This factor will increase/decrease the turnAssist effect<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
+        TrajectoryAlignmentStrength = 0.002 -- export: How strongly AP tries to align your velocity vector to the target when not in orbit, recommend 0.002
         pitchSpeedFactor = 0.8 -- export: For keyboard control
         yawSpeedFactor = 1 -- export: For keyboard control
-        rollSpeedFactor = 1.5 -- export: This factor will increase/decrease the player input along the roll axis<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
         brakeSpeedFactor = 3 -- export: When braking, this factor will increase the brake force by brakeSpeedFactor * velocity<br>Valid values: Superior or equal to 0.01
         brakeFlatFactor = 1 -- export: When braking, this factor will increase the brake force by a flat brakeFlatFactor * velocity direction><br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
-        autoRollFactor = 2 -- export: [Only in atmosphere]<br>When autoRoll is engaged, this factor will increase to strength of the roll back to 0<br>Valid values: Superior or equal to 0.01
         DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing the correct orientation
         fuelTankHandlingAtmo = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         fuelTankHandlingSpace = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
@@ -259,8 +259,12 @@ function script.onStart()
         else
             MsgText = "No databank found, install one anywhere and rerun the autoconfigure to save variables"
         end
-       -- Loading saved vars is hard on it
+        -- Loading saved vars is hard on it
         brakeToggle = BrakeToggleDefault
+        userControlScheme = string.lower(userControlScheme)
+        if string.find("keyboard virtual joystick mouse", userControlScheme) == nil then 
+            MsgText = "Invalid User Control Scheme selected.  Change userControlScheme in Lua Parameters to keyboard, mouse, or virtual joystick"
+        end
         MinimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
         autoRoll = autoRollPreference
         if antigrav then
@@ -275,11 +279,11 @@ function script.onStart()
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
         coroutine.yield() -- Give it some time to breathe before we do the rest
         for k in pairs(ElementsID) do
-            local name = eleType(ElementsID[k])
-            if (name == "landing gear") then
+            local type = eleType(ElementsID[k])
+            if (type == "landing gear") then
                 HasGear = true
             end
-            if (name == "dynamic core") then
+            if (type == "dynamic core") then
                 local hp = eleMaxHp(ElementsID[k])
                 if hp > 10000 then
                     coreOffset = 128
@@ -291,12 +295,12 @@ function script.onStart()
             end
             eleTotalMaxHp = eleTotalMaxHp + eleMaxHp(ElementsID[k])
             if (fuelX ~= 0 and fuelY ~= 0) then
-                if (name == "atmospheric fuel-tank" or name == "space fuel-tank" or name == "rocket fuel-tank") then
+                if (type == "atmospheric fuel-tank" or type == "space fuel-tank" or type == "rocket fuel-tank") then
                     local hp = eleMaxHp(ElementsID[k])
                     local mass = eleMass(ElementsID[k])
                     local curMass = 0
                     local curTime = system.getTime()
-                    if (name == "atmospheric fuel-tank") then
+                    if (type == "atmospheric fuel-tank") then
                         local vanillaMaxVolume = 400
                         local massEmpty = 35.03
                         if hp > 10000 then
@@ -319,7 +323,7 @@ function script.onStart()
                         atmoTanks[#atmoTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    if (name == "rocket fuel-tank") then
+                    if (type == "rocket fuel-tank") then
                         local vanillaMaxVolume = 320
                         local massEmpty = 173.42
                         if hp > 65000 then
@@ -342,7 +346,7 @@ function script.onStart()
                         rocketTanks[#rocketTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
                                                         vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    if (name == "space fuel-tank") then
+                    if (type == "space fuel-tank") then
                         local vanillaMaxVolume = 2400
                         local massEmpty = 182.67
                         if hp > 10000 then
@@ -369,7 +373,7 @@ function script.onStart()
             GyroIsOn = gyro.getState() == 1
         end
 
-        if userControlScheme ~= "Keyboard" then
+        if userControlScheme ~= "keyboard" then
             system.lockView(1)
         else
             system.lockView(0)
@@ -1503,12 +1507,12 @@ function script.onStart()
         end, buttonWidth * 2, buttonHeight, x, y, function()
             return false
         end, function()
-            if userControlScheme == "Keyboard" then
-                userControlScheme = "Mouse"
-            elseif userControlScheme == "Mouse" then
-                userControlScheme = "Virtual Joystick"
+            if userControlScheme == "keyboard" then
+                userControlScheme = "mouse"
+            elseif userControlScheme == "mouse" then
+                userControlScheme = "virtual joystick"
             else
-                userControlScheme = "Keyboard"
+                userControlScheme = "keyboard"
             end
         end)
         coroutine.yield() -- Just to make sure
@@ -1611,7 +1615,7 @@ function script.onStart()
         end
 
         function IsInFreeLook()
-            return system.isViewLocked() == 0 and userControlScheme ~= "Keyboard" and isRemote() == 0
+            return system.isViewLocked() == 0 and userControlScheme ~= "keyboard" and isRemote() == 0
         end
 
         function HUDPrologue(newContent)
@@ -4117,7 +4121,7 @@ function script.onTick(timerId)
         if MsgText ~= "empty" then
             DisplayMessage(newContent, MsgText)
         end
-        if isRemote() == 0 and userControlScheme == "Virtual Joystick" then
+        if isRemote() == 0 and userControlScheme == "virtual joystick" then
             DrawDeadZone(newContent)
         end
 
@@ -4182,7 +4186,7 @@ function script.onTick(timerId)
             SimulatedY = SimulatedY + deltaY
             Distance = math.sqrt(SimulatedX * SimulatedX + SimulatedY * SimulatedY)
             if not HoldingCtrl and isRemote() == 0 then -- Draw deadzone circle if it's navigating
-                if userControlScheme == "Virtual Joystick" then -- Virtual Joystick
+                if userControlScheme == "virtual joystick" then -- Virtual Joystick
                     -- Do navigation things
 
                     if SimulatedX > 0 and SimulatedX > DeadZone then
@@ -4200,7 +4204,7 @@ function script.onTick(timerId)
                     else
                         PitchInput2 = 0
                     end
-                elseif userControlScheme == "Mouse" then -- Mouse Direct
+                elseif userControlScheme == "mouse" then -- Mouse Direct
                     SimulatedX = 0
                     SimulatedY = 0
                     -- PitchInput2 = PitchInput2 - deltaY * MousePitchFactor
@@ -4519,7 +4523,6 @@ function script.onTick(timerId)
             
             if Reentry then
                 local fasterSpeed = ReentrySpeed
-                if CoreAltitude > 15000 then fasterSpeed = fasterSpeed * math.floor(CoreAltitude / 10000) end
                 if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= fasterSpeed then -- This thing is dumb.
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, fasterSpeed)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
@@ -4868,6 +4871,9 @@ function script.onFlush()
             '', '', tolerancePercentToSkipOtherPriorities)
         end
     elseif (verticalCommandType == axisCommandType.byTargetSpeed) then
+        if UpAmount == 0 then 
+            Nav:setEngineForceCommand('hover', vec3(), keepCollinearity) 
+        end
         local verticalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromTargetSpeed(
                                          axisCommandId.vertical)
         autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. verticalStrafeEngineTags
@@ -5081,7 +5087,7 @@ function script.onActionStart(action)
             BrakeIsOn = true -- Should never happen
         end
     elseif action == "lalt" then
-        if Nav.control.isRemoteControlled() == 0 and not freeLookToggle and userControlScheme == "Keyboard" then
+        if Nav.control.isRemoteControlled() == 0 and not freeLookToggle and userControlScheme == "keyboard" then
             system.lockView(1)
         end
     elseif action == "booster" then
@@ -5158,10 +5164,12 @@ function script.onActionStop(action)
         UpAmount = 0
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "down" then
         UpAmount = 0
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
+        Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "groundaltitudeup" then
         if antigrav and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
@@ -5206,7 +5214,7 @@ function script.onActionStop(action)
             else
                 ToggleView = true
             end
-        elseif Nav.control.isRemoteControlled() == 0 and not freeLookToggle and userControlScheme == "Keyboard" then
+        elseif Nav.control.isRemoteControlled() == 0 and not freeLookToggle and userControlScheme == "keyboard" then
             system.lockView(0)
         end
     end

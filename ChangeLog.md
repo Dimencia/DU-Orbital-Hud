@@ -1,7 +1,14 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.833
+- Any engine tagged with hover will not fire in cruise control unless spacebar/c used.  If they dont stop, tap c/spacebar (opposite direction) and they should.
+- Removed speed multiplier based on height when using re-entry to account for planets with very high atmosphere.
+- Modified userControlScheme to not care about upper/lowercase and to check for typos.
+- Validated all user LUA Parameter descriptions.  Mouse over a name to see what it does.
+
+
 Version 4.832
-- Clean up some variable naming\
+- Clean up some variable naming
 - Autopilot on arrival to orbit at new planet will only align prograde if proceeding to land
 - Vertically mounted engine performance (no gyro activated) changed (NOTE: For the moment, if in cruise control (ALT-Hold turns this on too) vertical engines will fire to help maintain altitude)
 1) Will always fire (or stop) if you hit spacebar/c (as appropriate for up/down mounted engines)
