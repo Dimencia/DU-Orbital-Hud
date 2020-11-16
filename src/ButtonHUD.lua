@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.833
+        VERSION_NUMBER = 4.834
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -4860,7 +4860,7 @@ function script.onFlush()
     if (verticalCommandType == axisCommandType.byThrottle) then
         local verticalStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
                                                verticalStrafeEngineTags, axisCommandId.vertical)
-        if UpAmount ~= 0 or (BrakeLanding and BrakeIsOn) or (atmosphere > 0 and (HovGndDet ~= -1 and HovGndDet > LandingGearGroundHeight+5)) then
+        if UpAmount ~= 0 or (BrakeLanding and BrakeIsOn) then
             Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity, 'airfoil',
                 'ground', '', tolerancePercentToSkipOtherPriorities)
         else
