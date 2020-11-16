@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.834
+- More vertical engine modification, now they should only come on if you are holding spacebar/c or if you are brake landing and Brakes are engaged to help slow your decent.
+This should fix the problem with landing in low g environments with vertical engines.
+
 Version 4.833
 - Any engine tagged with hover will not fire in cruise control unless spacebar/c used.  If they dont stop, tap c/spacebar (opposite direction) and they should.
 - Removed speed multiplier based on height when using re-entry to account for planets with very high atmosphere.
