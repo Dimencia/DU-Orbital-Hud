@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.835
+- With NQ concurrence - Modified AGG so that when you turn it OFF, the BaseAltitude will rapidly reach the TargetAltitude, 
+allowing you to resume using your AGG without waiting for the Base Altitude to reach Target Altitude at 3.8m/s.  Speed while AGG 
+is on remains at intended vanilla rate.
+
 Version 4.834
 - More vertical engine modification, now they should only come on if you are holding spacebar/c or if you are brake landing and Brakes are engaged to help slow your decent.
 This should fix the problem with landing in low g environments with vertical engines.

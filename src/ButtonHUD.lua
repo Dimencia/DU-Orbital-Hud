@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.834
+        VERSION_NUMBER = 4.835
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -4717,6 +4717,11 @@ function script.onTick(timerId)
 end
 
 function script.onFlush()
+    if antigrav then
+        if antigrav.getState() == 0 and antigrav.getBaseAltitude() ~= AntigravTargetAltitude then 
+            antigrav.setBaseAltitude(AntigravTargetAltitude) 
+        end
+    end
     local torqueFactor = 2 -- Force factor applied to reach rotationSpeed<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
 
     -- validate params
