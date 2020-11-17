@@ -48,6 +48,7 @@ function script.onStart()
         circleRad = 400 -- export: The size of the artifical horizon circle, recommended minimum 100, maximum 400.  Looks different > 200. Set to 0 to remove.
         DeadZone = 50 -- export: Number of pixels of deadzone at the center of the screen
         showHud = true -- export: Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
+        ShowOdometer = true -- export: Uncheck to hide the odometer panel up top.
         hideHudOnToggleWidgets = true -- export: Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
         ShiftShowsRemoteButtons = true -- export: Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
         StallAngle = 35 --export: Determines how much Autopilot is allowed to make you yaw/pitch in atmosphere.  Also gives a stall warning when not autopilot.  (default 35, higher = more tolerance for yaw/pitch/roll)
@@ -1589,7 +1590,7 @@ function script.onStart()
                if not IsInFreeLook() or brightHud then
                     if nearPlanet then -- use real pitch, roll, and heading
                         DrawRollLines (newContent, centerX, centerY, originalRoll, bottomText, nearPlanet)
-                        DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, nearPlanet)
+                        DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, nearPlanet, mfloor(getRelativeYaw(velocity)), speed)
                         DrawAltitudeDisplay(newContent, altitude, atmos)
                     else -- use Relative Pitch and Relative Yaw
                         DrawRollLines (newContent, centerX, centerY, roll, bottomText, nearPlanet)
@@ -1703,6 +1704,7 @@ function script.onStart()
             refreshLastMaxBrake(gravity)
             maxThrust = Nav:maxForceForward()
             totalMass = constructMass()
+            if not ShowOdometer then return end
             local accel = (vec3(core.getWorldAcceleration()):len() / 9.80665)
             if gravity > 0.1 then
                 reqThrust = totalMass * gravity
@@ -1914,7 +1916,7 @@ function script.onStart()
                 ]], yawx, yawy+25, yawC, yawx, yawy+35, bottomText)
         end
 
-        function DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, nearPlanet)
+        function DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, nearPlanet, atmoYaw, speed)
             -- ** CIRCLE ALTIMETER  - Base Code from Discord @Rainsome = Youtube CaptainKilmar** 
             local horizonRadius = circleRad -- Aliased global
             local pitchX = math.floor(horizonRadius * 3 / 5)
@@ -1965,6 +1967,14 @@ function script.onStart()
                 end
                 if horizonRadius > 200 then
                     if atmos > 0 then
+                        if speed > MinAutopilotSpeed then
+                            newContent[#newContent + 1] = stringf([["
+                            <g class="pdim txt txtmid">
+                            <text x="%d" y="%d">%s</text>
+                            <text x="%d" y="%d">%d deg</text>
+                            </g>
+                            ]],  centerX, centerY-15, "Yaw", centerX, centerY+20, atmoYaw)                            
+                        end
                         newContent[#newContent + 1] = stringf([[<g transform="rotate(%f,%d,%d)">]], -originalRoll, centerX, centerY)
                     else
                         newContent[#newContent + 1] = stringf([[<g transform="rotate(0,%d,%d)">]], centerX, centerY)
@@ -1975,20 +1985,31 @@ function script.onStart()
                     centerX+pitchX-25, centerY-5, centerX+pitchX-20, centerY, centerX+pitchX-25, centerY+5, centerX+pitchX-30, centerY+4, pitchC)
                     newContent[#newContent +1] = "</g>"
                 end
-                newContent[#newContent + 1] = stringf([[<path d="m %d,%d 35,0 15,15 15,-15 35,0" stroke-width="2" style="fill:none;stroke:#F5B800;" />]],
-                    centerX-50, centerY)
+                newContent[#newContent + 1] = stringf([[<path d="m %d,%d %d,0" stroke-width="2" style="fill:none;stroke:#F5B800;" />]],
+                    centerX-math.floor(horizonRadius/2)+15, centerY, horizonRadius-10)
                 if atmos == 0 and nearPlanet then 
                     newContent[#newContent + 1] = stringf([[<path transform="rotate(%f,%d,%d)" d="m %d,%f %d,0" stroke-width="1" style="fill:none;stroke:#F5B800;" />]],
                         (-1 * originalRoll), centerX, centerY, centerX-pitchX+10, centerY, pitchX*2-20)
                 end
                 newContent[#newContent + 1] = "</g>"
                 if horizonRadius < 200 then
-                    newContent[#newContent + 1] = stringf([["
-                    <g class="pdim txt txtmid">
-                    <text x="%d" y="%d">%s</text>
-                    <text x="%d" y="%d">%d deg</text>
-                    </g>
-                    ]], centerX, centerY-horizonRadius, pitchstring, centerX, centerY-horizonRadius+10, pitchC)
+                    if atmos > 0 and speed > MinAutopilotSpeed then 
+                        newContent[#newContent + 1] = stringf([["
+                        <g class="pdim txt txtmid">
+                        <text x="%d" y="%d">%s</text>
+                        <text x="%d" y="%d">%d deg</text>
+                        <text x="%d" y="%d">%s</text>
+                        <text x="%d" y="%d">%d deg</text>
+                        </g>
+                        ]], centerX, centerY-horizonRadius, pitchstring, centerX, centerY-horizonRadius+10, pitchC, centerX, centerY-15, "Yaw", centerX, centerY+20, atmoYaw)
+                    else
+                        newContent[#newContent + 1] = stringf([["
+                        <g class="pdim txt txtmid">
+                        <text x="%d" y="%d">%s</text>
+                        <text x="%d" y="%d">%d deg</text>
+                        </g>
+                        ]], centerX, centerY-horizonRadius, pitchstring, centerX, centerY-horizonRadius+15, pitchC )                       
+                    end
                 end
             end
         end

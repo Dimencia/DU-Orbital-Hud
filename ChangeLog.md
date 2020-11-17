@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.836
+- Added user variable ShowOdometer default true.  If you toggle it off then the Odometer panel doesnt show up top.
+- Added Yaw to center of AH when in atmo and moving fast enough.
+
 Version 4.835
 - With NQ concurrence - Modified AGG so that when you turn it OFF, the BaseAltitude will rapidly reach the TargetAltitude, 
 allowing you to resume using your AGG without waiting for the Base Altitude to reach Target Altitude at 3.8m/s.  Speed while AGG 
