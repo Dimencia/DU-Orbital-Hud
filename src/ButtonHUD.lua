@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.836
+        VERSION_NUMBER = 4.837
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -167,6 +167,8 @@ function script.onStart()
         SpaceLaunch = false
         FinalLand = false
         HovGndDet = -1
+        clearAllCheck = false
+        LockPitch = nil
 
         -- Local Variables used only within onStart
         local markers = {}
@@ -222,7 +224,8 @@ function script.onStart()
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                          "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
-                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", "LastMaxBrakeInAtmo", "AntigravTargetAltitude"}
+                         "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", 
+                         "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude"}
                         
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
@@ -743,6 +746,7 @@ function script.onStart()
                     ToggleAltitudeHold()
                 end
                 AutoTakeoff = false
+                LockPitch = nil
                 BrakeLanding = true
                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             end
@@ -767,6 +771,21 @@ function script.onStart()
                 BrakeIsOn = true
             end
         end
+        
+        function ToggleLockPitch()
+            if LockPitch == nil then
+                local constrF = vec3(core.getConstructWorldOrientationForward())
+                local constrR = vec3(core.getConstructWorldOrientationRight())
+                local worldV = vec3(core.getWorldVertical())
+                local pitch = getPitch(worldV, constrF, constrR)
+                LockPitch = pitch
+                AutoTakeoff = false
+                AltitudeHold = false
+                BrakeLanding = false
+            else
+                LockPitch = nil
+            end
+        end
 
         function ToggleAltitudeHold()
             AltitudeHold = not AltitudeHold
@@ -778,6 +797,7 @@ function script.onStart()
                 BrakeLanding = false
                 Reentry = false
                 autoRoll = true
+                LockPitch = nil
                 if (not GearExtended and not BrakeIsOn) or atmosphere() == 0 then -- Never autotakeoff in space
                     AutoTakeoff = false
                     HoldAltitude = CoreAltitude
@@ -848,6 +868,7 @@ function script.onStart()
                 -- f. If our distance to the target (ignoring altitude) is within our current brakeDistance, engage brake-landing
                 -- f2. Should we even try to let this happen on ships with bad brakes.  Eventually, try that.  For now just don't let them use this
                 if CustomTarget ~= nil then
+                    LockPitch = nil
                     if planet.name  == CustomTarget.planetname then 
                         StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
                         if not StrongBrakes and velMag > MinAutopilotSpeed then
@@ -871,6 +892,8 @@ function script.onStart()
                         end
                     else
                         SpaceLaunch = true
+                        RetrogradeIsOn = false
+                        ProgradeIsOn = false
                         if unit.getAtmosphereDensity() ~= 0 then 
                             ToggleAltitudeHold() 
                         else
@@ -888,6 +911,7 @@ function script.onStart()
                     Reentry = false
                     AutoTakeoff = false
                     APThrottleSet = false
+                    LockPitch = nil
                 else
                     SpaceLaunch = true
                     ToggleAltitudeHold()
@@ -908,6 +932,7 @@ function script.onStart()
             AltitudeHold = false
             FollowMode = false
             BrakeLanding = false
+            LockPitch = nil
             Reentry = false
             AutoTakeoff = false
         end
@@ -920,6 +945,7 @@ function script.onStart()
             AltitudeHold = false
             FollowMode = false
             BrakeLanding = false
+            LockPitch = nil
             Reentry = false
             AutoTakeoff = false
         end
@@ -942,6 +968,7 @@ function script.onStart()
                 BrakeLanding = false
                 AutoLanding = false
                 AltitudeHold = false -- And stop alt hold
+                LockPitch = nil
                 autoRoll = autoRollPreference
             end
         end
@@ -1036,6 +1063,38 @@ function script.onStart()
                 pitch = -pitch
             end -- Cross right dot forward?
             return pitch
+        end
+
+        function clearAll()
+            if clearAllCheck then
+                clearAllCheck = false
+                AutopilotAccelerating = false
+                AutopilotBraking = false
+                AutopilotCruising = false
+                Autopilot = false
+                AutopilotRealigned = false
+                AutopilotStatus = "Aligning"                
+                RetrogradeIsOn = false
+                ProgradeIsOn = false
+                AltitudeHold = false
+                Reentry = false
+                BrakeLanding = false
+                BrakeIsOn = false
+                AutoTakeoff = false
+                FollowMode = false
+                APThrottleSet = false
+                SpaceLand = false
+                SpaceLaunch = false
+                ReentryMode = false
+                autoRoll = autoRollPreference
+                EmergencyWarp = false
+                VectorToTarget = false
+                TurnBurn = false
+                GyroIsOn = false
+                LockPitch = nil
+            else
+                clearAllCheck = true
+            end
         end
 
         function wipeSaveVariables()
@@ -1943,7 +2002,7 @@ function script.onStart()
                             newContent[#newContent + 1] = stringf([[<g path transform="rotate(%f,%d,%d)" class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]],(-1 * originalRoll), centerX, centerY, centerX+pitchX-10, y, i)
                             if i == 0 or i == 180 or i == -180 then 
                                 newContent[#newContent + 1] = stringf([[<path transform="rotate(%f,%d,%d)" d="m %d,%f %d,0" stroke-width="1" style="fill:none;stroke:#F5B800;" />]],
-                                    (-1 * originalRoll), centerX, centerY, centerX-pitchX+10, y, pitchX*2-20)
+                                    (-1 * originalRoll), centerX, centerY, centerX-pitchX+20, y, pitchX*2-40)
                             end
                         else
                             newContent[#newContent + 1] = stringf([[<g class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]], centerX-pitchX+10, y, i)
@@ -1985,8 +2044,9 @@ function script.onStart()
                     centerX+pitchX-25, centerY-5, centerX+pitchX-20, centerY, centerX+pitchX-25, centerY+5, centerX+pitchX-30, centerY+4, pitchC)
                     newContent[#newContent +1] = "</g>"
                 end
+                local thirdHorizontal = math.floor(horizonRadius/3)
                 newContent[#newContent + 1] = stringf([[<path d="m %d,%d %d,0" stroke-width="2" style="fill:none;stroke:#F5B800;" />]],
-                    centerX-math.floor(horizonRadius/2)+15, centerY, horizonRadius-10)
+                    centerX-thirdHorizontal, centerY, horizonRadius-thirdHorizontal)
                 if atmos == 0 and nearPlanet then 
                     newContent[#newContent + 1] = stringf([[<path transform="rotate(%f,%d,%d)" d="m %d,%f %d,0" stroke-width="1" style="fill:none;stroke:#F5B800;" />]],
                         (-1 * originalRoll), centerX, centerY, centerX-pitchX+10, centerY, pitchX*2-20)
@@ -2225,6 +2285,9 @@ function script.onStart()
             elseif Autopilot and AutopilotTargetName ~= "None" then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Autopilot %s</text>]],
                                                   warningX, apY, AutopilotStatus)
+            elseif LockPitch ~= nil then
+                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">LockedPitch: %d</text>]],
+                                                    warningX, apY, math.floor(LockPitch))
             elseif FollowMode then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Follow Mode Engaged</text>]],
                                                   warningX, apY)
@@ -2266,7 +2329,7 @@ function script.onStart()
             end
             if VectorToTarget then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">%s</text>]], warningX,
-                                                  turnBurnY, VectorStatus)
+                                                  apY+30, VectorStatus)
             end
 
             newContent[#newContent + 1] = "</g>"
@@ -4056,7 +4119,7 @@ function script.onTick(timerId)
     
     elseif timerId == "oneSecond" then
         -- Timer for evaluation every 1 second
-
+        clearAllCheck = false
         refreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
         updateDistance()
         updateRadar()
@@ -4528,8 +4591,9 @@ function script.onTick(timerId)
             end
         end
         local up = vec3(core.getWorldVertical()) * -1
-        if AltitudeHold or BrakeLanding or Reentry or VectorToTarget then
+        if AltitudeHold or BrakeLanding or Reentry or VectorToTarget or LockPitch ~= nil then
             -- HoldAltitude is the alt we want to hold at
+            local nearPlanet = unit.getClosestPlanetInfluence() > 0
             local altitude = CoreAltitude
             -- Dampen this.
             local altDiff = HoldAltitude - altitude
@@ -4539,6 +4603,13 @@ function script.onTick(timerId)
             local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch
             if not AltitudeHold then
                 targetPitch = 0
+            end
+            if LockPitch ~= nil then 
+                if nearPlanet then 
+                    targetPitch = LockPitch 
+                else
+                    LockPitch = nil
+                end
             end
             autoRoll = true
             
@@ -4705,23 +4776,7 @@ function script.onTick(timerId)
 
         if antigrav and CoreAltitude < 200000 then
             if antigrav.getState() == 1 then
-                local velocity = vec3(core.getWorldVelocity())
-                local up = vec3(core.getWorldVertical()) * -1
-                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-                local singularityAltitude = antigrav.getBaseAltitude()
                 if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
-                local cc_speed = unit.getThrottle()
-                if Nav.axisCommandManager:getAxisCommandType(0) == 1 then -- Cruise control 
-                    cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
-                end
-                local singularRange = math.abs(CoreAltitude - singularityAltitude) 
-                if cc_speed > -1 and cc_speed < 1 and singularRange > 10 and singularRange < 501 and unit.getAtmosphereDensity() < 0.01 then
-                    if (CoreAltitude > antigrav.getBaseAltitude() and AntigravTargetAltitude > CoreAltitude and vSpd < 0) or (CoreAltitude < antigrav.getBaseAltitude() and AntigravTargetAltitude < CoreAltitude and vSpd > 0) then 
-                        BrakeIsOn = true
-                    else 
-                        BrakeIsOn = false
-                    end
-                end
                 if desiredBaseAltitude ~= AntigravTargetAltitude then
                     desiredBaseAltitude = AntigravTargetAltitude
                     antigrav.setBaseAltitude(desiredBaseAltitude)
@@ -4974,6 +5029,7 @@ function script.onActionStart(action)
         GearExtended = not GearExtended
         if GearExtended then
             VectorToTarget = false
+            LockPitch = nil
             if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                 Nav.control.cancelCurrentControlMasterMode()
             end
@@ -5077,7 +5133,7 @@ function script.onActionStart(action)
         ToggleAutopilot()
         ToggleView = false
     elseif action == "option5" then
-        ToggleTurnBurn()
+        ToggleLockPitch()
         ToggleView = false
     elseif action == "option6" then
         ToggleAltitudeHold()
@@ -5127,6 +5183,7 @@ function script.onActionStart(action)
         end
     elseif action == "stopengines" then
         Nav.axisCommandManager:resetCommand(axisCommandId.longitudinal)
+        clearAll()
     elseif action == "speedup" then
         if not HoldingCtrl then
             Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.longitudinal, speedChangeLarge)
