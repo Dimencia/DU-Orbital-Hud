@@ -1,5 +1,14 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.837
+- MANUAL CONTROL HOTKEY: Pressing Stop engines (Z by default) 2x within 1 second will clear ALL AP / special functions.  You will be at 0 engine in throttle mode with brakes off. (normal Z behavior)
+but all special features like altitude hold, or brake landing or anything else will turn off.  (Give me manual control key)  Pressing it just once is normal vanilla stop all engines.
+NOTE: This will NOT turn off antigrav or stop a warp in progress.  It does turn off emergency warp active.
+- LOCK PITCH FEATURE: Changed Alt-5 from Turn/Burn toggle (still available as button) to Lock Pitch toggle.  Will lock your target pitch at current pitch and attempt to maintain that pitch (this is different from Altitude Hold) Most other AP features will cancel LockPitch.
+- Removed automatic braking from AGG operation, it was interfering too much with pilot desired braking.  
+Will monitor for overshoot / yoyo and revisit if necessary, meantime toggle on brakes to prevent yoyo if at desired height.
+- Cleaned up static level bar in Artificial Horizon.
+
 Version 4.836
 - Added user variable ShowOdometer default true.  If you toggle it off then the Odometer panel doesnt show up top.
 - Added Yaw to center of AH when in atmo and moving fast enough.
