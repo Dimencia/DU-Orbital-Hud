@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.837
+        VERSION_NUMBER = 4.838
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -84,6 +84,7 @@ function script.onStart()
         fuelTankHandlingAtmo = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         fuelTankHandlingSpace = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         fuelTankHandlingRocket = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
+        ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
@@ -271,7 +272,7 @@ function script.onStart()
         end
         MinimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
         autoRoll = autoRollPreference
-        if antigrav then
+        if antigrav and not ExternalAGG then
             if AntigravTargetAltitude == nil then 
                 AntigravTargetAltitude = CoreAltitude
             end
@@ -403,7 +404,7 @@ function script.onStart()
                 v.deactivate()
             end
         end
-        if antigrav ~= nil then
+        if antigrav ~= nil and not ExternalAGG then
             if(antigrav.getState() == 1) then
                 antigrav.show()
             end
@@ -1387,7 +1388,7 @@ function script.onStart()
         end
 
         function ToggleAntigrav()
-            if antigrav then
+            if antigrav  and not ExternalAGG then
                 if antigrav.getState() == 1 then
                     antigrav.deactivate()
                     antigrav.hide()
@@ -1555,10 +1556,11 @@ function script.onStart()
             return isRemote() == 1
         end)
         y = y + buttonHeight + 20
-        MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
+        if not ExternalAGG then
+            MakeButton("Enable AGG", "Disable AGG", buttonWidth, buttonHeight, x, y, function()
             return antigrav.getState() == 1 end, ToggleAntigrav, function()
-            return antigrav ~= nil
-        end)   
+            return antigrav ~= nil end)
+        end   
         y = y + buttonHeight + 20
         MakeButton(function()
             return string.format("Toggle Control Scheme - Current: %s", userControlScheme)
@@ -2274,7 +2276,7 @@ function script.onStart()
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">ROCKET BOOST ENABLED</text>]],
                                                   warningX, ewarpY+20)
             end                  
-            if antigrav and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
+            if antigrav and not ExternalAGG and antigrav.getState() == 1 and AntigravTargetAltitude ~= nil then
                 if math.abs(CoreAltitude - antigrav.getBaseAltitude()) < 501 then
                     newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">AGG On - Target Altitude: %d Singluarity Altitude: %d</text>]],
                         warningX, apY+20, mfloor(AntigravTargetAltitude), mfloor(antigrav.getBaseAltitude()))
@@ -3982,7 +3984,7 @@ end
 
 function script.onStop()
     _autoconf.hideCategoryPanels()
-    if antigrav ~= nil then
+    if antigrav ~= nil  and not ExternalAGG then
         antigrav.hide()
     end
     if warpdrive ~= nil then
@@ -4774,7 +4776,7 @@ function script.onTick(timerId)
         end
         LastEccentricity = orbit.eccentricity
 
-        if antigrav and CoreAltitude < 200000 then
+        if antigrav and not ExternalAGG and CoreAltitude < 200000 then
             if antigrav.getState() == 1 then
                 if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
                 if desiredBaseAltitude ~= AntigravTargetAltitude then
@@ -4793,7 +4795,7 @@ function script.onTick(timerId)
 end
 
 function script.onFlush()
-    if antigrav then
+    if antigrav  and not ExternalAGG then
         if antigrav.getState() == 0 and antigrav.getBaseAltitude() ~= AntigravTargetAltitude then 
             antigrav.setBaseAltitude(AntigravTargetAltitude) 
         end
@@ -5087,7 +5089,7 @@ function script.onActionStart(action)
     elseif action == "groundaltitudeup" then
         OldButtonMod = HoldAltitudeButtonModifier
         OldAntiMod = AntiGravButtonModifier
-        if antigrav and antigrav.getState() == 1 then
+        if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil  then
                 AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
             else
@@ -5101,7 +5103,7 @@ function script.onActionStart(action)
     elseif action == "groundaltitudedown" then
         OldButtonMod = HoldAltitudeButtonModifier
         OldAntiMod = AntiGravButtonModifier
-        if antigrav and antigrav.getState() == 1 then
+        if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
@@ -5196,7 +5198,7 @@ function script.onActionStart(action)
         else
             DecrementAutopilotTargetIndex()
         end
-    elseif action == "antigravity" then
+    elseif action == "antigravity" and not ExternalAGG then
         if antigrav ~= nil then
             ToggleAntigrav()
         end
@@ -5254,14 +5256,14 @@ function script.onActionStop(action)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
         Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "groundaltitudeup" then
-        if antigrav and antigrav.getState() == 1 then
+        if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
         elseif AltitudeHold then
             HoldAltitudeButtonModifier = OldButtonMod
         end
         ToggleView = false
     elseif action == "groundaltitudedown" then
-        if antigrav and antigrav.getState() == 1 then
+        if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
         elseif AltitudeHold then
             HoldAltitudeButtonModifier = OldButtonMod
@@ -5305,7 +5307,7 @@ end
 
 function script.onActionLoop(action)
     if action == "groundaltitudeup" then
-        if antigrav and antigrav.getState() == 1 then
+        if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then 
                 AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
@@ -5321,7 +5323,7 @@ function script.onActionLoop(action)
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionLoop(1.0)
         end
     elseif action == "groundaltitudedown" then
-        if antigrav and antigrav.getState() == 1 then
+        if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then
                 AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
