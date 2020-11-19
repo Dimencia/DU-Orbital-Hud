@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.838
+- Updated Readme File - MANY thanks to THB for the effort on updating and cleaning up the file!
+- ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
+
 Version 4.837
 - MANUAL CONTROL HOTKEY: Pressing Stop engines (Z by default) 2x within 1 second will clear ALL AP / special functions.  You will be at 0 engine in throttle mode with brakes off. (normal Z behavior)
 but all special features like altitude hold, or brake landing or anything else will turn off.  (Give me manual control key)  Pressing it just once is normal vanilla stop all engines.
