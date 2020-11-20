@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.838
+        VERSION_NUMBER = 4.8395
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -32,6 +32,8 @@ function script.onStart()
         RemoteHud = false -- export: Whether you want full HUD while in remote mode, experimental, might not look right.
         userControlScheme = "virtual joystick" -- export: Set to "virtual joystick", "mouse", or "keyboard"
         brightHud = false -- export: Enable to prevent hud dimming when in freelook.
+        ResolutionX = 1920 -- export: Default is 1920, automatically scales, variable for use for wierd resolutions (1920x1200, etc)
+        ResolutionY = 1080 -- export: Default is 1080, automatically scales, variable for use for wierd resolutions (1920x1200, etc)
         PrimaryR = 130 -- export: Primary HUD color
         PrimaryG = 224 -- export: Primary HUD color
         PrimaryB = 255 -- export: Primary HUD color
@@ -218,7 +220,7 @@ function script.onStart()
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                            "RemoteHud", "RequireLock", "StallAngle"}
+                            "RemoteHud", "RequireLock", "StallAngle", "ResolutionX", "ResolutionY"}
         AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -1735,8 +1737,8 @@ function script.onStart()
                     </style>
                 </head>
                 <body>
-                    <svg height="100%%" width="100%%" viewBox="0 0 1920 1080">
-                    ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig)
+                    <svg height="100%%" width="100%%" viewBox="0 0 %d %d">
+                    ]], bright, bright, brightOrig, brightOrig, dim, dim, dimOrig, dimOrig, ResolutionX, ResolutionY)
         end
 
         function HUDEpilogue(newContent)
@@ -4242,8 +4244,7 @@ function script.onTick(timerId)
                 if not Animating and not Animated then
                     local collapsedContent = table.concat(newContent, "")
                     newContent = {}
-                    newContent[#newContent + 1] =
-                        "<style>@keyframes test { from { opacity: 0; } to { opacity: 1; } }  body { animation-name: test; animation-duration: 0.5s; }</style><body><svg width='100%' height='100%' position='absolute' top='0' left='0'><rect width='100%' height='100%' x='0' y='0' position='absolute' style='fill:rgb(6,5,26);'/></svg><svg width='50%' height='50%' style='position:absolute;top:30%;left:25%' viewbox='0 0 1920 1080'>"
+                    newContent[#newContent + 1] = "<style>@keyframes test { from { opacity: 0; } to { opacity: 1; } }  body { animation-name: test; animation-duration: 0.5s; }</style><body><svg width='100%' height='100%' position='absolute' top='0' left='0'><rect width='100%' height='100%' x='0' y='0' position='absolute' style='fill:rgb(6,5,26);'/></svg><svg width='50%' height='50%' style='position:absolute;top:30%;left:25%' viewbox='0 0 1920 1080'>"
                     newContent[#newContent + 1] = GalaxyMapHTML
                     newContent[#newContent + 1] = collapsedContent
                     newContent[#newContent + 1] = "</body>"
@@ -4255,8 +4256,7 @@ function script.onTick(timerId)
                 elseif Animated then
                     local collapsedContent = table.concat(newContent, "")
                     newContent = {}
-                    newContent[#newContent + 1] =
-                        "<body style='background-color:rgb(6,5,26)'><svg width='50%' height='50%' style='position:absolute;top:30%;left:25%' viewbox='0 0 1920 1080'>"
+                    newContent[#newContent + 1] = "<body style='background-color:rgb(6,5,26)'><svg width='50%' height='50%' style='position:absolute;top:30%;left:25%' viewbox='0 0 1920 1080'>"
                     newContent[#newContent + 1] = GalaxyMapHTML
                     newContent[#newContent + 1] = collapsedContent
                     newContent[#newContent + 1] = "</body>"

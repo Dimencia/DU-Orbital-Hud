@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.8395
+- Added ResolutionX and ResolutionY to user variables, default 1920x1080.  You do NOT need to change these for normal aspect ratios.
+
 Version 4.839
 - Fixed vector to target when doing autotakeoff.  Ship will now swivel to target as soon as you hit alt-4 while on ground.
 - Fixed Interplanetary Helper infor when targeting Saved Locations.  Note that time to target will show 0 when same planet autopilot.
