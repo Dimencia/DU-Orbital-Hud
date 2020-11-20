@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.839
+- Fixed vector to target when doing autotakeoff.  Ship will now swivel to target as soon as you hit alt-4 while on ground.
+- Fixed Interplanetary Helper infor when targeting Saved Locations.  Note that time to target will show 0 when same planet autopilot.
+
 Version 4.838
 - Updated Readme File - MANY thanks to THB for the effort on updating and cleaning up the file!
 - ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.

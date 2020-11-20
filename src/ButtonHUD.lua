@@ -856,7 +856,7 @@ function script.onStart()
 
         function ToggleAutopilot()
             -- Toggle Autopilot, as long as the target isn't None
-            if AutopilotTargetIndex > 0 and not Autopilot then
+            if AutopilotTargetIndex > 0 and not Autopilot and not VectorToTarget then
                 -- If it's a custom location... 
                 -- Behavior is probably 
                 -- a. If not at the same nearest planet and in space and the target has gravity, autopilot to that planet
@@ -922,6 +922,9 @@ function script.onStart()
                 AutopilotRealigned = false
                 VectorToTarget = false
                 APThrottleSet = false
+                AutoTakeoff = false
+                AltitudeHold = false
+                VectorToTarget = false
             end
         end
 
@@ -1340,7 +1343,7 @@ function script.onStart()
         function AlignToWorldVector(vector, tolerance)
             -- Sets inputs to attempt to point at the autopilot target
             -- Meant to be called from Update or Tick repeatedly
-            if atmosphere() == 0 or RateOfChange > (MinimumRateOfChange+0.08) then
+            if atmosphere() == 0 or RateOfChange > (MinimumRateOfChange+0.08) or HovGndDet ~= -1 then
                 if tolerance == nil then
                     tolerance = alignmentTolerance
                 end
@@ -3669,20 +3672,20 @@ function script.onStart()
                 AutopilotTargetPlanet = galaxyReference[0][atlasIndex]
                 if CustomTarget ~= nil then
                     if unit.getAtmosphereDensity() == 0 then
-                        if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
+                        if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) ~= 1 then
                             system.addDataToWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime) end
-                        if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) == 1 then
+                        if system.updateData(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) ~= 1 then
                             system.addDataToWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance) end
-                        if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) == 1 then
+                        if system.updateData(widgetCurBrakeTimeText, widgetCurBrakeTime) ~= 1 then
                             system.addDataToWidget(widgetCurBrakeTimeText, widgetCurBrakeTime) end
-                        if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) == 1 then
+                        if system.updateData(widgetCurBrakeDistanceText, widgetCurBrakeDistance) ~= 1 then
                             system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
-                        if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 1 then
+                        if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) ~= 1 then
                             system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
                     end
-                    if system.updateData(widgetMaxMassText, widgetMaxMass) == 1 then
+                    if system.updateData(widgetMaxMassText, widgetMaxMass) ~= 1 then
                         system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
-                    if system.updateData(widgetTravelTimeText, widgetTravelTime) == 1 then
+                    if system.updateData(widgetTravelTimeText, widgetTravelTime) ~= 1 then
                         system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
                 end
                 CustomTarget = nil
@@ -3691,10 +3694,14 @@ function script.onStart()
                 for _, v in pairs(galaxyReference[0]) do
                     if v.name == CustomTarget.planetname then
                         AutopilotTargetPlanet = v
-                        AutopilotTargetName = nil
+                        AutopilotTargetName = CustomTarget.name
                         break
                     end
                 end
+                if system.updateData(widgetMaxMassText, widgetMaxMass) ~= 1 then
+                    system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
+                if system.updateData(widgetTravelTimeText, widgetTravelTime) ~= 1 then
+                    system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
             end
             AutopilotTargetCoords = vec3(AutopilotTargetPlanet.center) -- Aim center until we align
             -- Determine the end speed
@@ -3740,9 +3747,14 @@ function script.onStart()
 
         function GetAutopilotTravelTime()
             if not Autopilot then
-                AutopilotDistance = (AutopilotTargetPlanet.center - vec3(core.getConstructWorldPos())):len() -- This updates elsewhere if we're already piloting
+                if CustomTarget == nil or CustomTarget.planetname ~= planet.name then
+                    AutopilotDistance = (AutopilotTargetPlanet.center - vec3(core.getConstructWorldPos())):len() -- This updates elsewhere if we're already piloting
+                else
+                    AutopilotDistance = (CustomTarget.position - vec3(core.getConstructWorldPos())):len()
+                end
             end
             local velocity = core.getWorldVelocity()
+            local speed = vec3(velocity):len()
             local accelDistance, accelTime =
                 Kinematic.computeDistanceAndTime(vec3(velocity):len(), MaxGameVelocity, -- From currently velocity to max
                     constructMass(), Nav:maxForceForward(), warmup, -- T50?  Assume none, negligible for this
@@ -3758,16 +3770,16 @@ function script.onStart()
             end
             local _, curBrakeTime
             if not TurnBurn then
-                _, curBrakeTime = GetAutopilotBrakeDistanceAndTime(vec3(velocity):len())
+                _, curBrakeTime = GetAutopilotBrakeDistanceAndTime(speed)
             else
-                _, curBrakeTime = GetAutopilotTBBrakeDistanceAndTime(vec3(velocity):len())
+                _, curBrakeTime = GetAutopilotTBBrakeDistanceAndTime(speed)
             end
             local cruiseDistance = 0
             local cruiseTime = 0
             -- So, time is in seconds
             -- If cruising or braking, use real cruise/brake values
-            if AutopilotCruising then -- If already cruising, use current speed
-                cruiseTime = Kinematic.computeTravelTime(vec3(velocity):len(), 0, AutopilotDistance)
+            if AutopilotCruising or (not Autopilot and speed > 5) then -- If already cruising, use current speed
+                cruiseTime = Kinematic.computeTravelTime(speed, 0, AutopilotDistance)
             elseif brakeDistance + accelDistance < AutopilotDistance then
                 -- Add any remaining distance
                 cruiseDistance = AutopilotDistance - (brakeDistance + accelDistance)
@@ -3778,7 +3790,9 @@ function script.onStart()
                 
                 accelTime = accelTime * accelRatio
             end
-            if AutopilotBraking then
+            if CustomTarget ~= nil and CustomTarget.planetname == planet.name and not Autopilot then
+                return cruiseTime
+            elseif AutopilotBraking then
                 return curBrakeTime
             elseif AutopilotCruising then
                 return cruiseTime + curBrakeTime
@@ -4028,11 +4042,16 @@ function script.onTick(timerId)
                 SetupInterplanetaryPanel()
             end
             if AutopilotTargetName ~= nil then
+                local customLocation = CustomTarget ~= nil
                 planetMaxMass = GetAutopilotMaxMass()
                 system.updateData(interplanetaryHeaderText,
                     '{"label": "Target", "value": "' .. AutopilotTargetName .. '", "unit":""}')
                 travelTime = GetAutopilotTravelTime() -- This also sets AutopilotDistance so we don't have to calc it again
-                Distance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
+                if customLocation then 
+                    Distance = (vec3(core.getConstructWorldPos()) - CustomTarget.position):len()
+                else
+                    Distance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
+                end
                 if not TurnBurn then
                     BrakeDistance, BrakeTime = GetAutopilotBrakeDistanceAndTime(velMag)
                     MaxBrakeDistance, MaxBrakeTime = GetAutopilotBrakeDistanceAndTime(MaxGameVelocity)
@@ -4075,19 +4094,6 @@ function script.onTick(timerId)
                         system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
                     WasInAtmo = false
                 end
-            else
-                system.updateData(interplanetaryHeaderText,
-                    '{"label": "Target", "value": "' .. CustomTarget.name .. '", "unit":""}')
-                Distance = (vec3(core.getConstructWorldPos()) - CustomTarget.position):len()
-                system.updateData(widgetDistanceText, '{"label": "Distance", "value": "' ..
-                    getDistanceDisplayString(Distance) .. '", "unit":""}')
-                system.removeDataFromWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
-                system.removeDataFromWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
-                system.removeDataFromWidget(widgetCurBrakeTimeText, widgetCurBrakeTime)
-                system.removeDataFromWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
-                system.removeDataFromWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
-                system.removeDataFromWidget(widgetMaxMassText, widgetMaxMass)
-                system.removeDataFromWidget(widgetTravelTimeText, widgetTravelTime)
             end
         else
             HideInterplanetaryPanel()
