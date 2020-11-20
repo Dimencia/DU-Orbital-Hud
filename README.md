@@ -157,6 +157,8 @@ Right click the seat and go to *Advanced -> Edit Lua Parameters* to see them all
         PrimaryR = 130 -- export: Primary HUD color
         PrimaryG = 224 -- export: Primary HUD color
         PrimaryB = 255 -- export: Primary HUD color
+        ResolutionX = 1920 -- export: Default is 1920, automatically scales, variable for use for wierd resolutions (1920x1200, etc)
+        ResolutionY = 1080 -- export: Default is 1080, automatically scales, variable for use for wierd resolutions (1920x1200, etc)
         centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), (use 1920x1080, it will scale) Default 960. Use centerX=700 and centerY=880 for lower left placement.
         centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), (use 1920x1080, it will scale) Default 540. Use centerX=700 and centerY=880 for lower left placement. 
         throtPosX = 1300 -- export: X position of Throttle Indicator, default 1300 to put it to right of default AH centerX parameter.
