@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.84
+- Bug fix of Artificial Horizon error when entering planet area from space.  Important bug fix (didnt notice it till approaching Feli)
+
 Version 4.8395
 - Added ResolutionX and ResolutionY to user variables, default 1920x1080.  You do NOT need to change these for normal aspect ratios.
 

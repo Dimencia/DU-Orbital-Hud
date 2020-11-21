@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.8395
+        VERSION_NUMBER = 4.84
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -1660,7 +1660,7 @@ function script.onStart()
                         DrawAltitudeDisplay(newContent, altitude, atmos)
                     else -- use Relative Pitch and Relative Yaw
                         DrawRollLines (newContent, centerX, centerY, roll, bottomText, nearPlanet)
-                        DrawArtificialHorizon(newContent, pitch, roll, atmos, centerX, centerY, nearPlanet)
+                        DrawArtificialHorizon(newContent, pitch, roll, atmos, centerX, centerY, nearPlanet, mfloor(roll), speed)
                     end
                     DrawPrograde(newContent, atmos, velocity, speed, centerX, centerY)
                 end
