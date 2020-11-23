@@ -88,7 +88,8 @@ function script.onStart()
         fuelTankHandlingRocket = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
-
+        NextSaveLocationName = "LocationName" --export: Enter desired name for next Save Location name.
+        
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
         APThrottleSet = false -- Do not save this, because when they re-enter, throttle won't be set anymore
         ToggleView = true
@@ -510,10 +511,14 @@ function script.onStart()
                 local position = vec3(core.getConstructWorldPos())
                 local name = planet.name .. ". " .. #SavedLocations
                                                       
-                if radar_1 then -- Just match the first one
-                    local id,_ = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
-                    if id ~= nil and id ~= "" then
-                        name = name .. " " .. radar_1.getConstructName(id)
+                if NextSaveLocationName ~= "LocationName" then
+                    name = name .. ": " ..tostring(NextSaveLocationName)
+                else
+                    if radar_1 then -- Just match the first one
+                        local id,_ = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
+                        if id ~= nil and id ~= "" then
+                            name = name .. " " .. radar_1.getConstructName(id)
+                        end
                     end
                 end
                 local newLocation = {
