@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.84
+        VERSION_NUMBER = 4.841
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -90,6 +90,7 @@ function script.onStart()
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
+        InAtmo = (atmosphere() > 0)
         APThrottleSet = false -- Do not save this, because when they re-enter, throttle won't be set anymore
         ToggleView = true
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
@@ -266,6 +267,7 @@ function script.onStart()
         else
             MsgText = "No databank found, install one anywhere and rerun the autoconfigure to save variables"
         end
+        coroutine.yield() -- Give it some time to breathe before we do the rest
         -- Loading saved vars is hard on it
         brakeToggle = BrakeToggleDefault
         userControlScheme = string.lower(userControlScheme)
@@ -284,7 +286,6 @@ function script.onStart()
                   [[)]]
         local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
-        coroutine.yield() -- Give it some time to breathe before we do the rest
         for k in pairs(ElementsID) do
             local type = eleType(ElementsID[k])
             if (type == "landing gear") then
@@ -376,6 +377,7 @@ function script.onStart()
                 end
             end
         end
+        coroutine.yield() -- Give it some time to breathe before we do the rest
         if gyro ~= nil then
             GyroIsOn = gyro.getState() == 1
         end
@@ -385,7 +387,7 @@ function script.onStart()
         else
             system.lockView(0)
         end
-        if atmosphere() > 0 then
+        if InAtmo then
             BrakeIsOn = true
         end
         if radar_1 then
@@ -440,10 +442,10 @@ function script.onStart()
                 Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
             end
         end
-        if atmosphere() > 0 and not dbHud and (GearExtended or not HasGear) then
+        if InAtmo and not dbHud and (GearExtended or not HasGear) then
             BrakeIsOn = true
         end
-        WasInAtmo = (atmosphere() > 0)
+        WasInAtmo = InAtmo
         unit.hide()
 
         -- BEGIN FUNCTION DEFINITIONS
@@ -460,7 +462,7 @@ function script.onStart()
                 if maxBrake ~= nil then
                     LastMaxBrake = maxBrake
                 end
-                if atmosphere() > 0 then
+                if InAtmo then
                     LastMaxBrakeInAtmo = maxBrake
                 end
                 lastMaxBrakeAtG = gravity
@@ -669,7 +671,6 @@ function script.onStart()
 
         -- Interplanetary helper
         function SetupInterplanetaryPanel()
-            InAtmo = (atmosphere() > 0)
             panelInterplanetary = system.createWidgetPanel("Interplanetary Helper")
             interplanetaryHeader = system.createWidget(panelInterplanetary, "value")
             interplanetaryHeaderText = system.createData('{"label": "Target Planet", "value": "N/A", "unit":""}')
@@ -801,7 +802,7 @@ function script.onStart()
                 Reentry = false
                 autoRoll = true
                 LockPitch = nil
-                if (not GearExtended and not BrakeIsOn) or atmosphere() == 0 then -- Never autotakeoff in space
+                if (not GearExtended and not BrakeIsOn) or not InAtmo then -- Never autotakeoff in space
                     AutoTakeoff = false
                     HoldAltitude = CoreAltitude
                    if not SpaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
@@ -1345,7 +1346,7 @@ function script.onStart()
         function AlignToWorldVector(vector, tolerance)
             -- Sets inputs to attempt to point at the autopilot target
             -- Meant to be called from Update or Tick repeatedly
-            if atmosphere() == 0 or RateOfChange > (MinimumRateOfChange+0.08) or HovGndDet ~= -1 then
+            if not InAtmo or RateOfChange > (MinimumRateOfChange+0.08) or HovGndDet ~= -1 then
                 if tolerance == nil then
                     tolerance = alignmentTolerance
                 end
@@ -1648,7 +1649,7 @@ function script.onStart()
 
             -- PRIMARY FLIGHT INSTRUMENTS
 
-            DrawVerticalSpeed(newContent, altitude, atmos) -- Weird this is draw during remote control...?
+            DrawVerticalSpeed(newContent, altitude) -- Weird this is draw during remote control...?
 
 
             if isRemote() == 0 or RemoteHud then
@@ -1656,13 +1657,13 @@ function script.onStart()
                if not IsInFreeLook() or brightHud then
                     if nearPlanet then -- use real pitch, roll, and heading
                         DrawRollLines (newContent, centerX, centerY, originalRoll, bottomText, nearPlanet)
-                        DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, nearPlanet, mfloor(getRelativeYaw(velocity)), speed)
-                        DrawAltitudeDisplay(newContent, altitude, atmos)
+                        DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX, centerY, nearPlanet, mfloor(getRelativeYaw(velocity)), speed)
+                        DrawAltitudeDisplay(newContent, altitude)
                     else -- use Relative Pitch and Relative Yaw
                         DrawRollLines (newContent, centerX, centerY, roll, bottomText, nearPlanet)
-                        DrawArtificialHorizon(newContent, pitch, roll, atmos, centerX, centerY, nearPlanet, mfloor(roll), speed)
+                        DrawArtificialHorizon(newContent, pitch, roll, centerX, centerY, nearPlanet, mfloor(roll), speed)
                     end
-                    DrawPrograde(newContent, atmos, velocity, speed, centerX, centerY)
+                    DrawPrograde(newContent, velocity, speed, centerX, centerY)
                 end
             end
             DrawThrottle(newContent, flightStyle, throt, flightValue)
@@ -1759,7 +1760,7 @@ function script.onStart()
             </g>]], x1, ys, mfloor(spd))
         end
 
-        function DrawOdometer(newContent, TotalDistanceTrip, TotalDistanceTravelled, flightStyle, flightTime)
+        function DrawOdometer(newContent, TotalDistanceTrip, TotalDistanceTravelled, flightStyle, flightTime, atmos)
             local xg = 1240
             local yg1 = 55
             local yg2 = 65
@@ -1781,7 +1782,7 @@ function script.onStart()
                 xg = 1120
                 yg1 = 55
                 yg2 = 65
-            elseif atmos > 0 then -- We only show atmo when not remote
+            elseif InAtmo then -- We only show atmo when not remote
                 newContent[#newContent + 1] = stringf([[
                     <text x="770" y="55">ATMOSPHERE</text>
                     <text x="770" y="65">%.2f</text>
@@ -1864,8 +1865,8 @@ function script.onStart()
         end
 
         -- Draw vertical speed indicator - Code by lisa-lionheart 
-        function DrawVerticalSpeed(newContent, altitude, atmos)
-            if (altitude < 200000 and atmos == 0) or (altitude and atmos > 0) then
+        function DrawVerticalSpeed(newContent, altitude)
+            if (altitude < 200000 and not InAtmo) or (altitude and InAtmo) then
                 local vSpd = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
                 local angle = 0
                 if math.abs(vSpd) > 1 then
@@ -1982,7 +1983,7 @@ function script.onStart()
                 ]], yawx, yawy+25, yawC, yawx, yawy+35, bottomText)
         end
 
-        function DrawArtificialHorizon(newContent, originalPitch, originalRoll, atmos, centerX, centerY, nearPlanet, atmoYaw, speed)
+        function DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX, centerY, nearPlanet, atmoYaw, speed)
             -- ** CIRCLE ALTIMETER  - Base Code from Discord @Rainsome = Youtube CaptainKilmar** 
             local horizonRadius = circleRad -- Aliased global
             local pitchX = math.floor(horizonRadius * 3 / 5)
@@ -1990,7 +1991,7 @@ function script.onStart()
                 local pitchC = mfloor(originalPitch)
                 local len = 0
                 local tickerPath = stringf([[<path transform="rotate(%f,%d,%d)" class="dim line" d="]], (-1 * originalRoll), centerX, centerY)
-                if atmos == 0 then
+                if not InAtmo then
                     tickerPath = stringf([[<path transform="rotate(0,%d,%d)" class="dim line" d="]], centerX, centerY)
                 end
                 newContent[#newContent + 1] = stringf([[<clipPath id="cut"><circle r="%f" cx="%d" cy="%d"/></clipPath>]],(horizonRadius - 1), centerX, centerY)
@@ -2004,7 +2005,7 @@ function script.onStart()
                     local y = centerY + (-i * 5 + originalPitch * 5)
                     if len == 30 then
                         tickerPath = stringf([[%s M %d %f h %d]], tickerPath, centerX-pitchX-len, y, len)
-                        if atmos > 0 then
+                        if InAtmo then
                             newContent[#newContent + 1] = stringf([[<g path transform="rotate(%f,%d,%d)" class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]],(-1 * originalRoll), centerX, centerY, centerX-pitchX+10, y, i)
                             newContent[#newContent + 1] = stringf([[<g path transform="rotate(%f,%d,%d)" class="pdim txt txtmid"><text x="%d" y="%f">%d</text></g>]],(-1 * originalRoll), centerX, centerY, centerX+pitchX-10, y, i)
                             if i == 0 or i == 180 or i == -180 then 
@@ -2026,13 +2027,13 @@ function script.onStart()
                 if not nearPlanet then 
                     pitchstring = "REL PITCH"
                 end
-                if originalPitch > 90 and atmos == 0 then
+                if originalPitch > 90 and not InAtmo then
                     originalPitch = 90 - (originalPitch - 90)
-                elseif originalPitch < -90 and atmos == 0 then
+                elseif originalPitch < -90 and not InAtmo then
                     originalPitch = -90 - (originalPitch + 90)
                 end
                 if horizonRadius > 200 then
-                    if atmos > 0 then
+                    if InAtmo then
                         if speed > MinAutopilotSpeed then
                             newContent[#newContent + 1] = stringf([["
                             <g class="pdim txt txtmid">
@@ -2054,13 +2055,13 @@ function script.onStart()
                 local thirdHorizontal = math.floor(horizonRadius/3)
                 newContent[#newContent + 1] = stringf([[<path d="m %d,%d %d,0" stroke-width="2" style="fill:none;stroke:#F5B800;" />]],
                     centerX-thirdHorizontal, centerY, horizonRadius-thirdHorizontal)
-                if atmos == 0 and nearPlanet then 
+                if not InAtmo and nearPlanet then 
                     newContent[#newContent + 1] = stringf([[<path transform="rotate(%f,%d,%d)" d="m %d,%f %d,0" stroke-width="1" style="fill:none;stroke:#F5B800;" />]],
                         (-1 * originalRoll), centerX, centerY, centerX-pitchX+10, centerY, pitchX*2-20)
                 end
                 newContent[#newContent + 1] = "</g>"
                 if horizonRadius < 200 then
-                    if atmos > 0 and speed > MinAutopilotSpeed then 
+                    if InAtmo and speed > MinAutopilotSpeed then 
                         newContent[#newContent + 1] = stringf([["
                         <g class="pdim txt txtmid">
                         <text x="%d" y="%d">%s</text>
@@ -2081,8 +2082,8 @@ function script.onStart()
             end
         end
 
-        function DrawAltitudeDisplay(newContent, altitude, atmos)
-            if (altitude < 200000 and atmos == 0) or (altitude and atmos > 0) then
+        function DrawAltitudeDisplay(newContent, altitude)
+            if (altitude < 200000 and not InAtmo) or (altitude and InAtmo) then
 
                 local rectX = altMeterX
                 local rectY = altMeterY
@@ -2169,8 +2170,8 @@ function script.onStart()
             end
         end
 
-        function DrawPrograde (newContent, atmos, velocity, speed, centerX, centerY)
-            if (speed > 5 and atmos == 0) or (speed > MinAutopilotSpeed) then
+        function DrawPrograde (newContent, velocity, speed, centerX, centerY)
+            if (speed > 5 and not InAtmo) or (speed > MinAutopilotSpeed) then
                 local horizonRadius = circleRad -- Aliased globa
                 local pitchRange = 20
                 local yawRange = 20
@@ -2211,7 +2212,7 @@ function script.onStart()
 
                 distance = math.sqrt((dx)^2 + (dy)^2)
                 -- Retrograde Dot
-                if( atmos == 0) then
+                if( not InAtmo) then
                     if distance < horizonRadius then
                         newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', x, y)
                         -- Draw a dot or whatever at x,y, it's inside the AH
@@ -2255,7 +2256,7 @@ function script.onStart()
             if BrakeIsOn then
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Brake Engaged</text>]], warningX, brakeY)
             end
-            if atmosphere() ~= 0 and RateOfChange < MinimumRateOfChange and velMag > brakeLandingRate+5 then
+            if InAtmo and RateOfChange < MinimumRateOfChange and velMag > brakeLandingRate+5 then
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+25)
             end
             if GyroIsOn then
@@ -3806,7 +3807,7 @@ function script.onStart()
         function GetAutopilotBrakeDistanceAndTime(speed)
             -- If we're in atmo, just return some 0's or LastMaxBrake, whatever's bigger
             -- So we don't do unnecessary API calls when atmo brakes don't tell us what we want
-            if atmosphere() == 0 then
+            if not InAtmo then
                 refreshLastMaxBrake()
                 return Kinematic.computeDistanceAndTime(speed, AutopilotEndSpeed, constructMass(), 0, 0,
                            LastMaxBrake - (AutopilotPlanetGravity * constructMass()))
@@ -4164,6 +4165,7 @@ function script.onTick(timerId)
         -- Localized Functions
         local isRemote = Nav.control.isRemoteControlled
         RateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
+        InAtmo = (unit.getAtmosphereDensity() > 0)
         YawInput2 = 0
         RollInput2 = 0
         PitchInput2 = 0
@@ -4366,7 +4368,9 @@ function script.onTick(timerId)
             end
         end
         if RetrogradeIsOn then
-            if velMag > MinAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
+            if InAtmo then 
+                RetrogradeIsOn = false
+            elseif velMag > MinAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
                 AlignToWorldVector(-(vec3(velocity)))
             end
         end

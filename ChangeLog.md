@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.841
+- Fixed Align Retrograde turning off if you dip into atmosphere
+- Minimized atmosphere calls to use a preset atmosphere check.
+
 Version 4.84
 - Bug fix of Artificial Horizon error when entering planet area from space.  Important bug fix (didnt notice it till approaching Feli)
 
