@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.842
+- Fixed (I hope) the occasional DrawThrottle bug report.
+- Moved stall warning to not overlap AGG info
+
 Version 4.841
 - Fixed Align Retrograde turning off if you dip into atmosphere
 - Minimized atmosphere calls to use a preset atmosphere check.

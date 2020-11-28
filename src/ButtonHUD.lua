@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.841
+        VERSION_NUMBER = 4.842
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -1394,7 +1394,7 @@ function script.onStart()
         end
 
         function ToggleAntigrav()
-            if antigrav  and not ExternalAGG then
+            if antigrav and not ExternalAGG then
                 if antigrav.getState() == 1 then
                     antigrav.deactivate()
                     antigrav.hide()
@@ -1585,7 +1585,18 @@ function script.onStart()
         end)
         coroutine.yield() -- Just to make sure
 
-        -- HUD - https://github.com/Rezoix/DU-hud with major modifications by Archeageo
+        function GetFlightStyle()
+            local flightType = Nav.axisCommandManager:getAxisCommandType(0)
+            local flightStyle = "TRAVEL"
+            if (flightType == 1) then
+                flightStyle = "CRUISE"
+            end
+            if Autopilot then
+                flightStyle = "AUTOPILOT"
+            end
+            return flightStyle
+        end
+
         function updateHud(newContent)
 
             local altitude = CoreAltitude
@@ -2257,7 +2268,7 @@ function script.onStart()
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Brake Engaged</text>]], warningX, brakeY)
             end
             if InAtmo and RateOfChange < MinimumRateOfChange and velMag > brakeLandingRate+5 then
-                newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+25)
+                newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+50)
             end
             if GyroIsOn then
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Gyro Enabled</text>]], warningX, gyroY)
@@ -3825,18 +3836,6 @@ function script.onStart()
             refreshLastMaxBrake()
             return Kinematic.computeDistanceAndTime(speed, AutopilotEndSpeed, constructMass(), Nav:maxForceForward(),
                        warmup, LastMaxBrake - (AutopilotPlanetGravity * constructMass()))
-        end
-
-        function GetFlightStyle()
-            local flightType = Nav.axisCommandManager:getAxisCommandType(0)
-            local flightStyle = "TRAVEL"
-            if (flightType == 1) then
-                flightStyle = "CRUISE"
-            end
-            if Autopilot then
-                flightStyle = "AUTOPILOT"
-            end
-            return flightStyle
         end
 
         function hoverDetectGround()
