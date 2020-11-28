@@ -1594,8 +1594,12 @@ function script.onStart()
             local worldV = vec3(core.getWorldVertical())
             local constrF = vec3(core.getConstructWorldOrientationForward())
             local constrR = vec3(core.getConstructWorldOrientationRight())
-            local pitch = getPitch(worldV, constrF, constrR) -- 180 - getRoll(worldV, constrR, constrF)
+            local constrU = vec3(core.getConstructWorldOrientationUp())
             local roll = getRoll(worldV, constrF, constrR) -- getRoll(worldV, constrF, constrR)
+            local radianRoll = (roll / 180) * math.pi
+            local corrX = math.cos(radianRoll)
+            local corrY = math.sin(radianRoll)
+            local pitch = getPitch(worldV, constrF, (constrR * corrX) + (constrU * corrY)) -- 180 - getRoll(worldV, constrR, constrF)
             local originalRoll = roll
             local originalPitch = pitch
             local atmos = atmosphere()
