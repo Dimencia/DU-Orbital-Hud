@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.843
+        VERSION_NUMBER = 4.844
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -468,7 +468,8 @@ function script.onStart()
                 local speed = vec3(velocity):len()
                 local maxBrake = jdecode(unit.getData()).maxBrake 
                 if maxBrake ~= nil and maxBrake > 0 and InAtmo then 
-                    maxBrake = maxBrake * utils.clamp(speed/100, 0.1, 1) * atmoden
+                    maxBrake = maxBrake / utils.clamp(speed/100, 0.1, 1)
+                    maxBrake = maxBrake / atmoden
                     if maxBrake > LastMaxBrakeInAtmo and atmoden > 0.10 then LastMaxBrakeInAtmo = maxBrake end
                 end
                 if maxBrake ~= nil and maxBrake > 0 then

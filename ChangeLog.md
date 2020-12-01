@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.844 
+- Fix in atmo max brake value, more reliable use of brake landing
+
 Version 4.843
 - Fixed erroneous pitch when rolled hard.
 - Fixed max brake values to save highest seen in atmo (> 0.10) unless out of seat for more than 3 min. (So swapping seat to remote or remote back to seat wotn reset it)
