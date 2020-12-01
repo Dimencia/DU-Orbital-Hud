@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.841
+        VERSION_NUMBER = 4.843
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -173,6 +173,7 @@ function script.onStart()
         HovGndDet = -1
         clearAllCheck = false
         LockPitch = nil
+        LastStartTime = 0
 
         -- Local Variables used only within onStart
         local markers = {}
@@ -229,7 +230,7 @@ function script.onStart()
                          "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
                          "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
                          "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", 
-                         "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude"}
+                         "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude", "LastStartTime"}
                         
         -- BEGIN CONDITIONAL CHECKS DURING STARTUP
         -- Load Saved Variables
@@ -269,6 +270,11 @@ function script.onStart()
         end
         coroutine.yield() -- Give it some time to breathe before we do the rest
         -- Loading saved vars is hard on it
+        local time = system.getTime()
+        if (LastStartTime + 180) < time then -- Variables to reset if out of seat (and not on hud) for more than 3 min
+            LastMaxBrakeInAtmo = 0
+        end
+        LastStartTime = time
         brakeToggle = BrakeToggleDefault
         userControlScheme = string.lower(userControlScheme)
         if string.find("keyboard virtual joystick mouse", userControlScheme) == nil then 
@@ -456,14 +462,17 @@ function script.onStart()
             end
 
             gravity = round(gravity, 5) -- round to avoid insignificant updates
+            local atmoden = atmosphere()
             if (force ~= nil and force) or (lastMaxBrakeAtG == nil or lastMaxBrakeAtG ~= gravity) then
-                local maxBrake = jdecode(unit.getData()).maxBrake
-
-                if maxBrake ~= nil then
-                    LastMaxBrake = maxBrake
+                local velocity = core.getVelocity()
+                local speed = vec3(velocity):len()
+                local maxBrake = jdecode(unit.getData()).maxBrake 
+                if maxBrake ~= nil and maxBrake > 0 and InAtmo then 
+                    maxBrake = maxBrake * utils.clamp(speed/100, 0.1, 1) * atmoden
+                    if maxBrake > LastMaxBrakeInAtmo and atmoden > 0.10 then LastMaxBrakeInAtmo = maxBrake end
                 end
-                if InAtmo then
-                    LastMaxBrakeInAtmo = maxBrake
+                if maxBrake ~= nil and maxBrake > 0 then
+                    LastMaxBrake = maxBrake
                 end
                 lastMaxBrakeAtG = gravity
             end
@@ -746,9 +755,7 @@ function script.onStart()
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
                     MsgText = "WARNING: Insufficient Brakes - Attempting coast landing, beware obstacles"
                 end
-                if not AltitudeHold then
-                    ToggleAltitudeHold()
-                end
+                AltitudeHold = false
                 AutoTakeoff = false
                 LockPitch = nil
                 BrakeLanding = true
@@ -874,7 +881,7 @@ function script.onStart()
                 if CustomTarget ~= nil then
                     LockPitch = nil
                     if planet.name  == CustomTarget.planetname then 
-                        StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
+                        StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrakeInAtmo)
                         if not StrongBrakes and velMag > MinAutopilotSpeed then
                             MsgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
                         end
@@ -1394,7 +1401,7 @@ function script.onStart()
         end
 
         function ToggleAntigrav()
-            if antigrav  and not ExternalAGG then
+            if antigrav and not ExternalAGG then
                 if antigrav.getState() == 1 then
                     antigrav.deactivate()
                     antigrav.hide()
@@ -1585,7 +1592,18 @@ function script.onStart()
         end)
         coroutine.yield() -- Just to make sure
 
-        -- HUD - https://github.com/Rezoix/DU-hud with major modifications by Archeageo
+        function GetFlightStyle()
+            local flightType = Nav.axisCommandManager:getAxisCommandType(0)
+            local flightStyle = "TRAVEL"
+            if (flightType == 1) then
+                flightStyle = "CRUISE"
+            end
+            if Autopilot then
+                flightStyle = "AUTOPILOT"
+            end
+            return flightStyle
+        end
+
         function updateHud(newContent)
 
             local altitude = CoreAltitude
@@ -1594,8 +1612,12 @@ function script.onStart()
             local worldV = vec3(core.getWorldVertical())
             local constrF = vec3(core.getConstructWorldOrientationForward())
             local constrR = vec3(core.getConstructWorldOrientationRight())
-            local pitch = getPitch(worldV, constrF, constrR) -- 180 - getRoll(worldV, constrR, constrF)
-            local roll = getRoll(worldV, constrF, constrR) -- getRoll(worldV, constrF, constrR)
+            local constrU = vec3(core.getConstructWorldOrientationUp())
+            local roll = getRoll(worldV, constrF, constrR) 
+            local radianRoll = (roll / 180) * math.pi
+            local corrX = math.cos(radianRoll)
+            local corrY = math.sin(radianRoll)
+            local pitch = getPitch(worldV, constrF, (constrR * corrX) + (constrU * corrY)) -- 180 - getRoll(worldV, constrR, constrF)            
             local originalRoll = roll
             local originalPitch = pitch
             local atmos = atmosphere()
@@ -1768,7 +1790,9 @@ function script.onStart()
             local gravity = core.g()
             local maxMass = 0
             local reqThrust = 0
+            local brakeValue = 0
             refreshLastMaxBrake(gravity)
+            if InAtmo then brakeValue = LastMaxBrakeInAtmo else brakeValue = LastMaxBrake end
             maxThrust = Nav:maxForceForward()
             totalMass = constructMass()
             if not ShowOdometer then return end
@@ -1810,7 +1834,7 @@ function script.onStart()
                     <text class="txtbig txtmid" x="960" y="180">%s</text>
                 ]], TotalDistanceTrip, (TotalDistanceTravelled / 1000), FormatTimeString(flightTime),
                                                   FormatTimeString(TotalFlightTime), (totalMass / 1000),
-                                                  (LastMaxBrake / 1000), (maxThrust / 1000), flightStyle)
+                                                  (brakeValue / 1000), (maxThrust / 1000), flightStyle)
                 if gravity > 0.1 then
                     newContent[#newContent + 1] = stringf([[
                             <text class="txtstart" x="970" y="30">Max Mass: %.2f Tons</text>
@@ -2257,7 +2281,7 @@ function script.onStart()
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Brake Engaged</text>]], warningX, brakeY)
             end
             if InAtmo and RateOfChange < MinimumRateOfChange and velMag > brakeLandingRate+5 then
-                newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+25)
+                newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+50)
             end
             if GyroIsOn then
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Gyro Enabled</text>]], warningX, gyroY)
@@ -3741,7 +3765,7 @@ function script.onStart()
         end
 
         function GetAutopilotMaxMass()
-            local apmaxmass = LastMaxBrake /
+            local apmaxmass = LastMaxBrakeInAtmo /
                                   (AutopilotTargetPlanet:getGravity(
                                       AutopilotTargetPlanet.center + (vec3(0, 0, 1) * AutopilotTargetPlanet.radius))
                                       :len())
@@ -3812,9 +3836,9 @@ function script.onStart()
                 return Kinematic.computeDistanceAndTime(speed, AutopilotEndSpeed, constructMass(), 0, 0,
                            LastMaxBrake - (AutopilotPlanetGravity * constructMass()))
             else
-                if LastMaxBrake and LastMaxBrake > 0 then
+                if LastMaxBrakeInAtmo and LastMaxBrakeInAtmo > 0 then
                     return Kinematic.computeDistanceAndTime(speed, AutopilotEndSpeed, constructMass(), 0, 0,
-                               LastMaxBrake - (AutopilotPlanetGravity * constructMass()))
+                               LastMaxBrakeInAtmo - (AutopilotPlanetGravity * constructMass()))
                 else
                     return 0, 0
                 end
@@ -3825,18 +3849,6 @@ function script.onStart()
             refreshLastMaxBrake()
             return Kinematic.computeDistanceAndTime(speed, AutopilotEndSpeed, constructMass(), Nav:maxForceForward(),
                        warmup, LastMaxBrake - (AutopilotPlanetGravity * constructMass()))
-        end
-
-        function GetFlightStyle()
-            local flightType = Nav.axisCommandManager:getAxisCommandType(0)
-            local flightStyle = "TRAVEL"
-            if (flightType == 1) then
-                flightStyle = "CRUISE"
-            end
-            if Autopilot then
-                flightStyle = "AUTOPILOT"
-            end
-            return flightStyle
         end
 
         function hoverDetectGround()
@@ -4667,12 +4679,11 @@ function script.onTick(timerId)
                 -- We just don't know the last leg
                 -- a2 + b2 = c2.  c2 - b2 = a2
                 -- local distanceToTarget = math.sqrt(targetVec:len()^2-(HoldAltitude-targetAltitude)^2)
-                local maxBrake = json.decode(unit.getData()).maxBrake
+                local maxBrake = LastMaxBrakeInAtmo
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                 local hSpd = velocity:len() - math.abs(vSpd)
                 local airFriction = vec3(core.getWorldAirFrictionAcceleration()) -- Maybe includes lift?
                 if maxBrake ~= nil then
-                    LastMaxBrake = maxBrake
                     BrakeDistance, BrakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, core.getConstructMass(), 0, 0,
                                                    maxBrake + (airFriction:len() - airFriction:project_on(up):len()) *
                                                        core.getConstructMass())
@@ -4681,7 +4692,7 @@ function script.onTick(timerId)
                                                    LastMaxBrake + vec3(core.getWorldAirFrictionAcceleration()):len() *
                                                        core.getConstructMass())
                 end
-                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
+                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrakeInAtmo)
                 if distanceToTarget <= BrakeDistance then
                     VectorStatus = "Finalizing Approach"
                     if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
@@ -5047,7 +5058,7 @@ function script.onActionStart(action)
             end
             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             if (vBooster or hover) and HovGndDet == -1 and (unit.getAtmosphereDensity() > 0 or CoreAltitude < ReentryAltitude) then
-                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrake)
+                StrongBrakes = ((planet.gravity * 9.80665 * core.getConstructMass()) < LastMaxBrakeInAtmo)
                 if not StrongBrakes and velMag > MinAutopilotSpeed then
                     MsgText = "WARNING: Insufficient Brakes - Attempting landing anyway"
                 end

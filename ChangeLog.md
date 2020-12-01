@@ -1,5 +1,13 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.843
+- Fixed erroneous pitch when rolled hard.
+- Fixed max brake values to save highest seen in atmo (> 0.10) unless out of seat for more than 3 min. (So swapping seat to remote or remote back to seat wotn reset it)
+
+Version 4.842
+- Fixed (I hope) the occasional DrawThrottle bug report.
+- Moved stall warning to not overlap AGG info
+
 Version 4.841
 - Fixed Align Retrograde turning off if you dip into atmosphere
 - Minimized atmosphere calls to use a preset atmosphere check.
