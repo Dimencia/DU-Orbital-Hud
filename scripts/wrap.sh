@@ -69,7 +69,11 @@ lua ${ROOTDIR}/scripts/wrap.lua --handle-errors --output yaml \
              --slots ${SLOTS[*]}
 
 # Re-insert the exports
-sed "/script={}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DST
+if [[ "$MINIFY" == "true" ]]; then
+    sed "/script={}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DSTT
+else
+    sed "/script = {}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DSTF_DST
+fi
 
 # Fix up minified L_TEXTs which requires a space after the comma
 sed -i -E 's/L_TEXT\(("[^"]*"),("[^"]*")\)/L_TEXT(\1, \2)/g' $CONF_DST
