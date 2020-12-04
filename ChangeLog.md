@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.845
+- Changed Rocket Boost in atmo from 1050 max speed cutoff to ReentrySpeed max speed cutoff
+
 Version 4.844 
 - Fix in atmo max brake value, more reliable use of brake landing
 

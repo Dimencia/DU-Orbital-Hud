@@ -10,7 +10,7 @@ function script.onStart()
             {1000, 5000, 10000, 20000, 30000})
 
         -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-        VERSION_NUMBER = 4.844
+        VERSION_NUMBER = 4.845
         -- function localizations
         local mfloor = math.floor
         local stringf = string.format
@@ -1535,8 +1535,7 @@ function script.onStart()
                 end
             end)
         MakeButton("Enable Emergency Warp", "Disable Emergency Warp", buttonWidth, buttonHeight, x + buttonWidth + 20, y, function()
-            return EmergencyWarp
-        end, function()
+            return EmergencyWarp end, function()
             EmergencyWarp = not EmergencyWarp
             if (EmergencyWarp) then
                 MsgText = "Emergency Warp Enabled"
@@ -5021,7 +5020,7 @@ function script.onFlush()
                     setEngineThrust('rocket_engine', 1)
                 end
             else
-                targetSpeed = targetSpeed * 1050 / 3.6 -- 1100km/hr being max safe speed in atmo for most ships
+                targetSpeed = targetSpeed * ReentrySpeed / 3.6 -- 1100km/hr being max safe speed in atmo for most ships
                 if speed >= (targetSpeed * (1- maxSpeedLag)) then
                     setEngineThrust('rocket_engine', 0)
                 elseif (IsBoosting) then
