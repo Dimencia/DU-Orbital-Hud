@@ -1,5 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.846
+- Added support for manually linked switch and set to toggle.  When you activate or deactivate control unit, it toggles any connected switch.  This can be used to activate multiple forcefields or doors off a single slot.
+Link the items to a relay, link the relay to a manual switch unit, link the switch to your control unit (seat/remote).
+- Changed manually linked Forcefield and Door to toggle, so when you activate control unit or deactive, it toggles any connected forcefields or doors
+- Made localized functions available globally
+
 Version 4.845
 - Changed Rocket Boost in atmo from 1050 max speed cutoff to ReentrySpeed max speed cutoff
 
