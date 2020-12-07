@@ -11,6 +11,7 @@ dbHud = databank
 vBooster = VerticalBooster
 hover = Hovercraft
 door = DoorUnit -- select=manual
+switch = ManualSwitchUnit -- select=manual
 forcefield = ForceFieldUnit -- select=manual
 atmofueltank = AtmoFuelContainer -- select=manual
 spacefueltank = SpaceFuelContainer -- select=manual

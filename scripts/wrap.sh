@@ -56,6 +56,7 @@ SLOTS=(
     vBooster:class=VerticalBooster
     hover:class=Hovercraft
     door:class=DoorUnit,select=manual
+    switch:class=ManualSwitchUnit,select=manual
     forcefield:class=ForceFieldUnit,select=manual
     atmofueltank:class=AtmoFuelContainer,select=manual
     spacefueltank:class=SpaceFuelContainer,select=manual
@@ -70,9 +71,9 @@ lua ${ROOTDIR}/scripts/wrap.lua --handle-errors --output yaml \
 
 # Re-insert the exports
 if [[ "$MINIFY" == "true" ]]; then
-    sed "/script={}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DSTT
+    sed "/script={}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DST
 else
-    sed "/script = {}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DSTF_DST
+    sed "/script = {}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DST
 fi
 
 # Fix up minified L_TEXTs which requires a space after the comma
