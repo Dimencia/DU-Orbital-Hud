@@ -74,7 +74,6 @@ if [[ "$MINIFY" == "true" ]]; then
     sed "/script={}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DST
 else
     sed "/script = {}/e cat $WORK_DIR/ButtonHUD.exports" $WORK_DIR/ButtonHUD.wrapped.conf > $CONF_DST
-
 fi
 
 # Fix up minified L_TEXTs which requires a space after the comma
