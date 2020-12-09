@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.850 - fixes for 0.23 DU update
+- Removed emergency warp support
+- Moved agg target height adjustment while agg is off to 
+
 Version 4.846
 - Added support for manually linked switch and set to toggle.  When you activate or deactivate control unit, it toggles any connected switch.  This can be used to activate multiple forcefields or doors off a single slot.
 Link the items to a relay, link the relay to a manual switch unit, link the switch to your control unit (seat/remote).
