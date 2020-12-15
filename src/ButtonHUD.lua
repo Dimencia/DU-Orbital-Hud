@@ -20,7 +20,7 @@ local isRemote = Nav.control.isRemoteControlled
 
 function script.onStart()
     -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-    VERSION_NUMBER = 4.850
+    VERSION_NUMBER = 4.851
     SetupComplete = false
     beginSetup = coroutine.create(function()
 
@@ -480,7 +480,6 @@ function script.onStart()
                 lastMaxBrakeAtG = gravity
             end
         end
-
         function MakeButton(enableName, disableName, width, height, x, y, toggleVar, toggleFunction, drawCondition)
             local newButton = {
                 enableName = enableName,
@@ -4938,38 +4937,42 @@ function script.onFlush()
     -- Rockets
     Nav:setBoosterCommand('rocket_engine')
     -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-    if(IsBoosting) then
+    if IsBoosting then 
         local speed = vec3(core.getVelocity()):len()
-        local setEngineThrust = unit.setEngineThrust
         local maxSpeedLag = 0.15
         if Nav.axisCommandManager:getAxisCommandType(0) == 1 then -- Cruise control rocket boost assist, Dodgin's modified.
             local cc_speed = Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal)
-            if speed * 3.6 > (cc_speed * (1 - maxSpeedLag)) then
-                setEngineThrust('rocket_engine', 0)
-            elseif (IsBoosting) then
-                setEngineThrust('rocket_engine', 1)
+            if speed * 3.6 > (cc_speed * (1 - maxSpeedLag)) and IsRocketOn then
+                IsRocketOn = false
+                Nav:toggleBoosters()
+            elseif speed * 3.6 < (cc_speed * (1 - maxSpeedLag)) and not IsRocketOn then
+                IsRocketOn = true
+                Nav:toggleBoosters()
             end
         else -- Atmosphere Rocket Boost Assist Not in Cruise Control by Azraeil
             local throttle = unit.getThrottle()
             local targetSpeed = (throttle/100)
             if atmosphere == 0 then
                 targetSpeed = targetSpeed * MaxGameVelocity
-                if speed >= (targetSpeed * (1- maxSpeedLag)) then
-                    setEngineThrust('rocket_engine', 0)
-                elseif (IsBoosting) then
-                    setEngineThrust('rocket_engine', 1)
+                if speed >= (targetSpeed * (1- maxSpeedLag)) and IsRocketOn then
+                    IsRocketOn = false
+                    Nav:toggleBoosters()
+                elseif speed < (targetSpeed * (1- maxSpeedLag)) and not IsRocketOn then
+                    IsRocketOn = true
+                    Nav:toggleBoosters()
                 end
             else
                 targetSpeed = targetSpeed * ReentrySpeed / 3.6 -- 1100km/hr being max safe speed in atmo for most ships
-                if speed >= (targetSpeed * (1- maxSpeedLag)) then
-                    setEngineThrust('rocket_engine', 0)
-                elseif (IsBoosting) then
-                    setEngineThrust('rocket_engine', 1)
+                if speed >= (targetSpeed * (1- maxSpeedLag)) and IsRocketOn then
+                    IsRocketOn = false
+                    Nav:toggleBoosters()
+                elseif speed < (targetSpeed * (1- maxSpeedLag)) and not IsRocketOn then 
+                    IsRocketOn = true
+                    Nav:toggleBoosters()
                 end
             end
         end
     end
-
 end
 
 function script.onUpdate()
@@ -5136,14 +5139,20 @@ function script.onActionStart(action)
             system.lockView(1)
         end
     elseif action == "booster" then
-        -- Nav:toggleBoosters()
         -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-        IsBoosting = not IsBoosting
-        if (IsBoosting) then
-            unit.setEngineThrust('rocket_engine', 1)
-        else
-            unit.setEngineThrust('rocket_engine', 0)
-        end
+       if not IsBoosting then 
+           if not IsRocketOn then 
+               Nav:toggleBoosters()
+               IsRocketOn = true
+           end
+           IsBoosting = true
+       else
+           if IsRocketOn then
+               Nav:toggleBoosters()
+               IsRocketOn = false
+           end
+           IsBoosting = false
+       end
     elseif action == "stopengines" then
         Nav.axisCommandManager:resetCommand(axisCommandId.longitudinal)
         clearAll()
