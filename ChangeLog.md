@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.851
+- Fixed Rockets.  Note that rockets will not work in Cruise mode now, thats vanilla.  Normal operation:  If speed > 85% of throttleSetting*1100kph in atmo or > 85% of thottleSetting*MaxVelocity user parameter in space, rockets will turn off.
+
 Version 4.850 - fixes for 0.23 DU update
 - Removed emergency warp support
 - Moved agg target height adjustment while agg is off to 
