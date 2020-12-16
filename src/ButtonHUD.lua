@@ -20,7 +20,7 @@ local isRemote = Nav.control.isRemoteControlled
 
 function script.onStart()
     -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-    VERSION_NUMBER = 4.851
+    VERSION_NUMBER = 4.852
     SetupComplete = false
     beginSetup = coroutine.create(function()
 
@@ -63,6 +63,8 @@ function script.onStart()
         MaxPitch = 30 -- export: Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  Default is 20 deg.  You can set higher or lower depending on your ships capabilities.
         ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
         ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
+        EmergencyWarpDistance = 320000 -- export: Set to distance as which an emergency warp will occur if radar target within that distance.  320000 is lock range for large radar on large ship no special skills.
+        IgnoreEmergencyWarpDistance = 500 -- export: Any targets within this distance are ignored for emergency warp.
         AutoTakeoffAltitude = 1000 -- export: How high above your ground starting position AutoTakeoff tries to put you
         TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
         LandingGearGroundHeight = 0 --export: Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear,
@@ -96,6 +98,7 @@ function script.onStart()
         MinAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
         LastMaxBrake = 0
         LastMaxBrakeInAtmo = 0
+        EmergencyWarp = false
         ReentryMode = false
         MousePitchFactor = 1 -- Mouse control only
         MouseYawFactor = 1 -- Mouse control only
@@ -130,6 +133,8 @@ function script.onStart()
         AutopilotTargetPlanet = nil
         TotalDistanceTravelled = 0.0
         TotalDistanceTrip = 0
+        InEmergencyWarp = false
+        NotTriedEmergencyWarp = true
         FlightTime = 0
         WipedDatabank = false
         LocationIndex = 0
@@ -217,10 +222,10 @@ function script.onStart()
                              "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo",
                              "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
-                             "ReentrySpeed", "ReentryAltitude",  "centerX", "centerY",
+                             "ReentrySpeed", "ReentryAltitude", "EmergencyWarpDistance", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                             "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY"}
-        AutoVariables = {"brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
+        AutoVariables = {"EmergencyWarp", "brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                          "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
@@ -306,12 +311,12 @@ function script.onStart()
             end
             eleTotalMaxHp = eleTotalMaxHp + eleMaxHp(ElementsID[k])
             if (fuelX ~= 0 and fuelY ~= 0) then
-                if (type == "Atmospheric fuel tank" or type == "Space fuel tank" or type == "Rocket fuel tank") then
+                if (type == "Atmospheric Fuel Tank" or type == "Space Fuel Tank" or type == "Rocket Fuel Tank") then
                     local hp = eleMaxHp(ElementsID[k])
                     local mass = eleMass(ElementsID[k])
                     local curMass = 0
                     local curTime = system.getTime()
-                    if (type == "Atmospheric fuel tank") then
+                    if (type == "Atmospheric Fuel Tank") then
                         local vanillaMaxVolume = 400
                         local massEmpty = 35.03
                         if hp > 10000 then
@@ -334,7 +339,7 @@ function script.onStart()
                         atmoTanks[#atmoTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    if (type == "Rocket fuel tank") then
+                    if (type == "Rocket Fuel Tank") then
                         local vanillaMaxVolume = 320
                         local massEmpty = 173.42
                         if hp > 65000 then
@@ -357,7 +362,7 @@ function script.onStart()
                         rocketTanks[#rocketTanks + 1] = {ElementsID[k], core.getElementNameById(ElementsID[k]),
                                                         vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
-                    if (type == "Space fuel tank") then
+                    if (type == "Space Fuel Tank") then
                         local vanillaMaxVolume = 2400
                         local massEmpty = 182.67
                         if hp > 10000 then
@@ -480,6 +485,7 @@ function script.onStart()
                 lastMaxBrakeAtG = gravity
             end
         end
+
         function MakeButton(enableName, disableName, width, height, x, y, toggleVar, toggleFunction, drawCondition)
             local newButton = {
                 enableName = enableName,
@@ -1103,6 +1109,7 @@ function script.onStart()
                 SpaceLaunch = false
                 ReentryMode = false
                 autoRoll = autoRollPreference
+                EmergencyWarp = false
                 VectorToTarget = false
                 TurnBurn = false
                 GyroIsOn = false
@@ -1534,6 +1541,17 @@ function script.onStart()
                     MsgText = "Orbit Display Disabled"
                 end
             end)
+        MakeButton("Enable Emergency Warp", "Disable Emergency Warp", buttonWidth, buttonHeight, x + buttonWidth + 20, y, function()
+            return EmergencyWarp end, function()
+            EmergencyWarp = not EmergencyWarp
+            if (EmergencyWarp) then
+                MsgText = "Emergency Warp Enabled"
+            else
+                MsgText = "Emergency Warp Disabled"
+            end
+        end, function()
+            return warpdrive ~= nil
+        end)
         y = y + buttonHeight + 20
         MakeButton("Glide Re-Entry", "Cancel Glide Re-Entry", buttonWidth, buttonHeight, x, y,
             function() return Reentry end, function() ReentryMode = true BeginReentry() end, function() return (CoreAltitude > ReentryAltitude) end )
@@ -2287,6 +2305,10 @@ function script.onStart()
                                                   warningX, hoverY,
                                                   getDistanceDisplayString(Nav:getTargetGroundAltitude()))
             end
+            if EmergencyWarp then
+                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">E-WARP ENGAGED</text>]],
+                                                  warningX, ewarpY)
+            end                
             if IsBoosting then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">ROCKET BOOST ENABLED</text>]],
                                                   warningX, ewarpY+20)
@@ -3910,6 +3932,24 @@ function script.onStart()
                 local radarContacts = radar_1.getEntries()
                 local radarData = radar_1.getData()
                 if #radarContacts > 0 then
+                    if HasSpaceRadar and EmergencyWarp then
+                        local data = radarData:gmatch('{"constructId[^}]*}[^}]*}') -- Gets each construct's entry in full
+                        for v in data do
+                            local id, distance = v:match([[{"constructId":"([%d%.]*)","distance":([%d%.]*)]])
+                            if id ~= nil and id ~= "" then
+                                distance = mfloor(distance)
+                                if (distance < EmergencyWarpDistance) and ( distance > IgnoreEmergencyWarpDistance) then
+                                    if NotTriedEmergencyWarp and jdecode(warpdrive.getData()).errorMsg ~= "PLANET TOO CLOSE" then
+                                        if radar_1.hasMatchingTransponder(id) ~= 1 then
+                                            InEmergencyWarp = true
+                                            NotTriedEmergencyWarp = false
+                                            break
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
                     local target = radarData:find('identifiedConstructs":%[%]')
                     if target == nil and perisPanelID == nil then
                         Peris = 1
@@ -4078,6 +4118,23 @@ function script.onTick(timerId)
             HideInterplanetaryPanel()
         end
         if warpdrive ~= nil then
+            if InEmergencyWarp then
+                if jdecode(warpdrive.getData()).buttonMsg ~= "CANNOT WARP" then
+                    MsgText = "EMERGENCY WARP ACTIVATED"
+                    MsgTimer = 5
+                    warpdrive.activateWarp()
+                    warpdrive.show()
+                    showWarpWidget = true
+                    EmergencyWarp = false
+                    InEmergencyWarp = false
+                else
+                    MsgText = "Emergency Warp Condition Met - Cannot Warp, will retry in 1 second\n" ..
+                                  (jdecode(warpdrive.getData()).errorMsg)
+                    msgTick = 1
+                    InEmergencyWarp = false
+                    unit.setTimer("reEmergencyWarp", 1)
+                end
+            end
             if jdecode(warpdrive.getData()).destination ~= "Unknown" and jdecode(warpdrive.getData()).distance > 400000 then
                 warpdrive.show()
                 showWarpWidget = true
@@ -4101,6 +4158,12 @@ function script.onTick(timerId)
         checkDamage(newContent)
         LastOdometerOutput = table.concat(newContent, "")
         collectgarbage("collect")
+    elseif timerId == "reEmergencyWarp" then
+        if EmergencyWarp then
+            NotTriedEmergencyWarp = true
+            InEmergencyWarp = true
+        end
+        unit.stopTimer("reEmergencyWarp")
     elseif timerId == "msgTick" then
         -- This is used to clear a message on screen after a short period of time and then stop itself
         local newContent = {}
@@ -4751,15 +4814,17 @@ function script.onTick(timerId)
                 else
                     desiredBaseAltitude = AntigravTargetAltitude
                 end
-                if antigrav.getBaseAltitude() ~= AntigravTargetAltitude then 
-                    antigrav.setBaseAltitude(desiredBaseAltitude) 
-                end            
             end
         end
     end
 end
 
 function script.onFlush()
+    if antigrav  and not ExternalAGG then
+        if antigrav.getState() == 0 and antigrav.getBaseAltitude() ~= AntigravTargetAltitude then 
+            antigrav.setBaseAltitude(AntigravTargetAltitude) 
+        end
+    end
     local torqueFactor = 2 -- Force factor applied to reach rotationSpeed<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
 
     -- validate params
@@ -5174,19 +5239,25 @@ function script.onActionStart(action)
         end
     elseif action == "warp" then
         if warpdrive ~= nil then
-            if showWarpWidget then
-                warpdrive.hide()
-                showWarpWidget = false
+            if not InEmergencyWarp then
+                if showWarpWidget then
+                    warpdrive.hide()
+                    showWarpWidget = false
+                else
+                    warpdrive.show()
+                    showWarpWidget = true
+                end
+                if jdecode(warpdrive.getData()).buttonMsg == "CANNOT WARP" then
+                    MsgText = jdecode(warpdrive.getData()).errorMsg
+                else
+                    warpdrive.activateWarp()
+                    warpdrive.show()
+                    showWarpWidget = true
+                end
             else
-                warpdrive.show()
-                showWarpWidget = true
-            end
-            if jdecode(warpdrive.getData()).buttonMsg == "CANNOT WARP" then
-                MsgText = jdecode(warpdrive.getData()).errorMsg
-            else
-                warpdrive.activateWarp()
-                warpdrive.show()
-                showWarpWidget = true
+                InEmergencyWarp = false -- lower case is IN situation
+                EmergencyWarp = false -- upper case is if to monitor for situation
+                MsgText = "Emergency Warp Cancelled"
             end
         end
     end
@@ -5345,4 +5416,3 @@ function updateDistance()
 end
 
 script.onStart()
-
