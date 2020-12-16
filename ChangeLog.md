@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.852
+- Fixed fuel tanks, again (stop changing element names!)
+- Restored emergency warp.
+
 Version 4.851
 - Fixed Rockets.  Note that rockets will not work in Cruise mode now, thats vanilla.  Normal operation:  If speed > 85% of throttleSetting*1100kph in atmo or > 85% of thottleSetting*MaxVelocity user parameter in space, rockets will turn off.
 
