@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.853
+- Removed Emergency Warp - ALT-J is hardcoded keybind now to initiate warp jump, no more lua call.
+
 Version 4.852
 - Fixed fuel tanks, again (stop changing element names!)
 - Restored emergency warp.
