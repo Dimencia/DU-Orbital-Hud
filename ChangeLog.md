@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.854
+- Sync AltitudeHold Target Height and AGG Target Height:  If AltitudeHold is on and AGG is on, and Agg Target Altitude gets within 20m of AltitudeHold target altitude they will couple together and using alt-space or alt-c will change both Target AGG altitude and Altitude Hold target altitude to same value.  Toggle off AGG to decouple target heights (or toggle off Altitude Hold).
+- Added more coroutine yeilds during startup every 250 elements processed to help with large ships (maybe, untested, but wont have a negative effect lower count ships)
+
 Version 4.853
 - Removed Emergency Warp - ALT-J is hardcoded keybind now to initiate warp jump, no more lua call.
 

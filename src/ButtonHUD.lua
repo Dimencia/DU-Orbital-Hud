@@ -20,7 +20,7 @@ local isRemote = Nav.control.isRemoteControlled
 
 function script.onStart()
     -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-    VERSION_NUMBER = 4.853
+    VERSION_NUMBER = 4.854
     SetupComplete = false
     beginSetup = coroutine.create(function()
 
@@ -245,6 +245,7 @@ function script.onStart()
                     end
                 end
             end
+            coroutine.yield()
             for k, v in pairs(AutoVariables) do
                 if hasKey(v) then
                     local result = jdecode(dbHud.getStringValue(v))
@@ -289,6 +290,7 @@ function script.onStart()
                   [[)]]
         local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
+        local count = 0
         for k in pairs(ElementsID) do
             local type = eleType(ElementsID[k])
             if (type == "landing gear") then
@@ -378,6 +380,10 @@ function script.onStart()
                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
                 end
+            end
+            if count == 250 then 
+                count = 0
+                coroutine.yield() 
             end
         end
         coroutine.yield() -- Give it some time to breathe before we do the rest
@@ -2302,14 +2308,18 @@ function script.onStart()
                 end
             elseif Autopilot and AutopilotTargetName ~= "None" then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Autopilot %s</text>]],
-                                                  warningX, apY, AutopilotStatus)
+                                                  warningX, apY+20, AutopilotStatus)
             elseif LockPitch ~= nil then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">LockedPitch: %d</text>]],
-                                                    warningX, apY, mfloor(LockPitch))
+                                                    warningX, apY+20, mfloor(LockPitch))
             elseif FollowMode then
                 newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Follow Mode Engaged</text>]],
-                                                  warningX, apY)
-            elseif AltitudeHold then
+                                                  warningX, apY+20)
+            elseif Reentry then
+                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Parachute Re-entry in Progress</text>]],
+                                                      warningX, apY+20)
+            end
+            if AltitudeHold then
                 if AutoTakeoff then
                     newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Ascent to %s</text>]],
                                                       warningX, apY, getDistanceDisplayString(HoldAltitude))
@@ -2322,9 +2332,6 @@ function script.onStart()
                     newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Altitude Hold: %s</text>]],
                                                       warningX, apY, getDistanceDisplayString2(HoldAltitude))
                 end
-            elseif Reentry then
-                newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Parachute Re-entry in Progress</text>]],
-                                                      warningX, apY)
             end
             if BrakeLanding then
                 if StrongBrakes then
@@ -5058,7 +5065,12 @@ function script.onActionStart(action)
         OldAntiMod = AntiGravButtonModifier
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil  then
-                AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+                if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
+                    AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+                    HoldAltitude = AntigravTargetAltitude
+                else
+                    AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+                end
             else
                 AntigravTargetAltitude = desiredBaseAltitude + 100
             end
@@ -5072,8 +5084,14 @@ function script.onActionStart(action)
         OldAntiMod = AntiGravButtonModifier
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then
-                AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
-                if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+                if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
+                    AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+                    if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+                    HoldAltitude = AntigravTargetAltitude
+                else
+                    AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+                    if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+                end
             else
                 AntigravTargetAltitude = desiredBaseAltitude
             end
@@ -5208,14 +5226,16 @@ function script.onActionStop(action)
     elseif action == "groundaltitudeup" then
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
-        elseif AltitudeHold then
+        end
+        if AltitudeHold then
             HoldAltitudeButtonModifier = OldButtonMod
         end
         ToggleView = false
     elseif action == "groundaltitudedown" then
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             AntiGravButtonModifier = OldAntiMod
-        elseif AltitudeHold then
+        end
+        if AltitudeHold then
             HoldAltitudeButtonModifier = OldButtonMod
         end
         ToggleView = false
@@ -5259,7 +5279,12 @@ function script.onActionLoop(action)
     if action == "groundaltitudeup" then
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then 
-                AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+                if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
+                    AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+                    HoldAltitude = AntigravTargetAltitude
+                else
+                    AntigravTargetAltitude = AntigravTargetAltitude + AntiGravButtonModifier
+                end
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
                 BrakeIsOn = false
             else
@@ -5275,10 +5300,16 @@ function script.onActionLoop(action)
     elseif action == "groundaltitudedown" then
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then
-                AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+                if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
+                    AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+                    if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+                    HoldAltitude = AntigravTargetAltitude
+                else
+                    AntigravTargetAltitude = AntigravTargetAltitude - AntiGravButtonModifier
+                    if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
+                end
                 AntiGravButtonModifier = AntiGravButtonModifier * 1.05
                 BrakeIsOn = false
-                if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
             else
                 AntigravTargetAltitude = desiredBaseAltitude - 100
                 BrakeIsOn = false
