@@ -1,4 +1,6 @@
 ## ChangeLog - Most recent changes at the top
+Version 4.855
+- Added VanillaRockets to user parameter.  If on, rockets will act like vanilla (toggle on/off with B by default)
 
 Version 4.854
 - Sync AltitudeHold Target Height and AGG Target Height:  If AltitudeHold is on and AGG is on, and Agg Target Altitude gets within 20m of AltitudeHold target altitude they will couple together and using alt-space or alt-c will change both Target AGG altitude and Altitude Hold target altitude to same value.  Toggle off AGG to decouple target heights (or toggle off Altitude Hold).

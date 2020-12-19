@@ -20,7 +20,7 @@ local isRemote = Nav.control.isRemoteControlled
 
 function script.onStart()
     -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-    VERSION_NUMBER = 4.854
+    VERSION_NUMBER = 4.855
     SetupComplete = false
     beginSetup = coroutine.create(function()
 
@@ -33,8 +33,9 @@ function script.onStart()
         BrakeToggleDefault = true -- export: Whether your brake toggle is on/off by default. Can be adjusted in the button menu.  Of is vanilla DU brakes.
         RemoteFreeze = false -- export: Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
         RemoteHud = false -- export: Whether you want full HUD while in remote mode, experimental, might not look right.
-        userControlScheme = "virtual joystick" -- export: Set to "virtual joystick", "mouse", or "keyboard"
         brightHud = false -- export: Enable to prevent hud dimming when in freelook.
+        VanillaRockets = false -- export: If on, rockets behave like vanilla
+        userControlScheme = "virtual joystick" -- export: Set to "virtual joystick", "mouse", or "keyboard"
         ResolutionX = 1920 -- export: Default is 1920, automatically scales, variable for use for wierd resolutions (1920x1200, etc)
         ResolutionY = 1080 -- export: Default is 1080, automatically scales, variable for use for wierd resolutions (1920x1200, etc)
         PrimaryR = 130 -- export: Primary HUD color
@@ -4947,7 +4948,7 @@ function script.onFlush()
     -- Rockets
     Nav:setBoosterCommand('rocket_engine')
     -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-    if IsBoosting then 
+    if IsBoosting and not VanillaRockets then 
         local speed = vec3(core.getVelocity()):len()
         local maxSpeedLag = 0.15
         if Nav.axisCommandManager:getAxisCommandType(0) == 1 then -- Cruise control rocket boost assist, Dodgin's modified.
@@ -5161,7 +5162,9 @@ function script.onActionStart(action)
         end
     elseif action == "booster" then
         -- Dodgin's Don't Die Rocket Govenor - Cruise Control Edition
-       if not IsBoosting then 
+        if VanillaRockets then 
+            Nav:toggleBoosters()
+        elseif not IsBoosting then 
            if not IsRocketOn then 
                Nav:toggleBoosters()
                IsRocketOn = true
