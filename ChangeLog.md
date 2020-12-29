@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.857
+- Added Above Ground Level (AGL) that will display when hover/vBooster that is slotted detects ground level (max about 80m)
+- Fixed LandedGroundHoverHeight to work.  Set that user variable to 1m below the AGL shown when on ground.
+- Added support for SatNav to DU Orbital Hud - toggle on UseSatNav in Edit Lua Parameters and then you do not need to edit the HUD when using SatNav
+
 Version 4.856
 - AGG will continue towards last set Target Height whether off or on.  To stop AGG changing target height, set target height = singularity (basealtitude) height.  NOTE:  AGG will continue towards its last set target height whether you are in seat or not.  If on, and in AGG control, ship will continue to height as well in seat or out.
 
