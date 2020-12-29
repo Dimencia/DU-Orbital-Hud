@@ -20,7 +20,7 @@ local isRemote = Nav.control.isRemoteControlled
 
 function script.onStart()
     -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-    VERSION_NUMBER = 4.856
+    VERSION_NUMBER = 4.857
     SetupComplete = false
     beginSetup = coroutine.create(function()
 
@@ -88,6 +88,7 @@ function script.onStart()
         fuelTankHandlingSpace = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         fuelTankHandlingRocket = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
         ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
+        UseSatNav = false -- export: Toggle on if using Trog SatNav script.  This will provide SatNav support.
         apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
 
         -- GLOBAL VARIABLES SECTION, USED OUTSIDE OF onStart
@@ -148,7 +149,7 @@ function script.onStart()
         SimulatedY = 0        
         AutopilotStatus = "Aligning"
         MsgTimer = 3
-        TargetGroundAltitude = nil -- So it can tell if one loaded or not
+        TargetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
         GearExtended = nil
         Distance = 0
         RadarMessage = ""
@@ -164,7 +165,6 @@ function script.onStart()
         DisplayOrbit = true
         AutopilotEndSpeed = 0
         SavedLocations = {}
-        LandingGearGroundHeight = 0
         SpaceLand = false
         SpaceLaunch = false
         FinalLand = false
@@ -172,6 +172,7 @@ function script.onStart()
         clearAllCheck = false
         LockPitch = nil
         LastStartTime = 0
+        myAutopilotTarget=""
 
         -- Local Variables used only within onStart
         local markers = {}
@@ -220,7 +221,7 @@ function script.onStart()
                              "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                              "ReentrySpeed", "ReentryAltitude", "centerX", "centerY",
                              "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                            "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY"}
+                            "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav"}
         AutoVariables = {"brakeToggle", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                          "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                          "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
@@ -1672,11 +1673,11 @@ function script.onStart()
                     if nearPlanet then -- use real pitch, roll, and heading
                         DrawRollLines (newContent, centerX, centerY, originalRoll, bottomText, nearPlanet)
                         DrawArtificialHorizon(newContent, originalPitch, originalRoll, centerX, centerY, nearPlanet, mfloor(getRelativeYaw(velocity)), speed)
-                        DrawAltitudeDisplay(newContent, altitude)
                     else -- use Relative Pitch and Relative Yaw
                         DrawRollLines (newContent, centerX, centerY, roll, bottomText, nearPlanet)
                         DrawArtificialHorizon(newContent, pitch, roll, centerX, centerY, nearPlanet, mfloor(roll), speed)
                     end
+                    DrawAltitudeDisplay(newContent, altitude, nearPlanet)
                     DrawPrograde(newContent, velocity, speed, centerX, centerY)
                 end
             end
@@ -2098,14 +2099,22 @@ function script.onStart()
             end
         end
 
-        function DrawAltitudeDisplay(newContent, altitude)
-            if (altitude < 200000 and not InAtmo) or (altitude and InAtmo) then
+        function DrawAltitudeDisplay(newContent, altitude, nearPlanet)
+            local rectX = altMeterX
+            local rectY = altMeterY
+            local rectW = 78
+            local rectH = 19
 
-                local rectX = altMeterX
-                local rectY = altMeterY
-                local rectW = 78
-                local rectH = 19
+            if HovGndDet and HovGndDet ~= -1 then
+                gndHeight = HovGndDet
+                table.insert(newContent, stringf([[
+                <g class="pdim altsm txtend">
+                <text x="%d" y="%d">AGL: %.1fm</text>
+                </g>
+                ]], rectX+rectW, rectY+rectH+20, gndHeight))
+            end
 
+            if nearPlanet and ((altitude < 200000 and not InAtmo) or (altitude and InAtmo)) then
                 table.insert(newContent, stringf([[
                     <g class="pdim">                        
                         <rect class="line" x="%d" y="%d" width="%d" height="%d"/> 
@@ -3971,6 +3980,7 @@ function script.onStart()
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("oneSecond", 1)
         unit.setTimer("tenthSecond", 1/10)
+        if UseSatNav then unit.setTimer("fiveSecond", 5) end
     end)
 end
 
@@ -4090,7 +4100,6 @@ function script.onTick(timerId)
                 showWarpWidget = false
             end
         end        
-    
     elseif timerId == "oneSecond" then
         -- Timer for evaluation every 1 second
         clearAllCheck = false
@@ -4105,6 +4114,48 @@ function script.onTick(timerId)
         checkDamage(newContent)
         LastOdometerOutput = table.concat(newContent, "")
         collectgarbage("collect")
+    elseif timerId == "fiveSecond" then
+        -- Support for SatNav by Trog
+        myAutopilotTarget = dbHud.getStringValue("SPBAutopilotTargetName")
+        if myAutopilotTarget ~= nil and myAutopilotTarget ~= "" and myAutopilotTarget ~= "SatNavNotChanged" then
+            local result = json.decode(dbHud.getStringValue("SavedLocations"))
+            if result ~= nil then
+                _G["SavedLocations"] = result        
+                local index = -1        
+                local newLocation        
+                for k, v in pairs(SavedLocations) do        
+                    if v.name and v.name == "SatNav Location" then                   
+                        index = k                
+                        break                
+                    end            
+                end        
+                if index ~= -1 then       
+                    newLocation = SavedLocations[index]            
+                    index = -1            
+                    for k, v in pairs(atlas[0]) do           
+                        if v.name and v.name == "SatNav Location" then               
+                            index = k                    
+                            break                  
+                        end                
+                    end            
+                    if index > -1 then           
+                        atlas[0][index] = newLocation                
+                    end            
+                    UpdateAtlasLocationsList()           
+                    MsgText = newLocation.name .. " position updated"            
+                end       
+            end
+
+            for i=1,#AtlasOrdered do    
+                if AtlasOrdered[i].name == myAutopilotTarget then
+                    AutopilotTargetIndex = i
+                    system.print("Index = "..AutopilotTargetIndex.." "..AtlasOrdered[i].name)          
+                    UpdateAutopilotTarget()
+                    dbHud.setStringValue("SPBAutopilotTargetName", "SatNavNotChanged")
+                    break            
+                end     
+            end
+        end
     elseif timerId == "msgTick" then
         -- This is used to clear a message on screen after a short period of time and then stop itself
         local newContent = {}
