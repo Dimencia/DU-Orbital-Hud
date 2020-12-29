@@ -20,7 +20,7 @@ local isRemote = Nav.control.isRemoteControlled
 
 function script.onStart()
     -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-    VERSION_NUMBER = 4.855
+    VERSION_NUMBER = 4.856
     SetupComplete = false
     beginSetup = coroutine.create(function()
 
@@ -291,7 +291,6 @@ function script.onStart()
                   [[)]]
         local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
-        local count = 0
         for k in pairs(ElementsID) do
             local type = eleType(ElementsID[k])
             if (type == "landing gear") then
@@ -381,10 +380,6 @@ function script.onStart()
                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
                 end
-            end
-            if count == 250 then 
-                count = 0
-                coroutine.yield() 
             end
         end
         coroutine.yield() -- Give it some time to breathe before we do the rest
@@ -4748,19 +4743,11 @@ function script.onTick(timerId)
         LastEccentricity = orbit.eccentricity
 
         if antigrav and not ExternalAGG and CoreAltitude < 200000 then
-            if antigrav.getState() == 1 then
                 if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
                 if desiredBaseAltitude ~= AntigravTargetAltitude then
                     desiredBaseAltitude = AntigravTargetAltitude
                     antigrav.setBaseAltitude(desiredBaseAltitude)
                 end
-            else
-                if AntigravTargetAltitude == nil then
-                    desiredBaseAltitude = CoreAltitude
-                else
-                    desiredBaseAltitude = AntigravTargetAltitude
-                end
-            end
         end
     end
 end

@@ -1,4 +1,8 @@
 ## ChangeLog - Most recent changes at the top
+
+Version 4.856
+- AGG will continue towards last set Target Height whether off or on.  To stop AGG changing target height, set target height = singularity (basealtitude) height.  NOTE:  AGG will continue towards its last set target height whether you are in seat or not.  If on, and in AGG control, ship will continue to height as well in seat or out.
+
 Version 4.855
 - Added VanillaRockets to user parameter.  If on, rockets will act like vanilla (toggle on/off with B by default)
 
