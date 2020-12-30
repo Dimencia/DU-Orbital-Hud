@@ -8,6 +8,7 @@ warpdrive = WarpDriveUnit
 gyro = GyroUnit
 weapon = WeaponUnit -- select=manual
 dbHud = databank
+telemeter = TelemeterUnit -- select=manual
 vBooster = VerticalBooster
 hover = Hovercraft
 door = DoorUnit -- select=manual
