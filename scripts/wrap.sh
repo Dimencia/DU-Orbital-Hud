@@ -53,6 +53,7 @@ SLOTS=(
     gyro:class=GyroUnit
     weapon:class=WeaponUnit,select=manual
     dbHud:class=databank
+    telemeter:class=TelemeterUnit,select=manual
     vBooster:class=VerticalBooster
     hover:class=Hovercraft
     door:class=DoorUnit,select=manual

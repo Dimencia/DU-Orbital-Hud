@@ -20,7 +20,7 @@ local isRemote = Nav.control.isRemoteControlled
 
 function script.onStart()
     -- Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
-    VERSION_NUMBER = 4.857
+    VERSION_NUMBER = 4.858
     SetupComplete = false
     beginSetup = coroutine.create(function()
 
@@ -293,6 +293,7 @@ function script.onStart()
         local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                      mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
         for k in pairs(ElementsID) do
+
             local type = eleType(ElementsID[k])
             if (type == "landing gear") then
                 HasGear = true
@@ -2105,8 +2106,9 @@ function script.onStart()
             local rectW = 78
             local rectH = 19
 
-            if HovGndDet and HovGndDet ~= -1 then
-                gndHeight = HovGndDet
+            local gndHeight = AboveGroundLevel()
+
+            if gndHeight ~= -1 then
                 table.insert(newContent, stringf([[
                 <g class="pdim altsm txtend">
                 <text x="%d" y="%d">AGL: %.1fm</text>
@@ -3850,14 +3852,47 @@ function script.onStart()
         end
 
         function hoverDetectGround()
-            local groundDistance = -1
+            local vgroundDistance = -1
+            local hgroundDistance = -1
             if vBooster then
-                groundDistance = vBooster.distance()
-            elseif hover then
-                groundDistance = hover.distance()
+                vgroundDistance = vBooster.distance()
             end
-            return groundDistance
+            if hover then
+                hgroundDistance = hover.distance()
+            end
+            if vgroundDistance ~= -1 and hgroundDistance ~= -1 then
+                if vgroundDistance < hgroundDistance then
+                    return vgroundDistance
+                else
+                    return hgroundDistance
+                end
+            elseif vgroundDistance ~= -1 then
+                return vgroundDistance
+            elseif hgroundDistance ~= -1 then
+                return hgroundDistance
+            else
+                return -1
+            end
         end            
+        
+        function AboveGroundLevel()
+            local groundDistance = -1
+            local hgroundDet = HovGndDet
+            if telemeter_1 then 
+                groundDistance = telemeter_1.getDistance()
+            end
+            if hgroundDet ~= -1 and groundDistance ~= -1 then
+                if hgroundDet < groundDistance then 
+                    return hgroundDet 
+                else
+                    return groundDistance
+                end
+            elseif hgroundDet ~= -1 then
+                return hgroundDet
+            else
+                return groundDistance
+            end
+        end
 
         function round(num, numDecimalPlaces)
             local mult = 10 ^ (numDecimalPlaces or 0)

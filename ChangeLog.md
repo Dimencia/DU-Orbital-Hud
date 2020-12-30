@@ -1,12 +1,20 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.858
+- Added optional telemeter support.  Telemeters are set for manual slotting like fuel tanks, meaning you must manually slot it to chair/remote one time, then run the hud autoconf.  
+When you hit CTRL-L looking at control unit, you should see telemeter_1 in a slot.  Telemeter has a range of 100m vice vBooster of 80m.  Above Ground Level will show the lower
+of telemeter or hover or vBooster reading.
+- Modified hover height to account for ships having hover AND vbooster (before it used vBooster and then didnt check hover) so that if a hover is lower than vBooster and detects ground,
+it's height will be used.
+
 Version 4.857
 - Added Above Ground Level (AGL) that will display when hover/vBooster that is slotted detects ground level (max about 80m)
 - Fixed LandedGroundHoverHeight to work.  Set that user variable to 1m below the AGL shown when on ground.
 - Added support for SatNav to DU Orbital Hud - toggle on UseSatNav in Edit Lua Parameters and then you do not need to edit the HUD when using SatNav
 
 Version 4.856
-- AGG will continue towards last set Target Height whether off or on.  To stop AGG changing target height, set target height = singularity (basealtitude) height.  NOTE:  AGG will continue towards its last set target height whether you are in seat or not.  If on, and in AGG control, ship will continue to height as well in seat or out.
+- AGG will continue towards last set Target Height whether off or on.  To stop AGG changing target height, set target height = singularity (basealtitude) height.  
+NOTE:  AGG will continue towards its last set target height whether you are in seat or not.  If on, and in AGG control, ship will continue to height as well in seat or out.
 
 Version 4.855
 - Added VanillaRockets to user parameter.  If on, rockets will act like vanilla (toggle on/off with B by default)
