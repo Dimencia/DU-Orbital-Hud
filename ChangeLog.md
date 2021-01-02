@@ -1,5 +1,12 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.900
+- Major refactoring of variables in to local unless a savable variable.
+- Due to the increased use of databanks on ships, the databank associated with this script must now be manually slotted one time.  
+This mean, put down seat, put down databank, slot databank to seat, run hud autoconf like normal.
+You should not need to reslot existing databanks used in previous versions.
+- Fixed time display for days, hours, minutes, seconds.
+
 Version 4.858
 - Added optional telemeter support.  Telemeters are set for manual slotting like fuel tanks, meaning you must manually slot it to chair/remote one time, then run the hud autoconf.  
 When you hit CTRL-L looking at control unit, you should see telemeter_1 in a slot.  Telemeter has a range of 100m vice vBooster of 80m.  Above Ground Level will show the lower
