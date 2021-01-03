@@ -18,8 +18,8 @@ ResolutionY = 1080 -- export: Default is 1080, automatically scales, variable fo
 PrimaryR = 130 -- export: Primary HUD color
 PrimaryG = 224 -- export: Primary HUD color
 PrimaryB = 255 -- export: Primary HUD color
-centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), (use 1920x1080, it will scale) Default 960. Use centerX=700 and centerY=880 for lower left placement.
-centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), (use 1920x1080, it will scale) Default 540. Use centerX=700 and centerY=880 for lower left placement. 
+centerX = 960 -- export: X postion of Artifical Horizon (KSP Navball), Default 960. Use centerX=700 and centerY=880 for lower left placement.
+centerY = 540 -- export: Y postion of Artifical Horizon (KSP Navball), Default 540. Use centerX=700 and centerY=880 for lower left placement. 
 throtPosX = 1300 -- export: X position of Throttle Indicator, default 1300 to put it to right of default AH centerX parameter.
 throtPosY = 540 -- export: Y position of Throttle indicator, default is 540 to place it centered on default AH centerY parameter.
 vSpdMeterX = 1525  -- export: X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
@@ -129,7 +129,6 @@ local autoVariables = {"BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "Prog
                     "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", 
                     "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude", "LastStartTime"}
 
-
 -- function localizations for improved performance when used frequently or in loops.
 local sprint = system.print
 local mfloor = math.floor
@@ -144,8 +143,15 @@ local eleMass = core.getElementMassById
 local constructMass = core.getConstructMass
 local isRemote = Nav.control.isRemoteControlled
 
+function round(num, numDecimalPlaces)
+    local mult = 10 ^ (numDecimalPlaces or 0)
+    return mfloor(num * mult + 0.5) / mult
+end
+
 -- Variables that we declare local outside script because they will be treated as global but get local effectiveness
 
+local halfResolutionX = round(ResolutionX / 2,0)
+local halfResolutionY = round(ResolutionY / 2,0)
 local apThrottleSet = false -- Do not save this, because when they re-enter, throttle won't be set anymore
 local toggleView = true
 local minAutopilotSpeed = 55 -- Minimum speed for autopilot to maneuver in m/s.  Keep above 25m/s to prevent nosedives when boosters kick in
@@ -233,7 +239,7 @@ local updateCount = 0
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.901
+    VERSION_NUMBER = 4.910
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -267,7 +273,7 @@ function script.onStart()
                 end
             end
             if useTheseSettings then
-                msgText = "Updated user preferences used.  Will be saved when you exit seat.  Toggle off useTheseSettings to use saved values"
+                msgText = "Updated user preferences used.  Will be saved when you exit seat.\nToggle off useTheseSettings to use saved values"
             elseif valuesAreSet then
                 msgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
             else
@@ -282,6 +288,8 @@ function script.onStart()
         if (LastStartTime + 180) < time then -- Variables to reset if out of seat (and not on hud) for more than 3 min
             LastMaxBrakeInAtmo = 0
         end
+        halfResolutionX = round(ResolutionX / 2,0)
+        halfResolutionY = round(ResolutionY / 2,0)
         LastStartTime = time
         BrakeToggleStatus = BrakeToggleDefault
         userControlScheme = string.lower(userControlScheme)
@@ -471,6 +479,22 @@ function script.onStart()
         unit.hide()
 
         -- BEGIN FUNCTION DEFINITIONS
+        
+        function ConvertResolutionX (v)
+            if ResolutionX == 1920 then 
+                return v
+            else
+                return round(ResolutionX * v / 1920, 0)
+            end
+        end
+
+        function ConvertResolutionY (v)
+            if ResolutionY == 1080 then 
+                return v
+            else
+                return round(ResolutionY * v / 1080, 0)
+            end
+        end
 
         function RefreshLastMaxBrake(gravity, force)
             if gravity == nil then
@@ -1786,9 +1810,9 @@ function script.onStart()
         end
 
         function DrawOdometer(newContent, totalDistanceTrip, TotalDistanceTravelled, flightStyle, flightTime, atmos)
-            local xg = 1240
-            local yg1 = 55
-            local yg2 = 65
+            local xg = ConvertResolutionX(1240)
+            local yg1 = ConvertResolutionY(55)
+            local yg2 = yg1+10
             local atmos = atmosphere()
             local gravity = core.g()
             local maxMass = 0
@@ -1806,14 +1830,15 @@ function script.onStart()
             end
             newContent[#newContent + 1] = [[<g class="pdim txt txtend">]]
             if isRemote() == 1 and not RemoteHud then
-                xg = 1120
-                yg1 = 55
-                yg2 = 65
+                xg = ConvertResolutionX(1120)
+                yg1 = ConvertResolutionY(55)
+                yg2 = yg1+10
             elseif inAtmo then -- We only show atmo when not remote
+                local atX = ConvertResolutionX(770)
                 newContent[#newContent + 1] = stringf([[
-                    <text x="770" y="55">ATMOSPHERE</text>
-                    <text x="770" y="65">%.2f</text>
-                ]], atmos)
+                    <text x="%d" y="%d">ATMOSPHERE</text>
+                    <text x="%d" y="%d">%.2f</text>
+                ]], atX, yg1, atX, yg2, atmos)
             end
             newContent[#newContent + 1] = stringf([[
                 <g class="pbright txtend">
@@ -1823,35 +1848,39 @@ function script.onStart()
                 <text x="%d" y="%d">ACCEL</text>
                 <text x="%d" y="%d">%.2f g</text>
                 ]], xg, yg1, xg, yg2, (gravity / 9.80665), xg, yg1 + 20, xg, yg2 + 20, accel)
-            newContent[#newContent + 1] = [[<g class="pbright txt">
-                    <path class="linethick" d="M 660 0 L 700 35 Q 960 55 1240 35 L 1280 0"/>]]
+            newContent[#newContent + 1] = stringf([[
+                <g class="pbright txt">
+                <path class="linethick" d="M %d 0 L %d %d Q %d %d %d %d L %d 0"/>]],
+                ConvertResolutionX(660), ConvertResolutionX(700), ConvertResolutionY(35), ConvertResolutionX(960), ConvertResolutionY(55),
+                ConvertResolutionX(1240), ConvertResolutionY(35), ConvertResolutionX(1280))
             if isRemote() == 0 or RemoteHud then
                 newContent[#newContent + 1] = stringf([[
-                    <text class="txtstart" x="700" y="20" >Trip: %.2f km</text>
-                    <text class="txtstart" x="700" y="30">Lifetime: %.2f Mm</text>
-                    <text class="txtstart" x="830" y="20">Trip Time: %s</text>
-                    <text class="txtstart" x="830" y="30">Total Time: %s</text>
-                    <text class="txtstart" x="970" y="20">Mass: %.2f Tons</text>
-                    <text class="txtend" x="1240" y="10">Max Brake: %.2f kN</text>
-                    <text class="txtend" x="1240" y="30">Max Thrust: %.2f kN</text>
-                    <text class="txtbig txtmid" x="960" y="180">%s</text>
-                ]], totalDistanceTrip, (TotalDistanceTravelled / 1000), FormatTimeString(flightTime),
-                                                  FormatTimeString(TotalFlightTime), (totalMass / 1000),
-                                                  (brakeValue / 1000), (maxThrust / 1000), flightStyle)
+                    <text class="txtstart" x="%d" y="%d" >Trip: %.2f km</text>
+                    <text class="txtstart" x="%d" y="%d">Lifetime: %.2f Mm</text>
+                    <text class="txtstart" x="%d" y="%d">Trip Time: %s</text>
+                    <text class="txtstart" x="%d" y="%d">Total Time: %s</text>
+                    <text class="txtstart" x="%d" y="%d">Mass: %.2f Tons</text>
+                    <text class="txtend" x="%d" y="%d">Max Brake: %.2f kN</text>
+                    <text class="txtend" x="%d" y="%d">Max Thrust: %.2f kN</text>
+                    <text class="txtbig txtmid" x="%d" y="%d">%s</text>]],
+                    ConvertResolutionX(700), ConvertResolutionY(20), totalDistanceTrip, ConvertResolutionX(700), ConvertResolutionY(30), (TotalDistanceTravelled / 1000),
+                    ConvertResolutionX(830), ConvertResolutionY(20), FormatTimeString(flightTime), ConvertResolutionX(830), ConvertResolutionY(30), FormatTimeString(TotalFlightTime),
+                    ConvertResolutionX(970), ConvertResolutionY(20), (totalMass / 1000), ConvertResolutionX(1240), ConvertResolutionY(10), (brakeValue / 1000),
+                    ConvertResolutionX(1240), ConvertResolutionY(30), (maxThrust / 1000), ConvertResolutionX(960), ConvertResolutionY(180), flightStyle)
                 if gravity > 0.1 then
                     newContent[#newContent + 1] = stringf([[
-                            <text class="txtstart" x="970" y="30">Max Mass: %.2f Tons</text>
-                            <text class="txtend" x="1240" y="20">Req Thrust: %.2f kN</text>
-                    ]], (maxMass / 1000), (reqThrust / 1000))
+                            <text class="txtstart" x="%d" y="%d">Max Mass: %.2f Tons</text>
+                            <text class="txtend" x="%d" y="%d">Req Thrust: %.2f kN</text>
+                    ]], ConvertResolutionX(970), ConvertResolutionY(30), (maxMass / 1000), ConvertResolutionX(1240), ConvertResolutionY(20), (reqThrust / 1000))
                 else
-                    newContent[#newContent + 1] = [[
-                        <text class="txtstart" x="970" y="30" text-anchor="start">Max Mass: n/a</text>
-                        <text class="txtend" x="1240" y="20" text-anchor="end">Req Thrust: n/a</text>
-                    ]]
+                    newContent[#newContent + 1] = stringf([[
+                        <text class="txtstart" x="%d" y="%d" text-anchor="start">Max Mass: n/a</text>
+                        <text class="txtend" x="%d" y="%d" text-anchor="end">Req Thrust: n/a</text>
+                    ]], ConvertResolutionX(970), ConvertResolutionY(30), ConvertResolutionX(1240), ConvertResolutionY(20))
                 end
             else -- If remote controlled, draw stuff near the top so it's out of the way
                 newContent[#newContent + 1] = stringf([[<text class="txtbig txtmid" x="960" y="33">%s</text>]],
-                                                  flightStyle)
+                                                ConvertResolutionX(960), ConvertResolutionY(33), flightStyle)
             end
             newContent[#newContent + 1] = "</g>"
         end
@@ -1971,8 +2000,8 @@ function script.onStart()
             local yawy = (centerY + horizonRadius + OFFSET + 20)
             local yawx = centerX
             if bottomText ~= "YAW" then 
-                yawy = 130
-                yawx = 960
+                yawy = ConvertResolutionY(130)
+                yawx = ConvertResolutionX(960)
             end
             local tickerPath = [[<path class="txttick line" d="]]
             for i = mfloor(yawC - (range+10) - yawC % 5 + 0.5), mfloor(yawC + (range+10) + yawC % 5 + 0.5), 5 do
@@ -2264,30 +2293,34 @@ function script.onStart()
 
         function DrawWarnings(newContent)
             newContent[#newContent + 1] = stringf(
-                                              [[<text class="hudver" x="1900" y="1070">DU Hud Version: %.3f</text>]],
-                                              VERSION_NUMBER)
-
+                                              [[<text class="hudver" x="%d" y="%d">DU Hud Version: %.3f</text>]], 
+                                              ConvertResolutionX(1900), ConvertResolutionY(1070), VERSION_NUMBER)
             newContent[#newContent + 1] = [[<g class="warnings">]]
             if unit.isMouseControlActivated() == 1 then
-                newContent[#newContent + 1] = [[<text x="960" y="550">Warning: Invalid Control Scheme Detected</text>]]
-                newContent[#newContent + 1] = [[<text x="960" y="600">Keyboard Scheme must be selected</text>]]
-                newContent[#newContent + 1] =
-                    [[<text x="960" y="650">Set your preferred scheme in Lua Parameters instead</text>]]
+                newContent[#newContent + 1] = stringf([[
+                    <text x="%d" y="%d">Warning: Invalid Control Scheme Detected</text>]],
+                    ConvertResolutionX(960), ConvertResolutionY(550))
+                newContent[#newContent + 1] = stringf([[
+                    <text x="%d" y="%d">Keyboard Scheme must be selected</text>]],
+                    ConvertResolutionX(960), ConvertResolutionY(600))
+                newContent[#newContent + 1] = stringf([[
+                    <text x="%d" y="%d">Set your preferred scheme in Lua Parameters instead</text>]],
+                    ConvertResolutionX(960), ConvertResolutionY(650))
             end
-            local warningX = 960
-            local brakeY = 860
-            local gearY = 880
-            local hoverY = 900
-            local ewarpY = 960
-            local apY = 200
-            local turnBurnY = 150
-            local gyroY = 960
+            local warningX = ConvertResolutionX(960)
+            local brakeY = ConvertResolutionY(860)
+            local gearY = ConvertResolutionY(880)
+            local hoverY = ConvertResolutionY(900)
+            local ewarpY = ConvertResolutionY(960)
+            local apY = ConvertResolutionY(200)
+            local turnBurnY = ConvertResolutionY(150)
+            local gyroY = ConvertResolutionY(960)
             if isRemote() == 1 and not RemoteHud then
-                brakeY = 135
-                gearY = 155
-                hoverY = 175
-                apY = 115
-                turnBurnY = 95
+                brakeY = ConvertResolutionY(135)
+                gearY = ConvertResolutionY(155)
+                hoverY = ConvertResolutionY(175)
+                apY = ConvertResolutionY(115)
+                turnBurnY = ConvertResolutionY(95)
             end
             if BrakeIsOn then
                 newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Brake Engaged</text>]], warningX, brakeY)
@@ -3913,11 +3946,6 @@ function script.onStart()
             end
         end
 
-        function round(num, numDecimalPlaces)
-            local mult = 10 ^ (numDecimalPlaces or 0)
-            return mfloor(num * mult + 0.5) / mult
-        end
-
         function tablelength(T)
             local count = 0
             for _ in pairs(T) do
@@ -3976,6 +4004,8 @@ function script.onStart()
             if (radar_1) then
                 local radarContacts = radar_1.getEntries()
                 local radarData = radar_1.getData()
+                local radarX = ConvertResolutionX(1770)
+                local radarY = ConvertResolutionY(330)
                 if #radarContacts > 0 then
                     local target = radarData:find('identifiedConstructs":%[%]')
                     if target == nil and perisPanelID == nil then
@@ -3989,8 +4019,8 @@ function script.onStart()
                         ToggleRadarPanel()
                     end
                     radarMessage = stringf(
-                                    [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: %i contacts</text>]],
-                                    #radarContacts)
+                                    [[<text class="pbright txtbig txtmid" x="%d" y="%d">Radar: %i contacts</text>]],
+                                    radarX, radarY, #radarContacts)
                     local friendlies = {}
                     for k, v in pairs(radarContacts) do
                         if radar_1.hasMatchingTransponder(v) == 1 then
@@ -3998,23 +4028,28 @@ function script.onStart()
                         end
                     end
                     if #friendlies > 0 then
-                        local y = 15
+                        local y = ConvertResolutionY(15)
+                        local x = ConvertResolutionX(1370)
                         radarMessage = stringf(
-                                        [[%s<text class="pbright txtbig txtmid" x="1370" y="%s">Friendlies In Range</text>]],
-                                        radarMessage, y)
+                                        [[%s<text class="pbright txtbig txtmid" x="%d" y="%d">Friendlies In Range</text>]],
+                                        radarMessage, x, y)
                         for k, v in pairs(friendlies) do
                             y = y + 20
-                            radarMessage = stringf([[%s<text class="pdim txtmid" x="1370" y="%s">%s</text>]],
-                                            radarMessage, y, radar_1.getConstructName(v))
+                            radarMessage = stringf([[%s<text class="pdim txtmid" x="%d" y="%d">%s</text>]],
+                                            radarMessage, x, y, radar_1.getConstructName(v))
                         end
                     end
                 else
                     local data
                     data = radarData:find('worksInEnvironment":false')
                     if data then
-                        radarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: Jammed</text>]]
+                        radarMessage = stringf([[
+                            <text class="pbright txtbig txtmid" x="%d" y="%d">Radar: Jammed</text>]],
+                            radarX, radarY)
                     else
-                        radarMessage = [[<text class="pbright txtbig txtmid" x="1770" y="330">Radar: No Contacts</text>]]
+                        radarMessage = stringf([[
+                            <text class="pbright txtbig txtmid" x="%d" y="%d">Radar: No Contacts</text>]],
+                            radarX, radarY)
                     end
                     if radarPanelID ~= nil then
                         peris = 0
@@ -4287,8 +4322,9 @@ function script.onTick(timerId)
 
         HUDEpilogue(newContent)
 
-        newContent[#newContent + 1] =
-            [[<svg width="100%" height="100%" style="position:absolute;top:0;left:0"  viewBox="0 0 2560 1440">]]
+        newContent[#newContent + 1] = stringf(
+            [[<svg width="100%%" height="100%%" style="position:absolute;top:0;left:0"  viewBox="0 0 %d %d">]],
+            ResolutionX, ResolutionY)   
         if msgText ~= "empty" then
             DisplayMessage(newContent, msgText)
         end
@@ -4297,16 +4333,16 @@ function script.onTick(timerId)
         end
 
         if isRemote() == 1 and screen_1 and screen_1.getMouseY() ~= -1 then
-            simulatedX = screen_1.getMouseX() * 2560
-            simulatedY = screen_1.getMouseY() * 1440
+            simulatedX = screen_1.getMouseX() * ResolutionX
+            simulatedY = screen_1.getMouseY() * ResolutionY
             SetButtonContains()
             DrawButtons(newContent)
             if screen_1.getMouseState() == 1 then
                 CheckButtons()
             end
             newContent[#newContent + 1] = stringf(
-                                              [[<g transform="translate(1280 720)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
-                                              simulatedX, simulatedY)
+                                              [[<g transform="translate(%d %d)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
+                                              halfResolutionX, halfResolutionY, simulatedX, simulatedY)
         elseif system.isViewLocked() == 0 then
             if isRemote() == 1 and holdingCtrl then
                 if not Animating then
@@ -4321,7 +4357,7 @@ function script.onTick(timerId)
                 if not Animating and not Animated then
                     local collapsedContent = table.concat(newContent, "")
                     newContent = {}
-                    newContent[#newContent + 1] = "<style>@keyframes test { from { opacity: 0; } to { opacity: 1; } }  body { animation-name: test; animation-duration: 0.5s; }</style><body><svg width='100%' height='100%' position='absolute' top='0' left='0'><rect width='100%' height='100%' x='0' y='0' position='absolute' style='fill:rgb(6,5,26);'/></svg><svg width='50%' height='50%' style='position:absolute;top:30%;left:25%' viewbox='0 0 1920 1080'>"
+                    newContent[#newContent + 1] = stringf("<style>@keyframes test { from { opacity: 0; } to { opacity: 1; } }  body { animation-name: test; animation-duration: 0.5s; }</style><body><svg width='100%%' height='100%%' position='absolute' top='0' left='0'><rect width='100%%' height='100%%' x='0' y='0' position='absolute' style='fill:rgb(6,5,26);'/></svg><svg width='50%%' height='50%%' style='position:absolute;top:30%%;left:25%w%' viewbox='0 0 %d %d'>", ResolutionX, ResolutionY)
                     newContent[#newContent + 1] = GalaxyMapHTML
                     newContent[#newContent + 1] = collapsedContent
                     newContent[#newContent + 1] = "</body>"
@@ -4333,7 +4369,7 @@ function script.onTick(timerId)
                 elseif Animated then
                     local collapsedContent = table.concat(newContent, "")
                     newContent = {}
-                    newContent[#newContent + 1] = "<body style='background-color:rgb(6,5,26)'><svg width='50%' height='50%' style='position:absolute;top:30%;left:25%' viewbox='0 0 1920 1080'>"
+                    newContent[#newContent + 1] = stringf("<body style='background-color:rgb(6,5,26)'><svg width='50%%' height='50%%' style='position:absolute;top:30%%;left:25%%' viewbox='0 0 %d %d'>", ResolutionX, ResolutionY)
                     newContent[#newContent + 1] = GalaxyMapHTML
                     newContent[#newContent + 1] = collapsedContent
                     newContent[#newContent + 1] = "</body>"
@@ -4341,8 +4377,8 @@ function script.onTick(timerId)
 
                 if not Animating then
                     newContent[#newContent + 1] = stringf(
-                                                      [[<g transform="translate(1280 720)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
-                                                      simulatedX, simulatedY)
+                                                      [[<g transform="translate(%d %d)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
+                                                      halfResolutionX, halfResolutionY, simulatedX, simulatedY)
                 end
             else
                 CheckButtons()
@@ -4412,8 +4448,8 @@ function script.onTick(timerId)
             end
             -- Cursor always on top, draw it last
             newContent[#newContent + 1] = stringf(
-                                              [[<g transform="translate(1280 720)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
-                                              simulatedX, simulatedY)
+                                              [[<g transform="translate(%d %d)"><circle class="cursor" cx="%fpx" cy="%fpx" r="5"/></g>]],
+                                              halfResolutionX, halfResolutionY, simulatedX, simulatedY)
         end
         newContent[#newContent + 1] = [[</svg></body>]]
         content = table.concat(newContent, "")
