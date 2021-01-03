@@ -1,5 +1,12 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.910
+- Resolution Refactor:  Default postions in Edit LUA Parameters are set for 1920x1080.
+Note: 1920x1080 works even if your game resolution is different (2560x1440), this lets you have bigger text on a higher resolution.
+If you change ResolutionX and ResolutionY, everything that does NOT have a X/Y setting in Edit LUA Parameters will shift based on your new resolution.
+All other values in Edit LUA Parameters must be shifted to where you want them.  This will of course save on your databank.
+i.e. if you set ResolutionX/Y to 2560/1440, you probably want to set centerX/Y to 1280/720, and the other X/Y locations to where you want them.
+
 Version 4.901
 - To help avoid burning up in atmosphere, New User Variable: AtmoSpeedLimit default (1050km/h) - If in atmo and in travel mode, brakes will toggle on and off if you attempt to exceed your atmo speed limit.  
 If in cruise mode, brake will come on and can be toggled off to allow continued speed increase.  NOTE: In cruise mode, DU controls brakes and engines, so Brake Engaged
