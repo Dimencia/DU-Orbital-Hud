@@ -39,7 +39,8 @@ speedChangeLarge = 5 -- export: The speed change that occurs when you tap speed 
 speedChangeSmall = 1 -- export: the speed change that occurs while you hold speed up/down, default is 1 (5% throttle change).
 brakeLandingRate = 30 -- export: Max loss of altitude speed in m/s when doing a brake landing, default 30.  This is to prevent "bouncing" as hover/boosters catch you.  Do not use negative number.
 MaxPitch = 30 -- export: Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  Default is 20 deg.  You can set higher or lower depending on your ships capabilities.
-ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in m/s.  291 = 1050 km/hr, higher might cause reentry burn.
+ReentrySpeed = 1050 -- export: Target re-entry speed once in atmosphere in km/h. 
+AtmoSpeedLimit = 1050 -- export: Speed limit in Atmosphere in km/h.  If you exceed this limit the ship will attempt to break till below this limit.
 ReentryAltitude = 2500 -- export: Target alititude when using re-entry.
 AutoTakeoffAltitude = 1000 -- export: How high above your ground starting position AutoTakeoff tries to put you
 TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
@@ -115,9 +116,9 @@ local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickR
                         "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo",
                         "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
-                        "ReentrySpeed", "ReentryAltitude", "centerX", "centerY",
+                        "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                    "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav"}
+                        "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav"}
 
 local autoVariables = {"BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
@@ -193,6 +194,7 @@ local coreAltitude = core.getAltitude()
 local elementsID = core.getElementIdList()
 local lastTravelTime = system.getTime()
 local gyroIsOn = nil
+local speedLimitBreaking = false
 
 -- Local Variables used only within onStart
 local markers = {}
@@ -231,7 +233,7 @@ local updateCount = 0
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.900
+    VERSION_NUMBER = 4.901
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -4250,6 +4252,19 @@ function script.onTick(timerId)
             end
         end
         LastIsWarping = isWarping
+        if inAtmo then
+            if not speedLimitBreaking  then
+                if velMag > (AtmoSpeedLimit / 3.6) then
+                    BrakeIsOn = true
+                    speedLimitBreaking  = true
+                end
+            else
+                if velMag < (AtmoSpeedLimit / 3.6) then
+                    BrakeIsOn = false
+                    speedLimitBreaking = false
+                end
+            end    
+        end
         if BrakeIsOn then
             brakeInput = 1
         else

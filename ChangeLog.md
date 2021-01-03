@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.901
+- To help avoid burning up in atmosphere, New User Variable: AtmoSpeedLimit default (1050km/h) - If in atmo and in travel mode, brakes will toggle on and off if you attempt to exceed your atmo speed limit.  
+If in cruise mode, brake will come on and can be toggled off to allow continued speed increase.  NOTE: In cruise mode, DU controls brakes and engines, so Brake Engaged
+may not slow you or may not come on.
+
 Version 4.900
 - Major refactoring of variables in to local unless a savable variable.
 - Due to the increased use of databanks on ships, the databank associated with this script must now be manually slotted one time.  
