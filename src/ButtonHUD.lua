@@ -65,6 +65,7 @@ DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing th
 fuelTankHandlingAtmo = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
 fuelTankHandlingSpace = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
 fuelTankHandlingRocket = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
+FuelTankOptimization = 0 -- export: For accurate unslotted fuel tank calculation, set this to the fuel tank optimization skill level of the person who placed the tank.  Ignored for slotted tanks.
 ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
 UseSatNav = false -- export: Toggle on if using Trog SatNav script.  This will provide SatNav support.
 apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
@@ -118,7 +119,7 @@ local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickR
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                        "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav"}
+                        "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization"}
 
 local autoVariables = {"BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
@@ -239,7 +240,7 @@ local updateCount = 0
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.910
+    VERSION_NUMBER = 4.911
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -274,6 +275,7 @@ function script.onStart()
             end
             if useTheseSettings then
                 msgText = "Updated user preferences used.  Will be saved when you exit seat.\nToggle off useTheseSettings to use saved values"
+                msgTimer = 5
             elseif valuesAreSet then
                 msgText = "Loaded Saved Variables (see Lua Chat Tab for list)"
             else
@@ -353,6 +355,9 @@ function script.onStart()
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
                         end
+                        if FuelTankOptimization > 0 then 
+                            vanillaMaxVolume = vanillaMaxVolume * 0.15 * FuelTankOptimization
+                        end
                         atmoTanks[#atmoTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
@@ -376,6 +381,9 @@ function script.onStart()
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
                         end
+                        if FuelTankOptimization > 0 then 
+                            vanillaMaxVolume = vanillaMaxVolume * 0.15 * FuelTankOptimization
+                        end
                         rocketTanks[#rocketTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
                                                         vanillaMaxVolume, massEmpty, curMass, curTime}
                     end
@@ -395,6 +403,9 @@ function script.onStart()
                         end
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
+                        end
+                        if FuelTankOptimization > 0 then 
+                            vanillaMaxVolume = vanillaMaxVolume * 0.15 * FuelTankOptimization
                         end
                         spaceTanks[#spaceTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
@@ -4287,7 +4298,7 @@ function script.onTick(timerId)
             end
         end
         LastIsWarping = isWarping
-        if inAtmo then
+        if inAtmo and atmosphere() > 0.09 then
             if not speedLimitBreaking  then
                 if velMag > (AtmoSpeedLimit / 3.6) then
                     BrakeIsOn = true
