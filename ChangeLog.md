@@ -1,5 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.911
+- Changed atmosphere speed limit to not apply brakes if atmosphere is < 0.10 (i.e. space engines would kick in)
+- Added FuelTankOptimzation user setting in Edit LUA Parameters, default 0.  (This is NOT Fuel Tank Handling, but instead the skill in 
+Stock Control of Mining and Industry).
+- Fixed fuel tank calculation when tanks placed with FuelTankOptimization skill 
+
 Version 4.910
 - Resolution Refactor:  Default postions in Edit LUA Parameters are set for 1920x1080 HUD resolution.
 Note: 1920x1080 works even if your game resolution is different (2560x1440), this lets you have bigger text on a higher resolution.
