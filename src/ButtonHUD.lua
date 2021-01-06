@@ -65,6 +65,7 @@ DampingMultiplier = 40 -- export: How strongly autopilot dampens when nearing th
 fuelTankHandlingAtmo = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
 fuelTankHandlingSpace = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
 fuelTankHandlingRocket = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
+ContainerOptimization = 0 -- export: For accurate estimates, set this to the Container Optimization level of the person who placed the tanks.  Ignored for slotted tanks.
 FuelTankOptimization = 0 -- export: For accurate unslotted fuel tank calculation, set this to the fuel tank optimization skill level of the person who placed the tank.  Ignored for slotted tanks.
 ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
 UseSatNav = false -- export: Toggle on if using Trog SatNav script.  This will provide SatNav support.
@@ -119,7 +120,7 @@ local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickR
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                        "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization"}
+                        "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization"}
 
 local autoVariables = {"BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
@@ -240,7 +241,7 @@ local updateCount = 0
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.912
+    VERSION_NUMBER = 4.913
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -355,8 +356,11 @@ function script.onStart()
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
                         end
+                        if ContainerOptimization > 0 then 
+                            vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * ContainerOptimization * 0.05)
+                        end
                         if FuelTankOptimization > 0 then 
-                            vanillaMaxVolume = vanillaMaxVolume * 0.15 * FuelTankOptimization
+                            vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * FuelTankOptimization * 0.05)
                         end
                         atmoTanks[#atmoTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
                                                     vanillaMaxVolume, massEmpty, curMass, curTime}
@@ -381,8 +385,11 @@ function script.onStart()
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
                         end
+                        if ContainerOptimization > 0 then 
+                            vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * ContainerOptimization * 0.05)
+                        end
                         if FuelTankOptimization > 0 then 
-                            vanillaMaxVolume = vanillaMaxVolume * 0.15 * FuelTankOptimization
+                            vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * FuelTankOptimization * 0.05)
                         end
                         rocketTanks[#rocketTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
                                                         vanillaMaxVolume, massEmpty, curMass, curTime}
@@ -404,8 +411,11 @@ function script.onStart()
                         if curMass > vanillaMaxVolume then
                             vanillaMaxVolume = curMass
                         end
+                        if ContainerOptimization > 0 then 
+                            vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * ContainerOptimization * 0.05)
+                        end
                         if FuelTankOptimization > 0 then 
-                            vanillaMaxVolume = vanillaMaxVolume * 0.15 * FuelTankOptimization
+                            vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * FuelTankOptimization * 0.05)
                         end
                         spaceTanks[#spaceTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
                                                     vanillaMaxVolume, massEmpty, curMass, curTime}

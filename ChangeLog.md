@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.913
+- Added ContainerOptimization user setting in Edit LUA Parameters, default 0.  (This is NOT Fuel Tank Handling, but instead the skill in 
+Stock Control of Mining and Industry).  To get accurate values of UNSLOTTED fuel tanks, you must set this, FuelTankOptimization and the 
+appropriate fuelTankHandling skill for the person who PLACED the tanks.
+
 Version 4.912
 SPECIAL - Introduction of DU-ECU.CONF
 First DU emergency control unit version 1.0.  Currently is vanilla ECU but with brake landing.  To use, put in your custom directory and load it onto a placed ECU, the ARM the ECU.
