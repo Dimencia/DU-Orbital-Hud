@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.912
+SPECIAL - Introduction of DU-ECU.CONF
+First DU emergency control unit version 1.0.  Currently is vanilla ECU but with brake landing.  To use, put in your custom directory and load it onto a placed ECU, the ARM the ECU.
+No interaction with databank at this time.  Enhancements to follow.
+
 Version 4.911
 - Changed atmosphere speed limit to not apply brakes if atmosphere is < 0.10 (i.e. space engines would kick in)
 - Added FuelTankOptimzation user setting in Edit LUA Parameters, default 0.  (This is NOT Fuel Tank Handling, but instead the skill in 
