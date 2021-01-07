@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.914
+- Fix versioning issue from 4.913 for some reason
+- Major refactor of function definitions outside of script.onStart() (users ignore this)
+- Begin adding remarks to code to help explain things
+
 Version 4.913
 - Added ContainerOptimization user setting in Edit LUA Parameters, default 0.  (This is NOT Fuel Tank Handling, but instead the skill in 
 Stock Control of Mining and Industry).  To get accurate values of UNSLOTTED fuel tanks, you must set this, FuelTankOptimization and the 
