@@ -1,5 +1,18 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.920 - Support for user input
+- Implemented user text input.  To use, hit tab and hit enter to send messages to Lua Chat.  (this will not cause tab fps slideshow if the chat tab is open first) Currently supported commands:
+    - /commands - Shows command list and help
+    - /setname name - renames the current selected saved postion to "name"
+    - /G variablename value - changes the global variablename to new value, example /G AtmoSpeedLimit 1300 would set that user variable to 1300 or /G circleRad 100 would shrink the artifical horizon
+    - /agg height - Sets the AGG target height to height.  Note that it must still move to this height at 4m/s like normal.
+    - /addlocation savename waypointpaste - Adds a new saved location based on waypoint.  Not as accurate as going to location and using Save button.
+- Added three new user variables for engine control (NOTE: if you fill these in, only engines on that axis that have the extra tags will fire):
+    - ExtraLongitudeTags = "none" -- export: Enter any extra longitudinal tags you use inside "" seperated by space, i.e. "forward faster major"  These will be added to the engines that are control by longitude.
+    - ExtraLateralTags = "none" -- export: Enter any extra lateral tags you use inside "" seperated by space, i.e. "left right"  These will be added to the engines that are control by lateral.
+    - ExtraVerticalTags = "none" -- export: Enter any extra longitudinal tags you use inside "" seperated by space, i.e. "up down"  These will be added to the engines that are control by vertical.
+- Fixed buttons not working in remote mode.
+
 Version 4.914
 - Fix versioning issue from 4.913 for some reason
 - Major refactor of function definitions outside of script.onStart() (users ignore this)

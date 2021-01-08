@@ -67,6 +67,9 @@ fuelTankHandlingSpace = 0 -- export: For accurate estimates, set this to the fue
 fuelTankHandlingRocket = 0 -- export: For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
 ContainerOptimization = 0 -- export: For accurate estimates, set this to the Container Optimization level of the person who placed the tanks.  Ignored for slotted tanks.
 FuelTankOptimization = 0 -- export: For accurate unslotted fuel tank calculation, set this to the fuel tank optimization skill level of the person who placed the tank.  Ignored for slotted tanks.
+ExtraLongitudeTags = "none" -- export: Enter any extra longitudinal tags you use inside '' seperated by space, i.e. "forward faster major"  These will be added to the engines that are control by longitude.
+ExtraLateralTags = "none" -- export: Enter any extra lateral tags you use inside '' seperated by space, i.e. "left right"  These will be added to the engines that are control by lateral.
+ExtraVerticalTags = "none" -- export: Enter any extra longitudinal tags you use inside '' seperated by space, i.e. "up down"  These will be added to the engines that are control by vertical.
 ExternalAGG = false -- export: Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
 UseSatNav = false -- export: Toggle on if using Trog SatNav script.  This will provide SatNav support.
 apTickRate = 0.0166667 -- export: Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
@@ -120,7 +123,8 @@ local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickR
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                        "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization"}
+                        "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
+                        "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags"}
 
 local autoVariables = {"BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
@@ -130,6 +134,7 @@ local autoVariables = {"BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "Prog
                     "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
                     "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", 
                     "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude", "LastStartTime"}
+
 
 -- function localizations for improved performance when used frequently or in loops.
 local sprint = system.print
@@ -250,6 +255,7 @@ local Kinematic = nil
 local Kep = nil
 local Animating = false
 local Animated = false
+local autoRoll = autoRollPreference
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -294,17 +300,22 @@ function LoadVariables()
     if (LastStartTime + 180) < time then -- Variables to reset if out of seat (and not on hud) for more than 3 min
         LastMaxBrakeInAtmo = 0
     end
-    halfResolutionX = round(ResolutionX / 2,0)
-    halfResolutionY = round(ResolutionY / 2,0)
+    if valuesAreSet then
+        halfResolutionX = round(ResolutionX / 2,0)
+        halfResolutionY = round(ResolutionY / 2,0)
+        resolutionWidth = ResolutionX
+        resolutionHeight = ResolutionY
+        BrakeToggleStatus = BrakeToggleDefault
+        userControlScheme = string.lower(userControlScheme)
+        autoRoll = autoRollPreference
+    end
     LastStartTime = time
-    BrakeToggleStatus = BrakeToggleDefault
-    userControlScheme = string.lower(userControlScheme)
     if string.find("keyboard virtual joystick mouse", userControlScheme) == nil then 
         msgText = "Invalid User Control Scheme selected.  Change userControlScheme in Lua Parameters to keyboard, mouse, or virtual joystick\nOr use shift and button in screen"
         msgTimer = 5
     end
     MinimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
-    autoRoll = autoRollPreference
+
     if antigrav and not ExternalAGG then
         if AntigravTargetAltitude == nil then 
             AntigravTargetAltitude = coreAltitude
@@ -566,6 +577,36 @@ function AddLocationsToAtlas() -- Just called once during init really
     UpdateAtlasLocationsList()
 end
 
+function AddNewLocationByWaypoint(savename, planetnumber, x, y, z)
+    if dbHud_1 then
+        local newLocation = {}
+        if planetnumber == 0 then
+            newLocation = {
+                position = vec3(x, y, z),
+                name = savename,
+                atmosphere = 0,
+                planetname = "Space",
+                gravity = 0
+            }
+        else
+            local atmo
+            if atlas[0][planetnumber].atmos then atmo = 100 else atmo = 0 end
+            newLocation = {
+                position = vec3(x, y, z),
+                name = savename,
+                atmosphere = atmo,
+                planetname = atlas[0][planetnumber].name,
+                gravity = atlas[0][planetnumber].gravity
+            }
+        end
+        SavedLocations[#SavedLocations + 1] = newLocation
+        table.insert(atlas[0], newLocation)
+        UpdateAtlasLocationsList()
+    else
+        msgText = "Databank must be installed to save locations"
+    end
+end
+
 function AddNewLocation() -- Don't call this unless they have a databank or it's kinda pointless
     -- Add a new location to SavedLocations
     if dbHud_1 then
@@ -596,25 +637,34 @@ function AddNewLocation() -- Don't call this unless they have a databank or it's
     end
 end
 
-function UpdatePosition()
+function UpdatePosition(newName)
     local index = -1
     local newLocation
     for k, v in pairs(SavedLocations) do
         if v.name and v.name == CustomTarget.name then
-            --msgText = v.name .. " saved location cleared"
             index = k
             break
         end
     end
     if index ~= -1 then
-        newLocation = {
-            position = vec3(core.getConstructWorldPos()),
-            name = SavedLocations[index].name,
-            atmosphere = unit.getAtmosphereDensity(),
-            planetname = planet.name,
-            gravity = unit.getClosestPlanetInfluence()
-        }
-        
+        local updatedName
+        if newName ~= nil then
+            newLocation = {
+                position = SavedLocations[index].position,
+                name = newName,
+                atmosphere = SavedLocations[index].atmosphere,
+                planetname = SavedLocations[index].planetname,
+                gravity = SavedLocations[index].gravity
+            } 
+        else
+            newLocation = {
+                position = vec3(core.getConstructWorldPos()),
+                name = SavedLocations[index].name,
+                atmosphere = unit.getAtmosphereDensity(),
+                planetname = planet.name,
+                gravity = unit.getClosestPlanetInfluence()
+            }   
+        end
         SavedLocations[index] = newLocation
         index = -1
         for k, v in pairs(atlas[0]) do
@@ -627,6 +677,10 @@ function UpdatePosition()
         end
         UpdateAtlasLocationsList()
         msgText = CustomTarget.name .. " position updated"
+        AutopilotTargetIndex = 0
+        UpdateAutopilotTarget()
+    else
+        msgText = "Name Not Found"
     end
 end
 
@@ -4102,7 +4156,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.914
+    VERSION_NUMBER = 4.920
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -4433,7 +4487,7 @@ function script.onTick(timerId)
                 if not Animating and not Animated then
                     local collapsedContent = table.concat(newContent, "")
                     newContent = {}
-                    newContent[#newContent + 1] = stringf("<style>@keyframes test { from { opacity: 0; } to { opacity: 1; } }  body { animation-name: test; animation-duration: 0.5s; }</style><body><svg width='100%%' height='100%%' position='absolute' top='0' left='0'><rect width='100%%' height='100%%' x='0' y='0' position='absolute' style='fill:rgb(6,5,26);'/></svg><svg width='50%%' height='50%%' style='position:absolute;top:30%%;left:25%w%' viewbox='0 0 %d %d'>", ResolutionX, ResolutionY)
+                    newContent[#newContent + 1] = stringf("<style>@keyframes test { from { opacity: 0; } to { opacity: 1; } }  body { animation-name: test; animation-duration: 0.5s; }</style><body><svg width='100%%' height='100%%' position='absolute' top='0' left='0'><rect width='100%%' height='100%%' x='0' y='0' position='absolute' style='fill:rgb(6,5,26);'/></svg><svg width='50%%' height='50%%' style='position:absolute;top:30%%;left:25%%' viewbox='0 0 %d %d'>", ResolutionX, ResolutionY)
                     newContent[#newContent + 1] = GalaxyMapHTML
                     newContent[#newContent + 1] = collapsedContent
                     newContent[#newContent + 1] = "</body>"
@@ -5091,7 +5145,8 @@ function script.onFlush()
     local autoNavigationUseBrake = false
 
     -- Longitudinal Translation
-    local longitudinalEngineTags = 'thrust analog longitudinal'
+    local longitudinalEngineTags = 'thrust analog longitudinal '
+    if ExtraLongitudeTags ~= "none" then longitudinalEngineTags = longitudinalEngineTags..ExtraLongitudeTags end
     local longitudinalCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.longitudinal)
     if (longitudinalCommandType == axisCommandType.byThrottle) then
         local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
@@ -5113,7 +5168,8 @@ function script.onFlush()
     end
 
     -- Lateral Translation
-    local lateralStrafeEngineTags = 'thrust analog lateral'
+    local lateralStrafeEngineTags = 'thrust analog lateral '
+    if ExtraLateralTags ~= "none" then lateralStrafeEngineTags = lateralStrafeEngineTags..ExtraLateralTags end
     local lateralCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.lateral)
     if (lateralCommandType == axisCommandType.byThrottle) then
         local lateralStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
@@ -5126,7 +5182,8 @@ function script.onFlush()
     end
 
     -- Vertical Translation
-    local verticalStrafeEngineTags = 'thrust analog vertical'
+    local verticalStrafeEngineTags = 'thrust analog vertical '
+    if ExtraVerticalTags ~= "none" then verticalStrafeEngineTags = verticalStrafeEngineTags..ExtraVerticalTags end
     local verticalCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.vertical)
     if (verticalCommandType == axisCommandType.byThrottle) then
         local verticalStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
@@ -5548,6 +5605,93 @@ function script.onActionLoop(action)
         if not holdingCtrl then
             Nav.axisCommandManager:updateCommandFromActionLoop(axisCommandId.longitudinal, -speedChangeSmall)
         end
+    end
+end
+
+function script.onInputText(text)
+    local i
+    local commands = "/commands /setname /G /agg /addlocation"
+    local command, arguement
+    local commandhelp = "Command List:\n/commands \n/setname <newname> - Updates current selected saved position name\n/G VariableName newValue - Updates global variable to new value\n"
+    commandhelp = commandhelp.."/agg <targetheight> - Manually set agg target height\n/addlocation savename ::pos{0,2,46.4596,-155.1799,22.6572} - adds a saved location by waypoint, not as accurate as making one at location"
+    i = string.find(text, " ")
+    if i ~= nil then
+        command = string.sub(text, 0, i-1)
+        arguement = string.sub(text, i+1)
+    elseif i == nil or not string.find(commands, command) then
+        for str in string.gmatch(commandhelp, "([^\n]+)") do
+            sprint(str)
+        end
+        return
+    end
+    if command == "/setname" then 
+        if arguement == nil or arguement == "" then
+            msgText = "Usage: /setname Newname"
+            return
+        end
+        if AutopilotTargetIndex > 0 and CustomTarget ~= nil then
+            UpdatePosition(arguement)
+        else
+            msgText = "Select a saved target to rename first"
+        end
+    elseif command == "/addlocation" then
+        if arguement == nil or arguement == "" or string.find(arguement, "::") == nil then
+            msgText = "Usage: /addlocation savename ::pos{0,2,46.4596,-155.1799,22.6572}"
+            return
+        end
+        i = string.find(arguement, "::")
+        local savename = string.sub(arguement, 1, i-2)
+        i = string.find(arguement, ",")
+        arguement = string.sub(arguement, i+1)
+        local j = string.find(arguement,",")
+        local planetnumber = tonumber(string.sub(arguement, 1, j-1))
+        i = string.find(arguement, ",")
+        arguement = string.sub(arguement, i+1)
+        j = string.find(arguement,",")
+        local x = tonumber(string.sub(arguement, 1, j-1))
+        i = string.find(arguement, ",")
+        arguement = string.sub(arguement, i+1)
+        j = string.find(arguement,",")        
+        local y = tonumber(string.sub(arguement, 1, j-1))
+        i = string.find(arguement, ",")
+        arguement = string.sub(arguement, i+1)        
+        local z = tonumber(string.sub(arguement, 1, #arguement-1))
+        AddNewLocationByWaypoint(savename, planetnumber, x, y, z)       
+    elseif command == "/agg" then
+        if arguement == nil or arguement == "" then
+            msgText = "Usage: /agg targetheight"
+            return
+        end
+        arguement = tonumber(arguement)
+        if arguement < 1000 then arguement = 1000 end
+        AntigravTargetAltitude = arguement
+        msgText = "AGG Target Height set to "..arguement
+    elseif command == "/G" then
+        if arguement == nil or arguement == "" then
+            msgText = "Usage: /G VariableName variablevalue"
+            return
+        end
+        i = string.find(arguement, " ")
+        local globalVariableName = string.sub(arguement,0, i-1)
+        local newGlobalValue = string.sub(arguement,i+1)
+        for k, v in pairs(saveableVariables) do
+            if v == globalVariableName then
+                msgText = "Variable "..globalVariableName.." changed to "..newGlobalValue
+                local varType = type(_G[v])
+                if varType == "number" then
+                    newGlobalValue = tonumber(newGlobalValue)
+                elseif varType == "boolean" then
+                    if string.lower(newGlobalValue) == "true" then
+                        newGlobalValue = true
+                    else
+                        newGlobalValue = false
+                    end
+                end
+                _G[v] = newGlobalValue
+                return
+            end
+        end
+        msgText = "No such global variable: "..globalVariableName
     end
 end
 
