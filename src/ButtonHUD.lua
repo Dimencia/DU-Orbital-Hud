@@ -577,26 +577,51 @@ function AddLocationsToAtlas() -- Just called once during init really
     UpdateAtlasLocationsList()
 end
 
-function AddNewLocationByWaypoint(savename, planetnumber, x, y, z)
+function zeroConvertToWorldCoordinates(pos) -- Many thanks to SilverZero for this.
+    local num  = ' *([+-]?%d+%.?%d*e?[+-]?%d*)'
+    local posPattern = '::pos{' .. num .. ',' .. num .. ',' ..  num .. ',' .. num ..  ',' .. num .. '}'    
+    local systemId, bodyId, latitude, longitude, altitude = string.match(pos, posPattern)
+    longitude = math.rad(longitude)
+    latitude = math.rad(latitude)
+    if (systemId == 0 and bodyId == 0) then
+        return vec3(latitude,
+                    longitude,
+                    altitude)
+    end
+    local planet = atlas[tonumber(systemId)][tonumber(bodyId)]  
+    local xproj = math.cos(latitude);   
+    local planetxyz = vec3(xproj*math.cos(longitude),
+                          xproj*math.sin(longitude),
+                             math.sin(latitude));
+    return planet.center + (planet.radius + altitude) * planetxyz
+end
+
+function AddNewLocationByWaypoint(savename, planetnumber, pos)
     if dbHud_1 then
         local newLocation = {}
+        local position = zeroConvertToWorldCoordinates(pos)
+        local planet = atlas[0][planetnumber]
         if planetnumber == 0 then
             newLocation = {
-                position = vec3(x, y, z),
+                position = position,
                 name = savename,
                 atmosphere = 0,
                 planetname = "Space",
                 gravity = 0
             }
         else
-            local atmo
-            if atlas[0][planetnumber].atmos then atmo = 100 else atmo = 0 end
+            local atmo = false
+            if planet.atmos then
+                atmo = true 
+            else 
+                atmo = false 
+            end
             newLocation = {
-                position = vec3(x, y, z),
+                position = position,
                 name = savename,
                 atmosphere = atmo,
-                planetname = atlas[0][planetnumber].name,
-                gravity = atlas[0][planetnumber].gravity
+                planetname = planet.name,
+                gravity = planet.gravity
             }
         end
         SavedLocations[#SavedLocations + 1] = newLocation
@@ -611,6 +636,7 @@ function AddNewLocation() -- Don't call this unless they have a databank or it's
     -- Add a new location to SavedLocations
     if dbHud_1 then
         local position = vec3(core.getConstructWorldPos())
+        sprint(position.x.." "..position.y.." "..position.z)
         local name = planet.name .. ". " .. #SavedLocations
                                               
         if radar_1 then -- Just match the first one
@@ -622,7 +648,7 @@ function AddNewLocation() -- Don't call this unless they have a databank or it's
         local newLocation = {
             position = position,
             name = name,
-            atmosphere = atmosphere(),
+            atmosphere = inAtmo,
             planetname = planet.name,
             gravity = unit.getClosestPlanetInfluence()
         }
@@ -4156,7 +4182,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.920
+    VERSION_NUMBER = 4.921
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5641,22 +5667,14 @@ function script.onInputText(text)
         end
         i = string.find(arguement, "::")
         local savename = string.sub(arguement, 1, i-2)
-        i = string.find(arguement, ",")
-        arguement = string.sub(arguement, i+1)
-        local j = string.find(arguement,",")
-        local planetnumber = tonumber(string.sub(arguement, 1, j-1))
-        i = string.find(arguement, ",")
-        arguement = string.sub(arguement, i+1)
-        j = string.find(arguement,",")
-        local x = tonumber(string.sub(arguement, 1, j-1))
-        i = string.find(arguement, ",")
-        arguement = string.sub(arguement, i+1)
-        j = string.find(arguement,",")        
-        local y = tonumber(string.sub(arguement, 1, j-1))
-        i = string.find(arguement, ",")
-        arguement = string.sub(arguement, i+1)        
-        local z = tonumber(string.sub(arguement, 1, #arguement-1))
-        AddNewLocationByWaypoint(savename, planetnumber, x, y, z)       
+        local pos = string.sub(arguement, i)
+        local num        = ' *([+-]?%d+%.?%d*e?[+-]?%d*)'
+        local posPattern = '::pos{' .. num .. ',' .. num .. ',' ..  num .. ',' .. num ..  ',' .. num .. '}'    
+        local systemId, bodyId, latitude, longitude, altitude = string.match(pos, posPattern);
+        local planet = atlas[tonumber(systemId)][tonumber(bodyId)]
+        AddNewLocationByWaypoint(savename, tonumber(bodyId), pos)   
+        msgText = "Added "..savename.." to saved locations,\nplanet "..planet.name.." at "..pos
+        msgTimer = 5    
     elseif command == "/agg" then
         if arguement == nil or arguement == "" then
             msgText = "Usage: /agg targetheight"

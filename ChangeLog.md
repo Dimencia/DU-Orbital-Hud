@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.921 
+- Fixed issue of converting ::pos to WorldCoordinates.  /addlocation Name ::waypoint works now
+- Provided feedback when adding a waypoint save location.
+- Fixed comment on ExtraVerticalTags to say vertical (no change to performance)
+
 Version 4.920 - Support for user input
 - Implemented user text input.  To use, hit tab and hit enter to send messages to Lua Chat.  (this will not cause tab fps slideshow if the chat tab is open first) Currently supported commands:
     - /commands - Shows command list and help
