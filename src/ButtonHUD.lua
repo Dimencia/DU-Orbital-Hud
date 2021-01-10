@@ -57,6 +57,7 @@ rollSpeedFactor = 1.5 -- export: This factor will increase/decrease the player i
 turnAssist = true -- export: [Only in atmosphere]<br>When the pilot is rolling, the flight model will try to add yaw and pitch to make the construct turn better<br>The flight model will start by adding more yaw the more horizontal the construct is and more pitch the more vertical it is
 turnAssistFactor = 2 -- export: [Only in atmosphere]<br>This factor will increase/decrease the turnAssist effect<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
 TrajectoryAlignmentStrength = 0.002 -- export: How strongly AP tries to align your velocity vector to the target when not in orbit, recommend 0.002
+torqueFactor = 2 -- export: Force factor applied to reach rotationSpeed<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
 pitchSpeedFactor = 0.8 -- export: For keyboard control
 yawSpeedFactor = 1 -- export: For keyboard control
 brakeSpeedFactor = 3 -- export: When braking, this factor will increase the brake force by brakeSpeedFactor * velocity<br>Valid values: Superior or equal to 0.01
@@ -1016,10 +1017,10 @@ function ToggleAutopilot()
             LockPitch = nil
             SpaceTarget = (CustomTarget.planetname == "Space")
             if SpaceTarget then
-                spaceLaunch = true
                 if atmosphere() ~= 0 then 
+                    spaceLaunch = true
                     ToggleAltitudeHold()
-                else                
+                else
                     Autopilot = true
                 end
             elseif planet.name  == CustomTarget.planetname then
@@ -1042,17 +1043,17 @@ function ToggleAutopilot()
                     end -- TBH... this is the only thing we need to do, make sure Alt Hold is on.  
                 else
                     if coreAltitude > 100000 or coreAltitude == 0 then
-                        spaceLaunch = true
+                        --spaceLaunch = true
                         Autopilot = true
                     else
                         spaceLand = true
                     end
                 end
             else
-                spaceLaunch = true
                 RetrogradeIsOn = false
                 ProgradeIsOn = false
                 if atmosphere() ~= 0 then 
+                    spaceLaunch = true
                     ToggleAltitudeHold() 
                 else
                     Autopilot = true
@@ -4222,7 +4223,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.922
+    VERSION_NUMBER = 4.923
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -4662,13 +4663,17 @@ function script.onTick(timerId)
                 local align = AlignToWorldVector(vec3(velocity),0.01) 
                 if spaceLand then 
                     autoRoll = true
-                    if align then 
-                        ProgradeIsOn = false
-                        reentryMode = true
-                        spaceLand = false   
-                        finalLand = true
-                        autoRoll = autoRollPreference   
-                        BeginReentry()
+                    if velMag < (ReentrySpeed/3.6) then
+                            BrakeIsOn = false
+                            ProgradeIsOn = false
+                            reentryMode = true
+                            spaceLand = false   
+                            finalLand = true
+                            Autopilot = false
+                            autoRoll = autoRollPreference   
+                            BeginReentry()
+                    else
+                        BrakeIsOn = true
                     end
                 end
             end
@@ -4691,7 +4696,7 @@ function script.onTick(timerId)
                 ToggleAutopilot()
             end
         end
-        if finalLand and coreAltitude < ReentryAltitude + 100 and (velMag*3.6) > (ReentrySpeed-100) then
+        if finalLand and (coreAltitude < (ReentryAltitude + 100)) and ((velMag*3.6) > (ReentrySpeed-100)) then
             ToggleAutopilot()
             finalLand = false
         end
@@ -4966,7 +4971,7 @@ function script.onTick(timerId)
             -- Align it prograde but keep whatever pitch inputs they gave us before, and ignore pitch input from alignment.
             -- So, you know, just yaw.
             local oldInput = pitchInput2
-            if velMag > minAutopilotSpeed then
+            if velMag > minAutopilotSpeed and not spaceLaunch then
                 AlignToWorldVector(vec3(velocity))
             end
             if VectorToTarget and CustomTarget ~= nil and AutopilotTargetIndex > 0 then
@@ -5060,13 +5065,13 @@ function script.onTick(timerId)
                 end
             end
             if AutoTakeoff or spaceLaunch then
-                if targetPitch < 20 then
+                if targetPitch < 15 then
                     AutoTakeoff = false -- No longer in ascent
                     if not spaceLaunch then 
                         if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                             Nav.control.cancelCurrentControlMasterMode()
                         end
-                    else
+                    elseif spaceLaunch and velMag < minAutopilotSpeed then
                         Autopilot = true
                         spaceLaunch = false
                         AltitudeHold = false
@@ -5074,13 +5079,19 @@ function script.onTick(timerId)
                             Nav.control.cancelCurrentControlMasterMode()
                         end
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    elseif spaceLaunch then
+                        if Nav.axisCommandManager:getAxisCommandType(0) ~= 0 then
+                            Nav.control.cancelCurrentControlMasterMode()
+                        end
+                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        BrakeIsOn = true
                     end
-                elseif spaceLaunch and atmosphere() == 0 and coreAltitude > 50000 then
+                elseif spaceLaunch and atmosphere() == 0 and coreAltitude > 75000 then
                     if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
-                    if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= 3500 then -- This thing is dumb.
-                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 3500)
+                    if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= 1500 then -- This thing is dumb.
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 1500)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                     end
@@ -5114,7 +5125,7 @@ function script.onFlush()
             antigrav.setBaseAltitude(AntigravTargetAltitude) 
         end
     end
-    local torqueFactor = 2 -- Force factor applied to reach rotationSpeed<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
+
 
     -- validate params
     pitchSpeedFactor = math.max(pitchSpeedFactor, 0.01)
@@ -5684,8 +5695,9 @@ function script.onInputText(text)
     local i
     local commands = "/commands /setname /G /agg /addlocation"
     local command, arguement
-    local commandhelp = "Command List:\n/commands \n/setname <newname> - Updates current selected saved position name\n/G VariableName newValue - Updates global variable to new value\n"
-    commandhelp = commandhelp.."/agg <targetheight> - Manually set agg target height\n/addlocation savename ::pos{0,2,46.4596,-155.1799,22.6572} - adds a saved location by waypoint, not as accurate as making one at location"
+    local commandhelp = "Command List:\n/commands \n/setname <newname> - Updates current selected saved position name\n/G VariableName newValue - Updates global variable to new value\n"..
+            "/G dump - shows all updatable variables with /G\n/agg <targetheight> - Manually set agg target height\n/"..
+            "addlocation savename ::pos{0,2,46.4596,-155.1799,22.6572} - adds a saved location by waypoint, not as accurate as making one at location"
     i = string.find(text, " ")
     if i ~= nil then
         command = string.sub(text, 0, i-1)
@@ -5732,7 +5744,23 @@ function script.onInputText(text)
         msgText = "AGG Target Height set to "..arguement
     elseif command == "/G" then
         if arguement == nil or arguement == "" then
-            msgText = "Usage: /G VariableName variablevalue"
+            msgText = "Usage: /G VariableName variablevalue\n/G dump - shows all variables"
+            return
+        end
+        if arguement == "dump" then
+            for k, v in pairs(saveableVariables) do
+                if type(_G[v]) == "boolean" then
+                    if _G[v] == true then
+                        sprint(v.." true")
+                    else
+                        sprint(v.." false")
+                    end
+                elseif _G[v] == nil then
+                    sprint(v.." nil")
+                else
+                    sprint(v.." ".._G[v])
+                end
+            end
             return
         end
         i = string.find(arguement, " ")
