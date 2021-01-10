@@ -1,5 +1,24 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.930 - Now with space! (Space waypoints and autopiloting to them)
+WARNING WARNING WARNING - Autopiloting to a point in space that has a physical object at it might end up
+with you smeared all over it.  The AP endeavors to stop you in time. Recommend setting a waypoint nearby or 
+wear a diaper AND brown pants buttercup.
+- Autopilot will now go to a saved location in space.  If on arrival you are too far off, you can Alt-4 again and 
+it will close in.
+- Added Space as a entry in the Atlas to allow for saving locations in space.
+- /addlocation now supports space waypoints.
+Save Locations:
+To make locations on planets, use either the Save Button or /addlocation Name Waypoint command
+To make locations in space, use only the /addlocation Name Waypoint command
+To rename a location, select it in the Interplanetary window, then use the /setname Name command
+To delete a location, select it in the interplanetary window, then click the Clear button
+Do not use Update button for space locations at this time.
+KNOWN ISSUES:
+- Autopilot from land to space save point may arrive off when first stops, just hit alt-4 again and it will zero in (works best starting in space)
+- Autopilot from space to land point SOMETIMES has issues when ready for re-entry, troubleshooting that.  If happens alt-4 to cancel, brake, alt-4 to go on in.
+
+
 Version 4.921 
 - Fixed issue of converting ::pos to WorldCoordinates.  /addlocation Name ::waypoint works now
 - Provided feedback when adding a waypoint save location.
