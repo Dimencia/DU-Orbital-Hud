@@ -110,6 +110,7 @@ LockPitch = nil
 LastMaxBrakeInAtmo = 0
 AntigravTargetAltitude = core.getAltitude()
 LastStartTime = 0
+SpaceTarget = false
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -126,7 +127,7 @@ local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickR
                         "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags"}
 
-local autoVariables = {"BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
+local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "DisplayOrbit", "BrakeLanding",
                     "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                     "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
@@ -581,13 +582,13 @@ function zeroConvertToWorldCoordinates(pos) -- Many thanks to SilverZero for thi
     local num  = ' *([+-]?%d+%.?%d*e?[+-]?%d*)'
     local posPattern = '::pos{' .. num .. ',' .. num .. ',' ..  num .. ',' .. num ..  ',' .. num .. '}'    
     local systemId, bodyId, latitude, longitude, altitude = string.match(pos, posPattern)
+    if (systemId == "0" and bodyId == "0") then
+        return vec3(tonumber(latitude),
+                    tonumber(longitude),
+                    tonumber(altitude))
+    end
     longitude = math.rad(longitude)
     latitude = math.rad(latitude)
-    if (systemId == 0 and bodyId == 0) then
-        return vec3(latitude,
-                    longitude,
-                    altitude)
-    end
     local planet = atlas[tonumber(systemId)][tonumber(bodyId)]  
     local xproj = math.cos(latitude);   
     local planetxyz = vec3(xproj*math.cos(longitude),
@@ -596,18 +597,17 @@ function zeroConvertToWorldCoordinates(pos) -- Many thanks to SilverZero for thi
     return planet.center + (planet.radius + altitude) * planetxyz
 end
 
-function AddNewLocationByWaypoint(savename, planetnumber, pos)
+function AddNewLocationByWaypoint(savename, planet, pos)
     if dbHud_1 then
         local newLocation = {}
         local position = zeroConvertToWorldCoordinates(pos)
-        local planet = atlas[0][planetnumber]
-        if planetnumber == 0 then
+        if planet.name == "Space" then
             newLocation = {
                 position = position,
                 name = savename,
-                atmosphere = 0,
-                planetname = "Space",
-                gravity = 0
+                atmosphere = false,
+                planetname = planet.name,
+                gravity = planet.gravity
             }
         else
             local atmo = false
@@ -636,21 +636,24 @@ function AddNewLocation() -- Don't call this unless they have a databank or it's
     -- Add a new location to SavedLocations
     if dbHud_1 then
         local position = vec3(core.getConstructWorldPos())
-        sprint(position.x.." "..position.y.." "..position.z)
         local name = planet.name .. ". " .. #SavedLocations
-                                              
         if radar_1 then -- Just match the first one
             local id,_ = radar_1.getData():match('"constructId":"([0-9]*)","distance":([%d%.]*)')
             if id ~= nil and id ~= "" then
                 name = name .. " " .. radar_1.getConstructName(id)
             end
         end
-        local newLocation = {
+        local newLocation = {}
+        local atmo = false
+        if planet.atmos then
+            atmo = true 
+        end
+        newLocation = {
             position = position,
             name = name,
-            atmosphere = inAtmo,
+            atmosphere = atmo,
             planetname = planet.name,
-            gravity = unit.getClosestPlanetInfluence()
+            gravity = planet.gravity
         }
         SavedLocations[#SavedLocations + 1] = newLocation
         -- Nearest planet, gravity also important - if it's 0, we don't autopilot to the target planet, the target isn't near a planet.                      
@@ -864,13 +867,13 @@ function ToggleTurnBurn()
     TurnBurn = not TurnBurn
 end
 
-function ToggleVectorToTarget()
+function ToggleVectorToTarget(SpaceTarget)
     -- This is a feature to vector toward the target destination in atmo or otherwise on-planet
     -- Uses altitude hold.  
     VectorToTarget = not VectorToTarget
     if VectorToTarget then
         TurnBurn = false
-        if not AltitudeHold then
+        if not AltitudeHold and not SpaceTarget then
             ToggleAltitudeHold()
         end
     end
@@ -997,7 +1000,7 @@ end
 
 function ToggleAutopilot()
     -- Toggle Autopilot, as long as the target isn't None
-    if AutopilotTargetIndex > 0 and not Autopilot and not VectorToTarget then
+    if AutopilotTargetIndex > 0 and not Autopilot and not VectorToTarget and not spaceLaunch then
         -- If it's a custom location... 
         -- Behavior is probably 
         -- a. If not at the same nearest planet and in space and the target has gravity, autopilot to that planet
@@ -1011,7 +1014,15 @@ function ToggleAutopilot()
         -- f2. Should we even try to let this happen on ships with bad brakes.  Eventually, try that.  For now just don't let them use this
         if CustomTarget ~= nil then
             LockPitch = nil
-            if planet.name  == CustomTarget.planetname then 
+            SpaceTarget = (CustomTarget.planetname == "Space")
+            if SpaceTarget then
+                spaceLaunch = true
+                if atmosphere() ~= 0 then 
+                    ToggleAltitudeHold()
+                else                
+                    Autopilot = true
+                end
+            elseif planet.name  == CustomTarget.planetname then
                 StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
                 if not StrongBrakes and velMag > minAutopilotSpeed then
                     msgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
@@ -1021,16 +1032,21 @@ function ToggleAutopilot()
                     if not AltitudeHold then
                         -- Autotakeoff gets engaged inside the toggle if conditions are met
                         if not VectorToTarget then
-                            ToggleVectorToTarget()
+                            ToggleVectorToTarget(SpaceTarget)
                         end
                     else
                         -- Vector to target
                         if not VectorToTarget then
-                            ToggleVectorToTarget()
+                            ToggleVectorToTarget(SpaceTarget)
                         end
                     end -- TBH... this is the only thing we need to do, make sure Alt Hold is on.  
                 else
-                    spaceLand = true
+                    if coreAltitude > 100000 or coreAltitude == 0 then
+                        spaceLaunch = true
+                        Autopilot = true
+                    else
+                        spaceLand = true
+                    end
                 end
             else
                 spaceLaunch = true
@@ -1059,6 +1075,7 @@ function ToggleAutopilot()
             ToggleAltitudeHold()
         end
     else
+        spaceLaunch = false
         Autopilot = false
         AutopilotRealigned = false
         VectorToTarget = false
@@ -1066,6 +1083,7 @@ function ToggleAutopilot()
         AutoTakeoff = false
         AltitudeHold = false
         VectorToTarget = false
+        HoldAltitude = coreAltitude
     end
 end
 
@@ -1551,7 +1569,7 @@ function BeginReentry()
         autoRoll = autoRollPreference
         AltitudeHold = false
     elseif atmosphere() ~= 0 or unit.getClosestPlanetInfluence() <= 0 or Reentry or not planet.atmos then
-        msgText = "Re-Entry requirements not met: you must start out of atmosphere and within a planets gravity well over a planet with atmosphere"
+        msgText = "Re-Entry requirements not met: you must start out of atmosphere\n and within a planets gravity well over a planet with atmosphere"
         msgTimer = 5
     elseif not reentryMode then-- Parachute ReEntry
         StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
@@ -2722,9 +2740,17 @@ function UpdateAutopilotTarget()
         if system.updateData(widgetTravelTimeText, widgetTravelTime) ~= 1 then
             system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
     end
-    AutopilotTargetCoords = vec3(autopilotTargetPlanet.center) -- Aim center until we align
+    if CustomTarget == nil then
+        AutopilotTargetCoords = vec3(autopilotTargetPlanet.center) -- Aim center until we align
+    else
+        AutopilotTargetCoords = CustomTarget.position
+    end
     -- Determine the end speed
-    _, AutopilotEndSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed(AutopilotTargetOrbit)
+    if CustomTarget ~= nil and CustomTarget.planetname == "Space" then 
+        AutopilotEndSpeed = 0
+    else
+        _, AutopilotEndSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed(AutopilotTargetOrbit)
+    end
     -- AutopilotEndSpeed = 0
     -- AutopilotPlanetGravity = autopilotTargetPlanet:getGravity(autopilotTargetPlanet.center + vec3({1,0,0}) * AutopilotTargetOrbit):len() -- Any direction, at our orbit height
     AutopilotPlanetGravity = 0 -- This is inaccurate unless we integrate and we're not doing that.  
@@ -2964,7 +2990,7 @@ function updateRadar()
             local friendlies = {}
             for k, v in pairs(radarContacts) do
                 if radar_1.hasMatchingTransponder(v) == 1 then
-                    friendlies[#friendlies + 1] = v
+                    table.insert(friendlies,v)
                 end
             end
             if #friendlies > 0 then
@@ -3033,6 +3059,20 @@ end
 function Atlas()
     return {
         [0] = {
+            [0] = {
+                GM = 0,
+                bodyId = 0,
+                center = {
+                    x = 0,
+                    y = 0,
+                    z = 0
+                },
+                name = 'Space',
+                planetarySystemId = 0,
+                radius = 0,
+                atmos = false,
+                gravity = 0
+            },
             [1] = {
                 GM = 6930729684,
                 bodyId = 1,
@@ -3484,7 +3524,7 @@ function SetupAtlas()
         GalaxyMapHTML =
             GalaxyMapHTML .. '<circle cx="' .. x .. '" cy="' .. y .. '" r="' .. (v.radius / xRatio) * 30 ..
                 '" stroke="white" stroke-width="3" fill="blue" />'
-        if not string.match(v.name, "Moon") and not string.match(v.name, "Sanctuary") then
+        if not string.match(v.name, "Moon") and not string.match(v.name, "Sanctuary") and not string.match (v.name, "Space") then
             GalaxyMapHTML = GalaxyMapHTML .. "<text x='" .. x .. "' y='" .. y + (v.radius / xRatio) * 30 + 20 ..
                                 "' font-size='28' fill=" .. rgb .. " text-anchor='middle' font-family='Montserrat'>" ..
                                 v.name .. "</text>"
@@ -4182,7 +4222,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.921
+    VERSION_NUMBER = 4.922
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -4210,13 +4250,11 @@ function script.onStart()
         Kinematic = Kinematics()
         Kep = Keplers()
         AddLocationsToAtlas()
+        UpdateAtlasLocationsList()
         UpdateAutopilotTarget()
-
         coroutine.yield()
-
         unit.hide()
         system.showScreen(1)
-
         -- That was a lot of work with dirty strings and json.  Clean up
         collectgarbage("collect")
         -- Start timers
@@ -4427,6 +4465,7 @@ function script.onTick(timerId)
         velMag = vec3(velocity):len()
         sys = galaxyReference[0]
         planet = sys:closestBody(core.getConstructWorldPos())
+        if planet.name == "Space" then planet = atlas[0][2] end
         kepPlanet = Kep(planet)
         orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
         hovGndDet = hoverDetectGround() 
@@ -4626,10 +4665,10 @@ function script.onTick(timerId)
                     if align then 
                         ProgradeIsOn = false
                         reentryMode = true
-                        BeginReentry()
                         spaceLand = false   
                         finalLand = true
                         autoRoll = autoRollPreference   
+                        BeginReentry()
                     end
                 end
             end
@@ -4656,7 +4695,7 @@ function script.onTick(timerId)
             ToggleAutopilot()
             finalLand = false
         end
-        if Autopilot and atmosphere() == 0 then
+        if Autopilot and atmosphere() == 0 and not spaceLand then
             -- Planetary autopilot engaged, we are out of atmo, and it has a target
             -- Do it.  
             -- And tbh we should calc the brakeDistance live too, and of course it's also in meters
@@ -4759,7 +4798,12 @@ function script.onTick(timerId)
                 -- We'll try <0.9 instead of <1 so that we don't end up in a barely-orbit where touching the controls will make it an escape orbit
                 -- Though we could probably keep going until it starts getting more eccentric, so we'd maybe have a circular orbit
 
-                if orbit.periapsis ~= nil and orbit.eccentricity < 1 then
+                if (CustomTarget ~=nil and CustomTarget.planetname == "Space" and velMag < 50) then
+                    msgText = "Autopilot complete, arrived at space location"
+                    AutopilotBraking = false
+                    Autopilot = false
+                    AutopilotStatus = "Aligning" -- Disable autopilot and reset
+                elseif (CustomTarget ==nil or (CustomTarget ~= nil and CustomTarget.planetname ~= "Space")) and orbit.periapsis ~= nil and orbit.eccentricity < 1 then
                     AutopilotStatus = "Circularizing"
                     if orbit.eccentricity > lastEccentricity or
                         (orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude <
@@ -4773,7 +4817,7 @@ function script.onTick(timerId)
                         brakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
                         apThrottleSet = false
-                        if CustomTarget ~= nil then
+                        if CustomTarget ~= nil and CustomTarget.planetname ~= "Space" then
                             ProgradeIsOn = true
                             spaceLand = true
                         end
@@ -4794,13 +4838,15 @@ function script.onTick(timerId)
                 -- It's engaged but hasn't started accelerating yet.
                 if aligned then
                     -- Re-align to 200km from our aligned right                    
-                    if not AutopilotRealigned then -- Removed radius from this because it makes our readouts look inaccurate?
-                        AutopilotTargetCoords = vec3(autopilotTargetPlanet.center) +
-                                                    ((AutopilotTargetOrbit + autopilotTargetPlanet.radius) *
-                                                        vec3(core.getConstructWorldOrientationRight()))
+                    if not AutopilotRealigned and CustomTarget == nil or (not AutopilotRealigned and CustomTarget ~= nil and CustomTarget.planetname ~= "Space") then
+                        if not spaceLand then
+                            AutopilotTargetCoords = vec3(autopilotTargetPlanet.center) +
+                                                        ((AutopilotTargetOrbit + autopilotTargetPlanet.radius) *
+                                                            vec3(core.getConstructWorldOrientationRight()))
+                            AutopilotShipUp = core.getConstructWorldOrientationUp()
+                            AutopilotShipRight = core.getConstructWorldOrientationRight()
+                        end
                         AutopilotRealigned = true
-                        AutopilotShipUp = core.getConstructWorldOrientationUp()
-                        AutopilotShipRight = core.getConstructWorldOrientationRight()
                     elseif aligned then
                         AutopilotAccelerating = true
                         AutopilotStatus = "Accelerating"
@@ -5033,8 +5079,8 @@ function script.onTick(timerId)
                     if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
-                    if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= 5000 then -- This thing is dumb.
-                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 5000)
+                    if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= 3500 then -- This thing is dumb.
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 3500)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                     end
@@ -5672,7 +5718,7 @@ function script.onInputText(text)
         local posPattern = '::pos{' .. num .. ',' .. num .. ',' ..  num .. ',' .. num ..  ',' .. num .. '}'    
         local systemId, bodyId, latitude, longitude, altitude = string.match(pos, posPattern);
         local planet = atlas[tonumber(systemId)][tonumber(bodyId)]
-        AddNewLocationByWaypoint(savename, tonumber(bodyId), pos)   
+        AddNewLocationByWaypoint(savename, planet, pos)   
         msgText = "Added "..savename.." to saved locations,\nplanet "..planet.name.." at "..pos
         msgTimer = 5    
     elseif command == "/agg" then
