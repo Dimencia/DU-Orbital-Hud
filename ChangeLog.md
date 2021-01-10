@@ -1,6 +1,13 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 4.930 - Now with space! (Space waypoints and autopiloting to them)
+Version 4.923
+- Cleaned up autopilot performance for various conditions, fixed re-entry to saved location.
+- Added /G dump - shows all changable variables and current setting.
+- Restored torqueFactor export variable - Force factor applied to reach rotationSpeed
+(higher value may be unstable) Valid values: Superior or equal to 0.01
+- Slowed approach to 100k when doing autopilot from planet to off before aligning to target to allow more accuracy
+
+Version 4.922 - Now with space! (Space waypoints and autopiloting to them)
 WARNING WARNING WARNING - Autopiloting to a point in space that has a physical object at it might end up
 with you smeared all over it.  The AP endeavors to stop you in time. Recommend setting a waypoint nearby or 
 wear a diaper AND brown pants buttercup.
