@@ -1,5 +1,16 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.924
+- Fixed time display for Days - Hours
+- Added default values to all user variables (Default: value)
+- Added SpaceSpeedLimit user parameter - When you hit the limit, and are not in autopilot mode, engines will turn off.  Default is 30000 (so will never apply)
+SpaceSpeedLimit = 30000 -- export: (Default: 30000) Space speed limit in KM/H.  If you hit this speed but are not in active autopilot, engines will turn off.
+- Added DisplayOrbit, OrbitMapSize, OrbitMapX, and OrbitMapY to user settings
+DisplayOrbit = true -- export: Show Orbit display when valid or not.  May also be toggled with shift Buttons
+OrbitMapSize = 250 -- export: Size of the orbit map, make sure it is divisible by 4
+OrbitMapX = 75 -- export: X postion of Orbit Display Disabled
+OrbitMapY = 0 -- export:  Y position of Orbit Display
+
 Version 4.923
 - Cleaned up autopilot performance for various conditions, fixed re-entry to saved location.
 - Added /G dump - shows all changable variables and current setting.
