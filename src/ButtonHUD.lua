@@ -78,7 +78,8 @@ ExtraLateralTags = "none" -- export: (Default: "none") Enter any extra lateral t
 ExtraVerticalTags = "none" -- export: (Default: "none") Enter any extra longitudinal tags you use inside '' seperated by space, i.e. "up down"  These will be added to the engines that are control by vertical.
 ExternalAGG = false -- export: (Default: false) Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
 UseSatNav = false -- export: (Default: false) Toggle on if using Trog SatNav script.  This will provide SatNav support.
-apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your HUD.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  The bigger the number the less often the autopilot and hud updates but may help peformance on slower machings.
+apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your autopilot features.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  
+hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -104,7 +105,6 @@ AutopilotTargetName = "None"
 AutopilotTargetCoords = nil
 AutopilotTargetIndex = 0
 GearExtended = nil
-TargetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
 TotalDistanceTravelled = 0.0
 TotalFlightTime = 0
 SavedLocations = {}
@@ -125,7 +125,7 @@ local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickR
                         "brakeFlatFactor", "autoRollFactor", "turnAssistFactor", "torqueFactor",
                         "AutoTakeoffAltitude", "TargetHoverHeight", "AutopilotInterplanetaryThrottle",
                         "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo",
-                        "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze",
+                        "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze", "hudTickRate",
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
@@ -137,7 +137,7 @@ local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "Retrogra
                     "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                     "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                     "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
-                    "AutopilotTargetIndex", "GearExtended", "TargetGroundAltitude", "TotalDistanceTravelled",
+                    "AutopilotTargetIndex", "GearExtended", "TotalDistanceTravelled",
                     "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", 
                     "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude", "LastStartTime"}
 
@@ -262,6 +262,11 @@ local Kep = nil
 local Animating = false
 local Animated = false
 local autoRoll = autoRollPreference
+local rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
+local velocity = vec3(core.getWorldVelocity())
+local velMag = vec3(velocity):len()
+local minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
+local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -320,7 +325,7 @@ function LoadVariables()
         msgText = "Invalid User Control Scheme selected.  Change userControlScheme in Lua Parameters to keyboard, mouse, or virtual joystick\nOr use shift and button in screen"
         msgTimer = 5
     end
-    MinimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
+    minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
 
     if antigrav and not ExternalAGG then
         if AntigravTargetAltitude == nil then 
@@ -489,12 +494,14 @@ function SetupChecks()
             Nav.control.retractLandingGears()
         end
     end
-    if TargetGroundAltitude ~= nil then
-        Nav.axisCommandManager:setTargetGroundAltitude(TargetGroundAltitude)
-        if TargetGroundAltitude == 0 and not hasGear then 
+    
+    if targetGroundAltitude ~= nil then
+        Nav.axisCommandManager:setTargetGroundAltitude(targetGroundAltitude)
+        if targetGroundAltitude == 0 and not hasGear then 
             GearExtended = true 
         end
-    else 
+    else
+        targetGroundAltitude = Nav:getTargetGroundAltitude() 
         if GearExtended or not hasGear then
             Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
             GearExtended = true
@@ -1504,7 +1511,7 @@ end
 function AlignToWorldVector(vector, tolerance)
     -- Sets inputs to attempt to point at the autopilot target
     -- Meant to be called from Update or Tick repeatedly
-    if not inAtmo or RateOfChange > (MinimumRateOfChange+0.08) or hovGndDet ~= -1 then
+    if not inAtmo or rateOfChange > (minimumRateOfChange+0.08) or hovGndDet ~= -1 then
         if tolerance == nil then
             tolerance = alignmentTolerance
         end
@@ -1745,7 +1752,7 @@ function GetFlightStyle()
     return flightStyle
 end
 
-function updateHud(newContent)
+function UpdateHud(newContent)
 
     local altitude = coreAltitude
     local velocity = core.getVelocity()
@@ -2439,7 +2446,7 @@ function DrawWarnings(newContent)
     if BrakeIsOn then
         newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Brake Engaged</text>]], warningX, brakeY)
     end
-    if inAtmo and RateOfChange < MinimumRateOfChange and velMag > brakeLandingRate+5 then
+    if inAtmo and rateOfChange < minimumRateOfChange and velMag > brakeLandingRate+5 then
         newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+50)
     end
     if gyroIsOn then
@@ -4227,7 +4234,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.924
+    VERSION_NUMBER = 4.925
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -4264,6 +4271,7 @@ function script.onStart()
         collectgarbage("collect")
         -- Start timers
         unit.setTimer("apTick", apTickRate)
+        unit.setTimer("hudTick", hudTickRate)
         unit.setTimer("oneSecond", 1)
         unit.setTimer("tenthSecond", 1/10)
         if UseSatNav then 
@@ -4457,71 +4465,14 @@ function script.onTick(timerId)
         simulatedX = 0
         simulatedY = 0
         unit.stopTimer("animateTick")
-    elseif timerId == "apTick" then
-        -- Localized Functions
-        local isRemote = isRemote
-        RateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
-        inAtmo = (atmosphere() > 0)
-        yawInput2 = 0
-        rollInput2 = 0
-        pitchInput2 = 0
-        LastApsDiff = -1
-        velocity = vec3(core.getWorldVelocity())
-        velMag = vec3(velocity):len()
-        sys = galaxyReference[0]
-        planet = sys:closestBody(core.getConstructWorldPos())
-        if planet.name == "Space" then planet = atlas[0][2] end
-        kepPlanet = Kep(planet)
-        orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
-        hovGndDet = hoverDetectGround() 
+    elseif timerId == "hudTick" then
         local deltaX = system.getMouseDeltaX()
         local deltaY = system.getMouseDeltaY()
-        TargetGroundAltitude = Nav:getTargetGroundAltitude()
-        local isWarping = (velMag > 8334)
-        if velMag > SpaceSpeedLimit/3.6 and not inAtmo and not Autopilot then
-            msgText = "Space Speed Engine Shutoff reached"
-            if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
-                Nav.control.cancelCurrentControlMasterMode()
-            end
-            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-        end
-        if not isWarping and LastIsWarping then
-            if not BrakeIsOn then
-                BrakeToggle()
-            end
-            if Autopilot then
-                ToggleAutopilot()
-            end
-        end
-        LastIsWarping = isWarping
-        if inAtmo and atmosphere() > 0.09 then
-            if not speedLimitBreaking  then
-                if velMag > (AtmoSpeedLimit / 3.6) then
-                    BrakeIsOn = true
-                    speedLimitBreaking  = true
-                end
-            else
-                if velMag < (AtmoSpeedLimit / 3.6) then
-                    BrakeIsOn = false
-                    speedLimitBreaking = false
-                end
-            end    
-        end
-        if BrakeIsOn then
-            brakeInput = 1
-        else
-            brakeInput = 0
-        end
-        coreAltitude = core.getAltitude()
-        if coreAltitude == 0 then
-            coreAltitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
-        end
-
         local newContent = {}
         HUDPrologue(newContent)
 
         if showHud then
-            updateHud(newContent) -- sets up Content for us
+            UpdateHud(newContent) -- sets up Content for us
         else
             DisplayOrbitScreen(newContent)
             DrawWarnings(newContent)
@@ -4660,14 +4611,65 @@ function script.onTick(timerId)
         end
         newContent[#newContent + 1] = [[</svg></body>]]
         content = table.concat(newContent, "")
-        -- if content ~= LastContent then
-        -- if isRemote() == 1 and screen_1 then -- Once the screens are fixed we can do this.
-        --    screen_1.setHTML(content) -- But also this is disgusting and the resolution's terrible.  We're doing something wrong.
-        -- else
-
         if not DidLogOutput then
             system.logInfo(LastContent)
             DidLogOutput = true
+        end        
+    elseif timerId == "apTick" then
+        -- Localized Functions
+        rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
+        inAtmo = (atmosphere() > 0)
+        yawInput2 = 0
+        rollInput2 = 0
+        pitchInput2 = 0
+        velocity = vec3(core.getWorldVelocity())
+        velMag = vec3(velocity):len()
+        sys = galaxyReference[0]
+        planet = sys:closestBody(core.getConstructWorldPos())
+        if planet.name == "Space" then planet = atlas[0][2] end -- Assign to Alioth since otherwise Space gets returned if at Alioth.
+        kepPlanet = Kep(planet)
+        orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
+        hovGndDet = hoverDetectGround() 
+
+
+        local isWarping = (velMag > 8334)
+        if velMag > SpaceSpeedLimit/3.6 and not inAtmo and not Autopilot then
+            msgText = "Space Speed Engine Shutoff reached"
+            if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
+                Nav.control.cancelCurrentControlMasterMode()
+            end
+            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+        end
+        if not isWarping and LastIsWarping then
+            if not BrakeIsOn then
+                BrakeToggle()
+            end
+            if Autopilot then
+                ToggleAutopilot()
+            end
+        end
+        LastIsWarping = isWarping
+        if inAtmo and atmosphere() > 0.09 then
+            if not speedLimitBreaking  then
+                if velMag > (AtmoSpeedLimit / 3.6) then
+                    BrakeIsOn = true
+                    speedLimitBreaking  = true
+                end
+            else
+                if velMag < (AtmoSpeedLimit / 3.6) then
+                    BrakeIsOn = false
+                    speedLimitBreaking = false
+                end
+            end    
+        end
+        if BrakeIsOn then
+            brakeInput = 1
+        else
+            brakeInput = 0
+        end
+        coreAltitude = core.getAltitude()
+        if coreAltitude == 0 then
+            coreAltitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
         end
         if ProgradeIsOn then
             if velMag > minAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
@@ -4935,9 +4937,8 @@ function script.onTick(timerId)
         if AltitudeHold or BrakeLanding or Reentry or VectorToTarget or LockPitch ~= nil then
             -- HoldAltitude is the alt we want to hold at
             local nearPlanet = unit.getClosestPlanetInfluence() > 0
-            local altitude = coreAltitude
             -- Dampen this.
-            local altDiff = HoldAltitude - altitude
+            local altDiff = HoldAltitude - coreAltitude
             -- This may be better to smooth evenly regardless of HoldAltitude.  Let's say, 2km scaling?  Should be very smooth for atmo
             -- Even better if we smooth based on their velocity
             local minmax = 500 + velMag
