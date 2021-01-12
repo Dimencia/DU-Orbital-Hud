@@ -1,5 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.925 - Increased FPS when using full HUD
+- Changed overlay (hud) to update at 1/4 the speed of autopilot. This also moves hud stuff out of ap area. Gained 10 FPS with little visible impact.
+- Added user variable hudTickRate for those who want to fine tune it, default is 4 times slower than ap tick rate (15 times/sec vice 60 times/sec)
+hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate. hudTickRate should be >= apTickRate.
+The hudTickRate has the biggest impact on FPS as it determines how often the overlay is redrawn(updated).  0.25 gives a 20+ fps gain, but you get 4 fps hud update.
+
 Version 4.924
 - Fixed time display for Days - Hours
 - Added default values to all user variables (Default: value)
