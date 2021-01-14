@@ -1,5 +1,12 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.926
+- Fixed movement speed of mouse post 4.924 back to previous rate.
+- Added user preference ability to invert mouse Y axis for flight control.
+InvertMouse = false -- export: (Default: false) If true, then when controlling flight mouse Y axis is inverted (pushing up noses plane down)  Does not affect selecting buttons or camera.
+- Prevent space speed limit activating when warping (had no effect,  just cleanup)
+
+
 Version 4.925 - Increased FPS when using full HUD
 - Changed overlay (hud) to update at 1/4 the speed of autopilot. This also moves hud stuff out of ap area. Gained 10 FPS with little visible impact.
 - Added user variable hudTickRate for those who want to fine tune it, default is 4 times slower than ap tick rate (15 times/sec vice 60 times/sec)
