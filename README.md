@@ -16,6 +16,7 @@
 |[Warnings](#warnings)
 |[Installation](#installation)|
 |[Usage / Hotkey Reference](#Usage)
+|[Smart Switches](#SmartSwitch)
 |[Variable Persistence](#variable-persistence)
 |[Customization](#customization)
 |[Examples and Tutorials](#examples-and-tutorials)
@@ -129,6 +130,15 @@ Vertical speed indicator | LUA chat commands |
 |Follow Mode|__ALT-8__ will toggle Follow Mode when using a Remote Controller. This makes your craft lift off and try to follow you wherever you go. It will not go below ground unless you dig out a big enough hole that it would naturally go down while hovering.|
 |Toggle Gyro|__ALT-9__ to toggle a linked gyro on or off. If a gyro is installed on your ship, this will change your ships perceived orientation from Core to Gyro. This is used to allow you to control flight based on gyro orientation and not core orientation.|
 |Radar|Radar indicates below minimap number of targets or if it is jammed (atmosphere in space or space in atmosphere). The radar widget only pops up if targets are detected. The periscope widget only pops up if you click a target and successfully identify it. All widgets close automagically.|
+[Return to Table of Contents](#table-of-contents)
+## Smart Switches
+This script will have automatic behaviors for certain switches depending on the name you give it. Any name used not in this description will be just be toggled. 
+
+Name your element switches to the following to get specific behavior: 
+* **navBlinkSwitch** = Blinking NAV Anti Collision lights (Usually the top/bottom red lights on an aircraft). 
+* **navLightSwitch** = Turns on NAV Directional lights (Usually green on the left, and red on the right, and three white lights in the rear on an aircraft). 
+* **headLightSwitch** = Turns on and off Headlights according to ground height (Use *HeadlightGroundHeight* to set desired height).
+* **fuelDisplaySwitch** = Turns on programming board that contains Fuel Display script attached to screen.
 
 [Return to Table of Contents](#table-of-contents)
 <!--This should go somewhere else, I'm not sure where yet.-->
@@ -182,6 +192,7 @@ Right click the seat and go to _Advanced_ -> _Edit Lua Parameters_ to see them a
     * AutoTakeoffAltitude = 1000 -- export: How high above your ground starting position AutoTakeoff tries to put you
     * TargetHoverHeight = 50 -- export: Hover height when retracting landing gear
     * LandingGearGroundHeight = 0 --export: Set to hover height reported - 1 when you use alt-spacebar to just lift off ground from landed postion.  4 is M size landing gear,
+    * HeadlightGroundHeight = 150 --export: Controls altitude to turn on/off Headlights. Turns off above value
     * MaxGameVelocity = 8333.00 -- export: Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
     * AutopilotTargetOrbit = 50000 -- export: How far you want the orbit to be from the planet in m.  200,000 = 1SU (Default 50000)
     * AutopilotInterplanetaryThrottle = 1.0 -- export: How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity

@@ -473,15 +473,14 @@ function SetupChecks()
             local name = core.getElementNameById(eID)
             if (name == "navBlinkSwitch") then
                 navBlinkSwitch = v
-            end
-            if (name == "navLightSwitch") then
+            elseif (name == "navLightSwitch") then
                 navLightSwitch = v
-            end
-            if (name == "headLightSwitch") then
+            elseif (name == "headLightSwitch") then
                 headLightSwitch = v
-            end
-            if (name == "fuelDisplaySwitch") then
+            elseif (name == "fuelDisplaySwitch") then
                 fuelDisplaySwitch = v
+            else
+                v.toggle()
             end
         end
     end
