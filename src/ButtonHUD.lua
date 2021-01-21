@@ -138,7 +138,7 @@ local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "Retrogra
                     "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                     "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                     "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
-                    "AutopilotTargetIndex", "GearExtended", "TotalDistanceTravelled",
+                    "AutopilotTargetIndex", "TotalDistanceTravelled",
                     "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", 
                     "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude", "LastStartTime"}
 
@@ -356,12 +356,13 @@ function CalculateFuelVolume(curMass, vanillaMaxVolume)
 end
 
 function ProcessElements()
+    local checkTanks = (fuelX ~= 0 and fuelY ~= 0)
     for k in pairs(elementsID) do
         local type = eleType(elementsID[k])
-        if (type == "landing gear") then
+        if (type == "Landing Gear") then
             hasGear = true
         end
-        if (type == "dynamic core") then
+        if (type == "Dynamic Core Unit") then
             local hp = eleMaxHp(elementsID[k])
             if hp > 10000 then
                 coreOffset = 128
@@ -372,72 +373,70 @@ function ProcessElements()
             end
         end
         eleTotalMaxHp = eleTotalMaxHp + eleMaxHp(elementsID[k])
-        if (fuelX ~= 0 and fuelY ~= 0) then
-            if (type == "Atmospheric Fuel Tank" or type == "Space Fuel Tank" or type == "Rocket Fuel Tank") then
-                local hp = eleMaxHp(elementsID[k])
-                local mass = eleMass(elementsID[k])
-                local curMass = 0
-                local curTime = system.getTime()
-                if (type == "Atmospheric Fuel Tank") then
-                    local vanillaMaxVolume = 400
-                    local massEmpty = 35.03
-                    if hp > 10000 then
-                        vanillaMaxVolume = 51200 -- volume in kg of L tank
-                        massEmpty = 5480
-                    elseif hp > 1300 then
-                        vanillaMaxVolume = 6400 -- volume in kg of M
-                        massEmpty = 988.67
-                    elseif hp > 150 then
-                        vanillaMaxVolume = 1600 --- volume in kg small
-                        massEmpty = 182.67
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
-                    end
-                    vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
-                    atmoTanks[#atmoTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+        if checkTanks and (type == "Atmospheric Fuel Tank" or type == "Space Fuel Tank" or type == "Rocket Fuel Tank") then
+            local hp = eleMaxHp(elementsID[k])
+            local mass = eleMass(elementsID[k])
+            local curMass = 0
+            local curTime = system.getTime()
+            if (type == "Atmospheric Fuel Tank") then
+                local vanillaMaxVolume = 400
+                local massEmpty = 35.03
+                if hp > 10000 then
+                    vanillaMaxVolume = 51200 -- volume in kg of L tank
+                    massEmpty = 5480
+                elseif hp > 1300 then
+                    vanillaMaxVolume = 6400 -- volume in kg of M
+                    massEmpty = 988.67
+                elseif hp > 150 then
+                    vanillaMaxVolume = 1600 --- volume in kg small
+                    massEmpty = 182.67
+                end
+                curMass = mass - massEmpty
+                if fuelTankHandlingAtmo > 0 then
+                    vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
+                end
+                vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
+                atmoTanks[#atmoTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+                                            vanillaMaxVolume, massEmpty, curMass, curTime}
+            end
+            if (type == "Rocket Fuel Tank") then
+                local vanillaMaxVolume = 320
+                local massEmpty = 173.42
+                if hp > 65000 then
+                    vanillaMaxVolume = 40000 -- volume in kg of L tank
+                    massEmpty = 25740
+                elseif hp > 6000 then
+                    vanillaMaxVolume = 5120 -- volume in kg of M
+                    massEmpty = 4720
+                elseif hp > 700 then
+                    vanillaMaxVolume = 640 --- volume in kg small
+                    massEmpty = 886.72
+                end
+                curMass = mass - massEmpty
+                if fuelTankHandlingRocket > 0 then
+                    vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
+                end
+                vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
+                rocketTanks[#rocketTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
                                                 vanillaMaxVolume, massEmpty, curMass, curTime}
+            end
+            if (type == "Space Fuel Tank") then
+                local vanillaMaxVolume = 2400
+                local massEmpty = 182.67
+                if hp > 10000 then
+                    vanillaMaxVolume = 76800 -- volume in kg of L tank
+                    massEmpty = 5480
+                elseif hp > 1300 then
+                    vanillaMaxVolume = 9600 -- volume in kg of M
+                    massEmpty = 988.67
                 end
-                if (type == "Rocket Fuel Tank") then
-                    local vanillaMaxVolume = 320
-                    local massEmpty = 173.42
-                    if hp > 65000 then
-                        vanillaMaxVolume = 40000 -- volume in kg of L tank
-                        massEmpty = 25740
-                    elseif hp > 6000 then
-                        vanillaMaxVolume = 5120 -- volume in kg of M
-                        massEmpty = 4720
-                    elseif hp > 700 then
-                        vanillaMaxVolume = 640 --- volume in kg small
-                        massEmpty = 886.72
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
-                    end
-                    vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
-                    rocketTanks[#rocketTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
-                                                    vanillaMaxVolume, massEmpty, curMass, curTime}
+                curMass = mass - massEmpty
+                if fuelTankHandlingSpace > 0 then
+                    vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
                 end
-                if (type == "Space Fuel Tank") then
-                    local vanillaMaxVolume = 2400
-                    local massEmpty = 182.67
-                    if hp > 10000 then
-                        vanillaMaxVolume = 76800 -- volume in kg of L tank
-                        massEmpty = 5480
-                    elseif hp > 1300 then
-                        vanillaMaxVolume = 9600 -- volume in kg of M
-                        massEmpty = 988.67
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
-                    end
-                    vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
-                    spaceTanks[#spaceTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
-                                                vanillaMaxVolume, massEmpty, curMass, curTime}
-                end
+                vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
+                spaceTanks[#spaceTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+                                            vanillaMaxVolume, massEmpty, curMass, curTime}
             end
         end
     end
@@ -451,9 +450,6 @@ function SetupChecks()
         system.lockView(1)
     else
         system.lockView(0)
-    end
-    if inAtmo then
-        BrakeIsOn = true
     end
     if radar_1 then
         if eleType(radar_1.getId()) == "Space Radar" then
@@ -512,8 +508,10 @@ function SetupChecks()
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
         end
     end
-    if inAtmo and not dbHud_1 and (GearExtended or not hasGear) then
+    if AboveGroundLevel() ~= -1 then
         BrakeIsOn = true
+    else
+         BrakeIsOn = false
     end
     WasInAtmo = inAtmo
 end
@@ -2910,7 +2908,7 @@ end
 
 function AboveGroundLevel()
     local groundDistance = -1
-    local hgroundDet = hovGndDet
+    local hgroundDet = hoverDetectGround()
     if telemeter_1 then 
         groundDistance = telemeter_1.getDistance()
     end
@@ -4237,7 +4235,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.926
+    VERSION_NUMBER = 4.927
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5132,7 +5130,7 @@ function script.onTick(timerId)
         lastEccentricity = orbit.eccentricity
 
         if antigrav and not ExternalAGG and coreAltitude < 200000 then
-                if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
+                if AntigravTargetAltitude == nil or AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                 if desiredBaseAltitude ~= AntigravTargetAltitude then
                     desiredBaseAltitude = AntigravTargetAltitude
                     antigrav.setBaseAltitude(desiredBaseAltitude)
@@ -5382,7 +5380,18 @@ end
 
 function script.onActionStart(action)
     if action == "gear" then
-        GearExtended = not GearExtended
+        if hasGear then
+            GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
+            if GearExtended then
+                Nav.control.retractLandingGears()
+                GearExtended = false
+            else
+                Nav.control.extendLandingGears()
+                GearExtended = true
+            end
+        else
+            GearExtended = not GearExtended
+        end    
         if GearExtended then
             VectorToTarget = false
             LockPitch = nil
@@ -5400,7 +5409,6 @@ function script.onActionStart(action)
                 AltitudeHold = false
                 BrakeLanding = true
                 autoRoll = true
-                GearExtended = false -- Don't actually do it
             else
                 BrakeIsOn = true
                 Nav.control.extendLandingGears()
