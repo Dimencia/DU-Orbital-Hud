@@ -51,6 +51,7 @@ ReentryAltitude = 2500 -- export: (Default: 2500) Target alititude when using re
 AutoTakeoffAltitude = 1000 -- export: (Default: 1000) How high above your ground starting position AutoTakeoff tries to put you
 TargetHoverHeight = 50 -- export: (Default: 50) Hover height when retracting landing gear
 LandingGearGroundHeight = 0 --export: (Default: 0) Set to AGL-1 when on ground (or 0)
+HeadlightGroundHeight = 150 --export: (Default: 150) Controls altitude to turn on/off Headlights. Turns off above value
 MaxGameVelocity = 8333.00 -- export: (Default: 8333.00) Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
 AutopilotTargetOrbit = 50000 -- export: (Default: 50000) How far you want the orbit to be from the planet in m.  200,000 = 1SU (Default 50000)
 AutopilotInterplanetaryThrottle = 1.0 -- export: (Default: 1.0) How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
@@ -270,6 +271,10 @@ local minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
 local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
 local deltaX = system.getMouseDeltaX()
 local deltaY = system.getMouseDeltaY()
+local navBlinkSwitch = nil
+local navLightSwitch = nil
+local headLightSwitch = nil
+local fuelDisplaySwitch = nil
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -462,14 +467,26 @@ function SetupChecks()
             hasAtmoRadar = true
         end
     end
-    -- Close door and retract ramp if available
-    if door then
-        for _, v in pairs(door) do
-            v.toggle()
+    if switch then 
+        for _, v in pairs(switch) do
+            local eID = v.getId()
+            local name = core.getElementNameById(eID)
+            if (name == "navBlinkSwitch") then
+                navBlinkSwitch = v
+            end
+            if (name == "navLightSwitch") then
+                navLightSwitch = v
+            end
+            if (name == "headLightSwitch") then
+                headLightSwitch = v
+            end
+            if (name == "fuelDisplaySwitch") then
+                fuelDisplaySwitch = v
+            end
         end
     end
-    if switch then
-        for _, v in pairs(switch) do
+    if door then
+        for _, v in pairs(door) do
             v.toggle()
         end
     end
@@ -4280,6 +4297,9 @@ function script.onStart()
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
+        navLightSwitch.activate()
+        headLightSwitch.activate()
+        fuelDisplaySwitch.activate()
     end)
 end
 
@@ -4292,16 +4312,10 @@ function script.onStop()
         warpdrive.hide()
     end
     core.hide()
-    Nav.control.switchOffHeadlights()
     -- Open door and extend ramp if available
     local atmo = atmosphere()
     if door and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(door) do
-            v.toggle()
-        end
-    end
-    if switch then
-        for _, v in pairs(switch) do
             v.toggle()
         end
     end
@@ -4325,10 +4339,13 @@ function script.onStop()
     if button then
         button.activate()
     end
+    navLightSwitch.deactivate()
+    fuelDisplaySwitch.deactivate()
 end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
+        navBlinkSwitch.deactivate()
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -4412,6 +4429,7 @@ function script.onTick(timerId)
         DrawOdometer(newContent, totalDistanceTrip, TotalDistanceTravelled, flightStyle, flightTime)
         CheckDamage(newContent)
         lastOdometerOutput = table.concat(newContent, "")
+        navBlinkSwitch.activate()
         collectgarbage("collect")
     elseif timerId == "fiveSecond" then
         -- Support for SatNav by Trog
@@ -5138,6 +5156,13 @@ function script.onTick(timerId)
                     antigrav.setBaseAltitude(desiredBaseAltitude)
                 end
         end
+
+        local groundHeight = Nav:getTargetGroundAltitude()
+        if (groundHeight < HeadlightGroundHeight) then
+            headLightSwitch.activate()
+        else
+            headLightSwitch.deactivate()
+        end
     end
 end
 
@@ -5409,12 +5434,6 @@ function script.onActionStart(action)
         else
             Nav.control.retractLandingGears()
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
-        end
-    elseif action == "light" then
-        if Nav.control.isAnyHeadlightSwitchedOn() == 1 then
-            Nav.control.switchOffHeadlights()
-        else
-            Nav.control.switchOnHeadlights()
         end
     elseif action == "forward" then
         pitchInput = pitchInput - 1
