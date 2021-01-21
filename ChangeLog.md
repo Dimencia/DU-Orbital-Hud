@@ -1,5 +1,11 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 4.927
+- Changed Landing Gear to always extend/retract regardless of height when G pressed.  Note: Pressing G while flying will still initiate Brake Landing when appropriate.
+- Changed HUD startup brake status (when you sit in seat) only to be on if ground level is detected.  This should prevent brakes being on when sitting returning from a disconnect.
+- Changed AGG to prevent target altitude going < 1000m
+- Fixed issues with Landing Gear and Dynamic Core Unit due type name change, landing gear and remote repair arrows should work better now.
+
 Version 4.926
 - Fixed movement speed of mouse post 4.924 back to previous rate.
 - Added user preference ability to invert mouse Y axis for flight control.
