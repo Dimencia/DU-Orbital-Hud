@@ -523,28 +523,7 @@ function SetupChecks()
     end
 
     -- Store their max kinematic parameters in ship-up direction for use in brake-landing
-    --MaxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())
-    -- This gives us a vector4 containing "atmoRange.FMaxPlus, atmoRange.FMaxMinus, spaceRange.FMaxPlus, spaceRange.FMaxMinus"
-    -- Which I hope is basically ability at high then low atmo densities?  It should be in Newtons.
-    -- For now just print them.
-    --system.print("Up Kinematics!")
-    --system.print(MaxKinematicUp[1])
-    --system.print(MaxKinematicUp[2])
-    --system.print(MaxKinematicUp[3])
-    --system.print(MaxKinematicUp[4])
-
-    -- Looks like only atmo FMaxPlus is giving a value other than 0, on my atmo-only ship.  Interesting.  And it's about 7,200,000
-    -- Which matches the 7.2MN Low Altitude Lift listed for my hovers and stuff
-    -- But it's 0 when my hovers aren't touching.  
-    -- This means realistically, we need to make sure we read what it's like when all the hovers are touching.
-    -- We need to read it constantly, and save the highest value
-    -- But then also overwrite any databank values the first chance we get to read something again.  
-    -- That or, give them a command they should use when fully landed after modifying the vertical capacity
-    -- Though I guess worst case, if someone lands on something and one of their hovers is hanging off the edge
-    -- They will just brake-land slower than normal for the next landing.
-
     MaxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
-
     -- For now, for simplicity, we only do this once at startup and store it.  If it's nonzero, later we use it. 
 
     WasInAtmo = inAtmo
