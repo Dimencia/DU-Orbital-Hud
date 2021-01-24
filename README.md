@@ -19,8 +19,8 @@
 |[Variable Persistence](#variable-persistence)
 |[Customization](#customization)
 |[Examples and Tutorials](#examples-and-tutorials)
-[No Autopilot Version](#no-autopilot-version)
-| [Credits](#credits) |
+|[No Autopilot Version](#no-autopilot-version)
+|[Credits](#credits) |
 <!--List of features both shorlist and expanded details-->
 # Features List
 
@@ -29,9 +29,9 @@
 Artificial horizon | Automatic braking | Brake-hold
 Altimeter | Autopilot to saved locations | Brake landings (brake force > construct mass)
 Pitch | Inter-planetary transit routes | Coast landings (brake force < construct mass)
-Roll | Orbital insertion | Auto-roll |
-Yaw | Transit-to-orbit | Pitch lock |
-Vertical speed indicator | LUA chat commands |
+Roll | Orbital insertion | Auto-roll
+Yaw | Transit-to-orbit | Pitch lock
+Vertical speed indicator | LUA chat commands | Waypoint management
 
 
 | Feature Details / Additional Features | 
@@ -107,8 +107,8 @@ Vertical speed indicator | LUA chat commands |
 |Save Location|Hold __SHIFT__ then selecting the __Save Position__ mouseover| Will save the current location in the databank (if installed). This location may be selected by the autopilot option to automatically fly to the destination.  It will _not_ monitor for impeeding structures or ships. Monitor during use. Locations will be named by planet/moon and a number.|
 |Update Location|Hold __SHIFT__ then selecting the __Update Position__ mouseover| Select a previously saved location in the Interplanetary Helper to change its name with the name of the closest atmo radar target name. This is a workaround until manual editing/naming of locations is available.|
 |Free Look|__ALT__|Toggles free-look mode (mouse moves camera around ship, not flight input). Please note that your view does not auto center when exiting Free Look. Free Look must be enabled to zoom in 3rd person mode.|
-|Autopilot Destination / Destination Select|__Option 1__ and __Option 2__, <br/>__ALT-1__ and __ALT-2__ or <br/>__SHIFT-R__ and __SHIFT-T__)|Cycles through autopilot destinations (planets / bodies / saved waypoints).|
 |Toggle HUD|__Option 3__, or __ALT-3__|Toggles the primary hud display HUD on/off, i.e. if off the vanilla widgets will appear.|
+|Autopilot Destination / Destination Select|__Option 1__ and __Option 2__, <br/>__ALT-1__ and __ALT-2__ or <br>__SHIFT-R__ and __SHIFT-T__|Cycles through autopilot destinations (planets / bodies / saved waypoints).|
 |Autopilot|__Option 4__, or __ALT-4__|Ship will tilt up at preset max angle (30 by default) and fly to 50km altitude and then engage autopilot to selected planet/moon. Once it arrives it will establish orbit and align to prograde. If a saved location was chosen, it will glide entry in and then autopilot to location. NOTE: It does not check to see if anything is in front of you on ground (like normal) nor if your target planet is behind current planet even 50km in space. DO NOT USE if your ship cannot power out of atmosphere at 30 deg with 100% engines. USE WITH CAUTION FIRST TIME. Tested Alioth to Sanct and Sanct to Alioth repeatedly.|
 |Lock Pitch|__Option 5__, or __ALT-5__|Will lock your target pitch at current pitch and attempt to maintain that pitch (this is different from Altitude Hold) Most other AP features will cancel Lock Pitch.
 |Altitude Hold|__Option 6__, or __ALT-6__|Toggles the altitude hold functionality. Tries to keep the current altitude in spite of planetary curvatore. Depending on ship's lift/force, the actual height may be less than the targeted height! Adjust altitude with (left) __ALT-C__ (down) and (left) __ALT-SPACE__ (up) in increments (growing increments if key is kept held down).|
@@ -118,6 +118,7 @@ Vertical speed indicator | LUA chat commands |
 <!--Messy Messy details. This needs to be cleaned up.-->
 | Item | Detailed Description|
 | --- | --- |
+|User text input|To use, hit __TAB__ and then __ENTER__ to send messages to LUA Chat (this will not cause the known tab fps slideshow if the chat tab is open first).<br>*Currently supported commands:*<br>__/commands__ - shows command list and help<br>__/G *VariableName value*__ - changes the global variablename (corresponding to the same-named LUA parameter) to the specified new *value*. Note: names are case-sensitive!<br>Examples:<br>__/G AtmoSpeedLimit 1300__ sets that LUA parameter to 1300km/h or __/G circleRad 100__ would shrink the artifical horizon down to 100 from default 400.<br>__/agg *height*__ - Sets the AGG target height to *height* (in meters). Note that it must still move to this height at 4m/s like normal.<br>__/addlocation *savename waypointpaste*__ - Adds a new saved location based on waypoint. The *savename* must not contain spaces/blanks! Not as accurate as going to location and using Save button.<br>__/setname *name*__ - renames the current selected saved postion to "name"|
 |UI Overlay|Hold __SHIFT__ to show the UI overlay with buttons (not in freelook!). Mouse over a button and let go of __SHIFT__ to select it (not clicking it). While holding SHIFT, press R/T (speedup/speeddown) to cycle between autopilot targets.|
 |Free Look|__ALT__ is now a toggle for free-look. Because of the way we had to use Keyboard mode, it can't re-center when you lock it back, but that can be desirable in some situations|
 |Autopilot Destination / Destination Select|__ALT-1__ and __ALT-2__ (__Option1__ and __Option2__) to scroll between target planets for Autopilot and display. This also works using SHIFT-R and SHIFT-T to scroll. This widget will not display if no planet is selected (ie you must press one of these hotkeys after entering the seat in order to show the widget)|
