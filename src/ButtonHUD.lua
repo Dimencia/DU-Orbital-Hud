@@ -494,25 +494,59 @@ function SetupChecks()
         end
     end
     
+    local aboveGroundLevel = AboveGroundLevel()
+
+    -- Engage brake and extend Gear if either a hover detects something, or they're in space and moving very slowly
+    if aboveGroundLevel ~= -1 or (not inAtmo and vec3(core.getVelocity()):len() < 50) then
+        BrakeIsOn = true
+        if not hasGear then
+            GearExtended = true
+        end
+    else
+        BrakeIsOn = false
+    end
+
     if targetGroundAltitude ~= nil then
         Nav.axisCommandManager:setTargetGroundAltitude(targetGroundAltitude)
         if targetGroundAltitude == 0 and not hasGear then 
-            GearExtended = true 
+            GearExtended = true
+            BrakeIsOn = true -- If they were hovering at 0 and have no gear, consider them landed 
         end
     else
         targetGroundAltitude = Nav:getTargetGroundAltitude() 
-        if GearExtended or not hasGear then
+        if GearExtended then -- or not hasGear then -- And we already tagged GearExtended if they don't have gear, we can just use this
             Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
-            GearExtended = true
+            --GearExtended = true -- We don't need to extend gear just because they have a databank, that would have been done earlier if necessary
         else
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
         end
     end
-    if AboveGroundLevel() ~= -1 then
-        BrakeIsOn = true
-    else
-         BrakeIsOn = false
-    end
+
+    -- Store their max kinematic parameters in ship-up direction for use in brake-landing
+    --MaxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())
+    -- This gives us a vector4 containing "atmoRange.FMaxPlus, atmoRange.FMaxMinus, spaceRange.FMaxPlus, spaceRange.FMaxMinus"
+    -- Which I hope is basically ability at high then low atmo densities?  It should be in Newtons.
+    -- For now just print them.
+    --system.print("Up Kinematics!")
+    --system.print(MaxKinematicUp[1])
+    --system.print(MaxKinematicUp[2])
+    --system.print(MaxKinematicUp[3])
+    --system.print(MaxKinematicUp[4])
+
+    -- Looks like only atmo FMaxPlus is giving a value other than 0, on my atmo-only ship.  Interesting.  And it's about 7,200,000
+    -- Which matches the 7.2MN Low Altitude Lift listed for my hovers and stuff
+    -- But it's 0 when my hovers aren't touching.  
+    -- This means realistically, we need to make sure we read what it's like when all the hovers are touching.
+    -- We need to read it constantly, and save the highest value
+    -- But then also overwrite any databank values the first chance we get to read something again.  
+    -- That or, give them a command they should use when fully landed after modifying the vertical capacity
+    -- Though I guess worst case, if someone lands on something and one of their hovers is hanging off the edge
+    -- They will just brake-land slower than normal for the next landing.
+
+    MaxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
+
+    -- For now, for simplicity, we only do this once at startup and store it.  If it's nonzero, later we use it. 
+
     WasInAtmo = inAtmo
 end
 
@@ -545,7 +579,17 @@ function RefreshLastMaxBrake(gravity, force)
         if maxBrake ~= nil and maxBrake > 0 and inAtmo then 
             maxBrake = maxBrake / utils.clamp(speed/100, 0.1, 1)
             maxBrake = maxBrake / atmoden
-            if maxBrake > LastMaxBrakeInAtmo and atmoden > 0.10 then LastMaxBrakeInAtmo = maxBrake end
+            --if maxBrake > LastMaxBrakeInAtmo and atmoden > 0.10 then LastMaxBrakeInAtmo = maxBrake end
+            if atmoden > 0.10 then 
+                if LastMaxBrakeInAtmo then
+                    LastMaxBrakeInAtmo = (LastMaxBrakeInAtmo + maxBrake) / 2
+                else
+                    LastMaxBrakeInAtmo = maxBrake 
+                end
+            end -- Now that we're calculating actual brake values, we want this updated
+                -- We were ignoring real brake calculations and overriding them with previous wrong, but higher, brake calculations
+                -- Also, ideally this would always give us the same value, but because it's DU they don't.  Sometimes it's a bit off.  
+                -- We should keep a rolling average to smooth any offness.
         end
         if maxBrake ~= nil and maxBrake > 0 then
             LastMaxBrake = maxBrake
@@ -3902,7 +3946,7 @@ function PlanetRef()
         local coord = vec3(coordinates)
         for _, params in pairs(self) do
             local distance2 = (params.center - coord):len2()
-            if not body or distance2 < minDistance2 then
+            if (not body or distance2 < minDistance2) and params.name ~= "Space" then -- Never return space.  
                 body = params
                 minDistance2 = distance2
             end
@@ -4241,6 +4285,8 @@ function script.onStart()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
             {1000, 5000, 10000, 20000, 30000})
 
+        SetupChecks() -- All the if-thens to set up for particular ship.  Specifically override these with the saved variables if available
+
         -- Load Saved Variables
         LoadVariables()
 
@@ -4250,8 +4296,6 @@ function script.onStart()
         ProcessElements()
 
         coroutine.yield() -- Give it some time to breathe before we do the rest
-
-        SetupChecks() -- All the if-thens to set up for particular ship
 
         SetupButtons() -- Set up all the pushable buttons.
 
@@ -4573,7 +4617,7 @@ function script.onTick(timerId)
         velMag = vec3(velocity):len()
         sys = galaxyReference[0]
         planet = sys:closestBody(core.getConstructWorldPos())
-        if planet.name == "Space" then planet = atlas[0][2] end -- Assign to Alioth since otherwise Space gets returned if at Alioth.
+        --if planet.name == "Space" then planet = atlas[0][2] end -- Assign to Alioth since otherwise Space gets returned if at Alioth.
         kepPlanet = Kep(planet)
         orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
         hovGndDet = hoverDetectGround() 
@@ -4999,51 +5043,57 @@ function script.onTick(timerId)
                 -- We're overriding pitch and roll so, this will just set yaw, we can do this directly
                 AlignToWorldVector(targetVec)
 
-                local distanceToTarget = targetVec:len() - targetVec:project_on(up):len() -- Probably not strictly accurate with curvature but it should work
+                --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
                 -- Well, maybe not.  Really we have a triangle.  Of course.  
                 -- We know C, our distance to target.  We know the height we'll be above the target (should be the same as our current height)
                 -- We just don't know the last leg
                 -- a2 + b2 = c2.  c2 - b2 = a2
-                -- local distanceToTarget = math.sqrt(targetVec:len()^2-(HoldAltitude-targetAltitude)^2)
-                local maxBrake = LastMaxBrakeInAtmo
+                local targetAltitude = planet:getAltitude(CustomTarget.position)
+                local distanceToTarget = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
+
+
+                -- We want current brake value, not max
+                local curBrake = LastMaxBrakeInAtmo
+                if curBrake then
+                    curBrake = curBrake * utils.clamp(velMag/100,0.1,1) * unit.getAtmosphereDensity()
+                else
+                    curBrake = LastMaxBrake
+                end
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                 local hSpd = velocity:len() - math.abs(vSpd)
-                local airFriction = vec3(core.getWorldAirFrictionAcceleration()) -- Maybe includes lift?
-                if maxBrake ~= nil then
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, constructMass(), 0, 0,
-                                                   maxBrake + (airFriction:len() - airFriction:project_on(up):len()) *
-                                                       constructMass())
-                else
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, constructMass(), 0, 0,
-                                                   LastMaxBrake + vec3(core.getWorldAirFrictionAcceleration()):len() *
-                                                       constructMass())
+                local airFrictionVec = vec3(core.getWorldAirFrictionAcceleration())
+                local airFriction = math.sqrt(airFrictionVec:len() - airFrictionVec:project_on(up):len()) * constructMass() 
+                -- Assume it will halve over our duration, if not sqrt.  We'll try sqrt because it's underestimating atm
+                -- First calculate stopping to 100 - that all happens with full brake power
+                if hSpd > 100 then
+                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(hSpd, 100, constructMass(), 0, 0,
+                                                    curBrake + airFriction)
+                    -- Then add in stopping from 100 to 0 at what averages to half brake power.  Assume no friction for this
+                    local lastDist, _ = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, curBrake/2)
+
+                    brakeDistance = brakeDistance + lastDist
+                else -- Just calculate it regularly assuming the value will be halved while we do it, assuming no friction
+                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, constructMass(), 0, 0, curBrake/2)
                 end
-                StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
-                if distanceToTarget <= brakeDistance then
-                    VectorStatus = "Finalizing Approach"
+               
+
+                --StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
+                StrongBrakes = true -- We don't care about this or glide landing anymore and idk where all it gets used
+                if distanceToTarget <= brakeDistance then -- Since we're now accurate on this, we need to just brake-land immediately.  
+                    VectorStatus = "Finalizing Approach" -- Left for compatibility
                     if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
                     if AltitudeHold then
                         ToggleAltitudeHold() -- Don't need this anymore
-                        VectorToTarget = true -- But keep this part on... 
                     end
-                    if StrongBrakes then
-                        BrakeIsOn = true
-                    else
-                        VectorToTarget = false -- We're done here.  Toggle on the landing routine for coast-landing
-                        BrakeLanding = true
-                    end
+                    BrakeLanding = true
+                    VectorToTarget = false
 
                 elseif not AutoTakeoff then
                     BrakeIsOn = false
                 end
-                if LastTargetDistance ~= nil and distanceToTarget > LastTargetDistance and not AltitudeHold and
-                    not AutoTakeoff then
-                    BrakeLanding = true
-                    VectorToTarget = false
-                end
-                LastTargetDistance = distanceToTarget
+                
             end
             pitchInput2 = oldInput
             local constrF = vec3(core.getConstructWorldOrientationForward())
@@ -5054,16 +5104,60 @@ function script.onTick(timerId)
             local autoPitchThreshold = 0.1
             if BrakeLanding then
                 targetPitch = 0
+                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                local skipLandingRate = false
+                local actualStoppingDistance = 0 -- I'm pretty sure vbooster and hover don't have a way to output their detection distance
+                if MaxKinematicUp ~= nil and MaxKinematicUp > 0 then
+                    -- Calculate a landing rate instead since we know what their hovers can do
+                    -- Or rather, calculate the current stopping distance vs the distance we can read from the hover or telemeter
+                    
+                    if vbooster and vbooster.getMaxDistance then
+                        if vbooster.getMaxDistance() > actualStoppingDistance then
+                            actualStoppingDistance = vbooster.getMaxDistance()
+                        end
+                    end
+                    if hover and hover.getMaxDistance then
+                        if hover.getMaxDistance() > actualStoppingDistance then
+                            actualStoppingDistance = hover.getMaxDistance()
+                        end
+                    end
+                    if telemeter_1 then
+                        if telemeter_1.getMaxDistance() > actualStoppingDistance then
+                            actualStoppingDistance = telemeter_1.getMaxDistance()
+                        end
+                    end
+                    if actualStoppingDistance == 0 then
+                        actualStoppingDistance = 30 -- Assume a short one.  
+                    end
+                    --local gravity = planet:getGravity(planet.center + (vec3(0, 0, 1) * (planet.radius + core.getAltitude()))) -- This is BS and apparently this isn't a BodyParameters
+                    local gravity = planet.gravity*9.8*core.getConstructMass() -- We'll use a random BS value of a guess
+                    local airFriction = vec3(core.getWorldAirFrictionAcceleration()):len() * core.getConstructMass()
+                    -- Funny enough, LastMaxBrakeInAtmo has stuff done to it to convert to a flat value
+                    -- But we need the instant one back, to know how good we are at braking at this exact moment
+
+                    local curBrake = LastMaxBrakeInAtmo * utils.clamp(vSpd/100,0.1,1) * unit.getAtmosphereDensity()
+                    local totalNewtons = MaxKinematicUp + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
+                    local stopDistance, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 0, core.getConstructMass(), 0, 0, totalNewtons) 
+
+                    --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
+
+                    if stopDistance >= actualStoppingDistance then
+                        BrakeIsOn = true
+                    else
+                        BrakeIsOn = false
+                    end
+                    skipLandingRate = true
+                end
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                     Nav.control.cancelCurrentControlMasterMode()
                 end
                 Nav.axisCommandManager:setTargetGroundAltitude(500)
                 Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(500)
-                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                
                 groundDistance = hovGndDet
-                if groundDistance > -1 then
-                    if math.abs(targetPitch - pitch) < autoPitchThreshold then
-                        autoRoll = autoRollPreference
+                if groundDistance > -1 then 
+                    if math.abs(targetPitch - pitch) < autoPitchThreshold then 
+                        autoRoll = autoRollPreference                           
                         if velMag < 1 then
                             BrakeLanding = false
                             AltitudeHold = false
@@ -5076,11 +5170,11 @@ function script.onTick(timerId)
                             BrakeIsOn = true
                         end
                     end
-                elseif StrongBrakes and (velocity:normalize():dot(-up) < 0.99) then
+                elseif StrongBrakes and (velocity:normalize():dot(-up) < 0.999) then
                     BrakeIsOn = true
-                elseif vSpd < -brakeLandingRate then
+                elseif vSpd < -brakeLandingRate and not skipLandingRate then
                     BrakeIsOn = true
-                else
+                elseif not skipLandingRate then
                     BrakeIsOn = false
                 end
             end
