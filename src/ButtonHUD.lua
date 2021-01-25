@@ -5115,7 +5115,7 @@ function script.onTick(timerId)
                     -- But we need the instant one back, to know how good we are at braking at this exact moment
 
                     local curBrake = LastMaxBrakeInAtmo * utils.clamp(vSpd/100,0.1,1) * unit.getAtmosphereDensity()
-                    local totalNewtons = MaxKinematicUp + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
+                    local totalNewtons = MaxKinematicUp * unit.getAtmosphereDensity() + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
                     local stopDistance, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 0, core.getConstructMass(), 0, 0, totalNewtons) 
 
                     --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")

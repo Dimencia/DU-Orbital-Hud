@@ -1,4 +1,8 @@
 ## ChangeLog - Most recent changes at the top
+Version 4.93
+- Fixed Brake values in atmo for BrakeLanding and VectorToTarget (flight to waypoint)
+- Adjusted flight to waypoint behavior to no longer feather the brakes when incoming - the calculations are now accurate even at high altitude, so it relies on them
+- Adjusted BrakeLanding behavior to calculate an appropriate brakeLandingRate, if its hovers were in contact with the ground when you entered the seat (so it can measure them)
 
 Version 4.927
 - Changed Landing Gear to always extend/retract regardless of height when G pressed.  Note: Pressing G while flying will still initiate Brake Landing when appropriate.
