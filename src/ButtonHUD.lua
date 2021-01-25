@@ -524,7 +524,7 @@ function SetupChecks()
     end
 
     -- Store their max kinematic parameters in ship-up direction for use in brake-landing
-    if inAtmo then 
+    if inAtmo and aboveGroundLevel ~= -1 then 
         maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
     end
     -- For now, for simplicity, we only do this once at startup and store it.  If it's nonzero, later we use it. 
@@ -4307,6 +4307,29 @@ function script.onStart()
     end)
 end
 
+function SaveDataBank(copy)
+    if dbHud_1 then
+        if not wipedDatabank then
+            for k, v in pairs(autoVariables) do
+                dbHud_1.setStringValue(v, jencode(_G[v]))
+                if copy and dbHud_2 then
+                    dbHud_2.setStringValue(v, jencode(_G[v]))
+                end
+            end
+            for k, v in pairs(saveableVariables) do
+                dbHud_1.setStringValue(v, jencode(_G[v]))
+                if copy and dbHud_2 then
+                    dbHud_2.setStringValue(v, jencode(_G[v]))
+                end
+            end
+            sprint("Saved Variables to Datacore")
+            if copy and dbHud_2 then
+                msgText = "Databank copied.  Remove copy when ready."
+            end
+        end
+    end
+end
+
 function script.onStop()
     _autoconf.hideCategoryPanels()
     if antigrav ~= nil  and not ExternalAGG then
@@ -4334,18 +4357,7 @@ function script.onStop()
             v.toggle()
         end
     end
-    -- Save variables
-    if dbHud_1 then
-        if not wipedDatabank then
-            for k, v in pairs(autoVariables) do
-                dbHud_1.setStringValue(v, jencode(_G[v]))
-            end
-            for k, v in pairs(saveableVariables) do
-                dbHud_1.setStringValue(v, jencode(_G[v]))
-            end
-            sprint("Saved Variables to Datacore")
-        end
-    end
+    SaveDataBank()
     if button then
         button.activate()
     end
@@ -4426,9 +4438,6 @@ function script.onTick(timerId)
     elseif timerId == "oneSecond" then
         -- Timer for evaluation every 1 second
         clearAllCheck = false
-        if inAtmo and (maxKinematicUp == nil or maxKinematicUp <= 0) then 
-            maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
-        end
         RefreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
         updateDistance()
         updateRadar()
@@ -5802,16 +5811,18 @@ end
 
 function script.onInputText(text)
     local i
-    local commands = "/commands /setname /G /agg /addlocation"
-    local command, arguement
+    local commands = "/commands /setname /G /agg /addlocation /copydatabank"
+    local command, arguement = nil, nil
     local commandhelp = "Command List:\n/commands \n/setname <newname> - Updates current selected saved position name\n/G VariableName newValue - Updates global variable to new value\n"..
-            "/G dump - shows all updatable variables with /G\n/agg <targetheight> - Manually set agg target height\n/"..
-            "addlocation savename ::pos{0,2,46.4596,-155.1799,22.6572} - adds a saved location by waypoint, not as accurate as making one at location"
+            "/G dump - shows all updatable variables with /G\n/agg <targetheight> - Manually set agg target height\n"..
+            "/addlocation savename ::pos{0,2,46.4596,-155.1799,22.6572} - adds a saved location by waypoint, not as accurate as making one at location\n"..
+            "/copydatabank - copies dbHud databank to a blank databank"
     i = string.find(text, " ")
+    command = text
     if i ~= nil then
         command = string.sub(text, 0, i-1)
         arguement = string.sub(text, i+1)
-    elseif i == nil or not string.find(commands, command) then
+    elseif not string.find(commands, command) then
         for str in string.gmatch(commandhelp, "([^\n]+)") do
             sprint(str)
         end
@@ -5893,6 +5904,12 @@ function script.onInputText(text)
             end
         end
         msgText = "No such global variable: "..globalVariableName
+    elseif command == "/copydatabank" then 
+        if dbHud_2 then 
+            SaveDataBank(true) 
+        else
+            msgText = "Databank required to copy databank"
+        end
     end
 end
 
