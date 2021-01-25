@@ -259,6 +259,7 @@ local YouAreHere = nil
 local PlanetaryReference = nil
 local galaxyReference = nil
 local Kinematic = nil
+local maxKinematicUp = nil
 local Kep = nil
 local Animating = false
 local Animated = false
@@ -524,7 +525,7 @@ function SetupChecks()
 
     -- Store their max kinematic parameters in ship-up direction for use in brake-landing
     if inAtmo then 
-        MaxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
+        maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
     end
     -- For now, for simplicity, we only do this once at startup and store it.  If it's nonzero, later we use it. 
 
@@ -727,7 +728,7 @@ function UpdatePosition(newName)
             newLocation = {
                 position = vec3(core.getConstructWorldPos()),
                 name = SavedLocations[index].name,
-                atmosphere = unit.getAtmosphereDensity(),
+                atmosphere = atmosphere(),
                 planetname = planet.name,
                 gravity = unit.getClosestPlanetInfluence()
             }   
@@ -4425,6 +4426,9 @@ function script.onTick(timerId)
     elseif timerId == "oneSecond" then
         -- Timer for evaluation every 1 second
         clearAllCheck = false
+        if inAtmo and (maxKinematicUp == nil or maxKinematicUp <= 0) then 
+            maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
+        end
         RefreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
         updateDistance()
         updateRadar()
@@ -5036,7 +5040,7 @@ function script.onTick(timerId)
                 -- We want current brake value, not max
                 local curBrake = LastMaxBrakeInAtmo
                 if curBrake then
-                    curBrake = curBrake * utils.clamp(velMag/100,0.1,1) * unit.getAtmosphereDensity()
+                    curBrake = curBrake * utils.clamp(velMag/100,0.1,1) * atmosphere()
                 else
                     curBrake = LastMaxBrake
                 end
@@ -5088,7 +5092,7 @@ function script.onTick(timerId)
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                 local skipLandingRate = false
                 local actualStoppingDistance = 0 -- I'm pretty sure vbooster and hover don't have a way to output their detection distance
-                if MaxKinematicUp ~= nil and MaxKinematicUp > 0 then
+                if maxKinematicUp ~= nil and maxKinematicUp > 0 then
                     -- Calculate a landing rate instead since we know what their hovers can do
                     -- Or rather, calculate the current stopping distance vs the distance we can read from the hover or telemeter
                     
@@ -5111,14 +5115,14 @@ function script.onTick(timerId)
                         actualStoppingDistance = 30 -- Assume a short one.  
                     end
                     --local gravity = planet:getGravity(planet.center + (vec3(0, 0, 1) * (planet.radius + core.getAltitude()))) -- This is BS and apparently this isn't a BodyParameters
-                    local gravity = planet.gravity*9.8*core.getConstructMass() -- We'll use a random BS value of a guess
-                    local airFriction = vec3(core.getWorldAirFrictionAcceleration()):len() * core.getConstructMass()
+                    local gravity = planet.gravity*9.8*constructMass() -- We'll use a random BS value of a guess
+                    local airFriction = vec3(core.getWorldAirFrictionAcceleration()):len() * constructMass()
                     -- Funny enough, LastMaxBrakeInAtmo has stuff done to it to convert to a flat value
                     -- But we need the instant one back, to know how good we are at braking at this exact moment
 
-                    local curBrake = LastMaxBrakeInAtmo * utils.clamp(vSpd/100,0.1,1) * unit.getAtmosphereDensity()
-                    local totalNewtons = MaxKinematicUp * unit.getAtmosphereDensity() + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
-                    local stopDistance, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 0, core.getConstructMass(), 0, 0, totalNewtons) 
+                    local curBrake = LastMaxBrakeInAtmo * utils.clamp(vSpd/100,0.1,1) * atmosphere()
+                    local totalNewtons = maxKinematicUp * atmosphere() + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
+                    local stopDistance, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 0, constructMass(), 0, 0, totalNewtons) 
 
                     --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
 
