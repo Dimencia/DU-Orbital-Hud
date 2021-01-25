@@ -523,7 +523,9 @@ function SetupChecks()
     end
 
     -- Store their max kinematic parameters in ship-up direction for use in brake-landing
-    MaxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
+    if inAtmo then 
+        MaxKinematicUp = core.getMaxKinematicsParametersAlongAxis("vertical", core.getConstructOrientationUp())[1]
+    end
     -- For now, for simplicity, we only do this once at startup and store it.  If it's nonzero, later we use it. 
 
     WasInAtmo = inAtmo
