@@ -2385,12 +2385,15 @@ end
 
 function DrawPrograde (newContent, velocity, speed, centerX, centerY)
     if (speed > 5 and not inAtmo) or (speed > minAutopilotSpeed) then
-        local horizonRadius = circleRad -- Aliased globa
+        local horizonRadius = circleRad -- Aliased global
         local pitchRange = 20
         local yawRange = 20
         local velo = vec3(velocity)
         local relativePitch = getRelativePitch(velo)
         local relativeYaw = getRelativeYaw(velo)
+
+        local dotSize = 14
+        local dotRadius = dotSize/2
         
         local dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
         local dy = (relativePitch/pitchRange)*horizonRadius
@@ -2398,43 +2401,88 @@ function DrawPrograde (newContent, velocity, speed, centerX, centerY)
         local y = centerY + dy
 
         local distance = math.sqrt((dx)^2 + (dy)^2)
+
+        local progradeDot = [[<circle
+        cx="]] .. x .. [["
+        cy="]] .. y .. [["
+        r="]] .. dotRadius/dotSize .. [["
+        style="fill:#d7fe00;stroke:none;fill-opacity:1"/>
+     <circle
+        cx="]] .. x .. [["
+        cy="]] .. y .. [["
+        r="]] .. dotRadius .. [["
+        style="stroke:#d7fe00;stroke-opacity:1;fill:none" />
+     <path
+        d="M ]] .. x-dotSize .. [[,]] .. y .. [[ h ]] .. dotRadius .. [["
+        style="stroke:#d7fe00;stroke-opacity:1" />
+     <path
+        d="M ]] .. x+dotRadius .. [[,]] .. y .. [[ h ]] .. dotRadius .. [["
+        style="stroke:#d7fe00;stroke-opacity:1" />
+     <path
+        d="M ]] .. x .. [[,]] .. y-dotSize .. [[ v ]] .. dotRadius .. [["
+        style="stroke:#d7fe00;stroke-opacity:1" />]]
             
         if distance < horizonRadius then
-            newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', x, y)
+            newContent[#newContent + 1] = progradeDot
             -- Draw a dot or whatever at x,y, it's inside the AH
         else
             -- x,y is outside the AH.  Figure out how to draw an arrow on the edge of the circle pointing to it.
             -- First get the angle
             -- tan(ang) = o/a, tan(ang) = x/y
             -- atan(x/y) = ang (in radians)
-            -- There is a special overload for doing this on a circle and setting up the signs correctly for the quadrants
-            local angle = math.atan(dy,dx) 
+            -- This is a special overload for doing this on a circle and setting up the signs correctly for the quadrants
+            local angle = math.atan(dy,dx)
              -- Project this onto the circle
             -- These are backwards from what they're supposed to be.  Don't know why, that's just what makes it work apparently
-            local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
-            local projectedY = centerY + horizonRadius*math.sin(angle)
-                newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', projectedX, projectedY)
-        end
-        relativePitch = getRelativePitch(-velo)
-        relativeYaw = getRelativeYaw(-velo)
-        
-        dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
-        dy = (relativePitch/pitchRange)*horizonRadius
-        x = centerX + dx
-        y = centerY + dy
+            local arrowSize = 4
+            local projectedX = centerX + (horizonRadius)*math.cos(angle) -- Needs to be converted to deg?  Probably not
+            local projectedY = centerY + (horizonRadius)*math.sin(angle)
+            -- Draw an arrow that we will rotate by angle
+            -- Convert angle to degrees
+            newContent[#newContent + 1] = stringf('<g transform="rotate(%f %f %f)"><rect x="%f" y="%f" width="%f" height="%f" stroke="#d7fe00" fill="#d7fe00" /><path d="M %f %f l %f %f l %f %f z" fill="#d7fe00" stroke="#d7fe00"></g>', angle*(180/math.pi), projectedX, projectedY, projectedX-arrowSize, projectedY-arrowSize/2, arrowSize*2, arrowSize,
+                                                                                                                                                projectedX+arrowSize, projectedY - arrowSize, arrowSize, arrowSize, -arrowSize, arrowSize)
 
-        distance = math.sqrt((dx)^2 + (dy)^2)
-        -- Retrograde Dot
-        if( not inAtmo) then
+            --newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', projectedX, projectedY)
+        end
+
+        if(not inAtmo) then
+            relativePitch = getRelativePitch(-velo)
+            relativeYaw = getRelativeYaw(-velo)
+            
+            dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
+            dy = (relativePitch/pitchRange)*horizonRadius
+            x = centerX + dx
+            y = centerY + dy
+
+            distance = math.sqrt((dx)^2 + (dy)^2)
+            -- Retrograde Dot
+            
             if distance < horizonRadius then
-                newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', x, y)
+                local retrogradeDot = [[<circle
+                cx="]] .. x .. [["
+                cy="]] .. y .. [["
+                r="]] .. dotRadius .. [["
+                style="stroke:#d7fe00;stroke-opacity:1;fill:none" />
+             <path
+                d="M ]] .. x .. [[,]] .. y-dotSize .. [[ v ]] .. dotRadius .. [["
+                style="stroke:#d7fe00;stroke-opacity:1" id="l"/>
+             <use
+                xlink:href="#l"
+                transform="rotate(120,]] .. x .. [[,]] .. y .. [[)" />
+             <use
+                xlink:href="#l"
+                transform="rotate(-120,]] .. x .. [[,]] .. y .. [[)" />
+             <path
+                d="M ]] .. x-dotRadius .. [[,]] .. y .. [[ h ]] .. dotSize .. [["
+                style="stroke-width:0.5;stroke:#d7fe00;stroke-opacity:1"
+                transform="rotate(-45,]] .. x .. [[,]] .. y .. [[)" id="c"/>
+            <use
+                xlink:href="#c"
+                transform="rotate(-90,]] .. x .. [[,]] .. y .. [[)"/>]]
+                newContent[#newContent + 1] = retrogradeDot
                 -- Draw a dot or whatever at x,y, it's inside the AH
-            else
-                local angle = math.atan(dy,dx) 
-                local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
-                local projectedY = centerY + horizonRadius*math.sin(angle)
-                newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', projectedX, projectedY)
-            end
+            end -- Don't draw an arrow for this one, only prograde is that important
+
         end
     end
 end
@@ -4261,7 +4309,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.93
+    VERSION_NUMBER = 4.94
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
