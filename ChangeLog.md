@@ -1,6 +1,6 @@
 ## ChangeLog - Most recent changes at the top
 Version 4.93 - Databank copy and better brake landing
-- Added /copydatabank command (Note in theory this can be used to copy any databank)
+- Added /copydatabank command
 To use, put a blank databank on vehicle with existing dbHud databank already linked to chair. 
 Link from chair to blank. Rerun hud autoconf. You should see dbHud_1 and dbHud_2 on the slot list now. 
 Sit in the chair, type /copydatabank in lua chat, wait for it to say its done, then stand and remove copied databank.
