@@ -3158,7 +3158,7 @@ function Atlas()
                 name = 'Space',
                 planetarySystemId = 0,
                 radius = 0,
-                atmos = false,
+                hasAtmosphere = false,
                 gravity = 0
             },
             [2] = {
