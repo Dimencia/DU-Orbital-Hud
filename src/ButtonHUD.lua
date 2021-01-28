@@ -126,7 +126,7 @@ local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickR
                         "pitchSpeedFactor", "yawSpeedFactor", "rollSpeedFactor", "brakeSpeedFactor",
                         "brakeFlatFactor", "autoRollFactor", "turnAssistFactor", "torqueFactor",
                         "AutoTakeoffAltitude", "TargetHoverHeight", "AutopilotInterplanetaryThrottle",
-                        "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo",
+                        "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo", "ExternalAGG", "ShouldCheckDamage",
                         "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze", "hudTickRate",
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit",
