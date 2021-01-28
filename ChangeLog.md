@@ -1,4 +1,6 @@
 ## ChangeLog - Most recent changes at the top
+Version 4.933
+- Further improved BrakeLanding + Waypoint.  If you entered the ship while it was in atmo with hovers/boosters touching the ground, and if you are going to a waypoint and it accurately gets within 100m of that waypoint, and that waypoint has a valid Altitude that's above 0, it will do an Extreme Brake Land.  Since it knows the altitude it's landing at, it will descend in free-fall until just before it reaches the landing area
 
 Version 4.932
 - Changed Prograde and Retrograde from white/red dot to KSP markers

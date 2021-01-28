@@ -5000,7 +5000,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.932
+    VERSION_NUMBER = 4.933
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5875,11 +5875,29 @@ function script.onTick(timerId)
                     local stopDistance, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 0, constructMass(), 0, 0, totalNewtons) 
 
                     --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
+                    local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
+                    
+                    if knownAltitude then
+                        local targetAltitude = planet:getAltitude(CustomTarget.position)
+                        local distanceToGround = coreAltitude - targetAltitude - 30 -- Try to aim for 30m above the ground
+                        local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
+                        local horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
 
-                    if stopDistance >= actualStoppingDistance then
-                        BrakeIsOn = true
-                    else
-                        BrakeIsOn = false
+                        if horizontalDistance > 100 then
+                            -- We are too far off, don't trust our altitude data
+                            knownAltitude = false
+                        elseif distanceToGround <= stopDistance then
+                            BrakeIsOn = true
+                        else
+                            BrakeIsOn = false
+                        end
+                    end
+                    if not knownAltitude then
+                        if stopDistance >= actualStoppingDistance then
+                            BrakeIsOn = true
+                        else
+                            BrakeIsOn = false
+                        end
                     end
                     skipLandingRate = true
                 end
@@ -5888,7 +5906,7 @@ function script.onTick(timerId)
                 end
                 Nav.axisCommandManager:setTargetGroundAltitude(500)
                 Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(500)
-                
+
                 groundDistance = hovGndDet
                 if groundDistance > -1 then 
                     if math.abs(targetPitch - pitch) < autoPitchThreshold then 
