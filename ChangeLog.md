@@ -1,4 +1,11 @@
 ## ChangeLog - Most recent changes at the top
+
+Version 4.932
+- Changed Prograde and Retrograde from white/red dot to KSP markers
+- Changed when prograde is behind to change to Arrow pointing direction
+- Added ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disable for performance on very large ships
+- Incorporated Hyperion data Atlas for more specifics for each planet, will allow better control on different planets (features coming soon).
+
 Version 4.93 - Databank copy and better brake landing
 - Added /copydatabank command (Note in theory this can be used to copy any databank)
 To use, put a blank databank on vehicle with existing dbHud databank already linked to chair. 
