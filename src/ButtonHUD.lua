@@ -416,7 +416,7 @@ function ProcessElements()
                 end
                 curMass = mass - massEmpty
                 if fuelTankHandlingRocket > 0 then
-                    vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
+                    vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.1))
                 end
                 vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
                 rocketTanks[#rocketTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
