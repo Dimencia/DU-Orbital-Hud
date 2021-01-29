@@ -5870,12 +5870,16 @@ function script.onTick(timerId)
                     local curBrake = LastMaxBrakeInAtmo * utils.clamp(vSpd/100,0.1,1) * atmosphere()
                     local totalNewtons = maxKinematicUp * atmosphere() + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
                     
-                    local stopDistance1, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 100, constructMass(), 0, 0, totalNewtons) 
-                    local stopDistance2, _ = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, totalNewtons - curBrake/2) -- Low brake power for the last 100kph
+                    local stopDistance = 0
+                    if vSpd > 100 then
+                        local stopDistance1, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 100, constructMass(), 0, 0, totalNewtons) 
+                        local stopDistance2, _ = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, totalNewtons - curBrake/2) -- Low brake power for the last 100kph
+                        stopDistance = stopDistance1 + stopDistance2
+                    else
+                        stopDistance, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 0, constructMass(), 0, 0, totalNewtons - curBrake/2) 
+                    end
 
-                    local stopDistance = stopDistance1 + stopDistance2
-
-                    system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
+                    --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
                     local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
                     
                     if knownAltitude then
@@ -5925,7 +5929,7 @@ function script.onTick(timerId)
                         end
                     end
                 elseif StrongBrakes and (velocity:normalize():dot(-up) < 0.999) then
-                    system.print("Too much HSpeed, braking")
+                    --system.print("Too much HSpeed, braking")
                     BrakeIsOn = true
                 elseif vSpd < -brakeLandingRate and not skipLandingRate then
                     BrakeIsOn = true
