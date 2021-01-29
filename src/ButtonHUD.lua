@@ -5875,7 +5875,7 @@ function script.onTick(timerId)
 
                     local stopDistance = stopDistance1 + stopDistance2
 
-                    --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
+                    system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
                     local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
                     
                     if knownAltitude then
@@ -5883,11 +5883,6 @@ function script.onTick(timerId)
                         local distanceToGround = coreAltitude - targetAltitude - 50 -- Try to aim for 50m above the ground
                         local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
                         local horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
-
-                        local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
-                        -- We're overriding pitch and roll so, this will just set yaw, we can do this directly.  This is esp important during the approach
-                        AlignToWorldVector(targetVec)
-                        pitchInput2 = oldInput -- idk?  It should really have been set to 0 already...
 
                         if horizontalDistance > 100 then
                             -- We are too far off, don't trust our altitude data
@@ -5930,6 +5925,7 @@ function script.onTick(timerId)
                         end
                     end
                 elseif StrongBrakes and (velocity:normalize():dot(-up) < 0.999) then
+                    system.print("Too much HSpeed, braking")
                     BrakeIsOn = true
                 elseif vSpd < -brakeLandingRate and not skipLandingRate then
                     BrakeIsOn = true
