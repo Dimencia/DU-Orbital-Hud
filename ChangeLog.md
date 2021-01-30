@@ -1,4 +1,7 @@
 ## ChangeLog - Most recent changes at the top
+Version 4.935
+- Extremely dangerous BrakeLanding changes.  Brakelanding is now, again, faster - but attempts to put you at effectively 0m above the ground.  Please let me know if this breaks your ship so I can adjust it, but it works fine on all of mine.  May cause issues if things are under your ship when landing and aren't detected by your hovers/vboosters
+
 Version 4.934
 - More BrakeLanding and Waypoint improvements.  Waypoint and space autopilot alignment should now be more aggressive when it is very close to the target.  BrakeLanding should now be slightly safer and slower, particularly on ships that had a telemeter
 - BrakeLanding will end and lower you to the ground as soon as your vSpd is no longer negative, instead of waiting until you raise back up
