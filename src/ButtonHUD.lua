@@ -82,6 +82,7 @@ UseSatNav = false -- export: (Default: false) Toggle on if using Trog SatNav scr
 apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your autopilot features.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  
 hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate
 ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disabled for performance on very large ships
+BrakeLandingExtraDistance = 10 --export: (Default: 10) How many extra meters BrakeLanding should give you to brake, vs the math
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -5785,12 +5786,11 @@ function script.onTick(timerId)
             -- Align it prograde but keep whatever pitch inputs they gave us before, and ignore pitch input from alignment.
             -- So, you know, just yaw.
             local oldInput = pitchInput2
-            if velMag > minAutopilotSpeed and not spaceLaunch then
+            if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget then
                 AlignToWorldVector(vec3(velocity))
             end
             if VectorToTarget and CustomTarget ~= nil and AutopilotTargetIndex > 0 then
                 local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
-                -- We're overriding pitch and roll so, this will just set yaw, we can do this directly
                 AlignToWorldVector(targetVec, nil, DampingMultiplier) -- Don't dampen so hard in atmo... or harder?
 
                 --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
@@ -5905,11 +5905,12 @@ function script.onTick(timerId)
                             stopDistance, _ = Kinematic.computeDistanceAndTime(speedAfterBraking, 0, constructMass(), 0, 0, maxKinematicUp * atmosphere() + math.sqrt(curBrake) + airFriction - gravity) 
                         end
 
-                        system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
-                        if LandingGearGroundHeight == 0 then
-                            stopDistance = stopDistance+10 -- Add leeway for large ships with forcefields or landing gear
-                        else
-                            stopDistance = stopDistance + LandingGearGroundHeight + 1 -- Still needs something extra probably
+                        --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
+                        --if LandingGearGroundHeight == 0 then
+                            stopDistance = stopDistance+BrakeLandingExtraDistance -- Add leeway for large ships with forcefields or landing gear
+                        --else
+                        --    stopDistance = stopDistance + LandingGearGroundHeight + 1 -- Still needs something extra probably
+                        --end
                         local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
                         
                         if knownAltitude then
