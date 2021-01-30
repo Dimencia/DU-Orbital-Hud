@@ -5906,7 +5906,10 @@ function script.onTick(timerId)
                         end
 
                         system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
-                        stopDistance = stopDistance+10 -- Add leeway for large ships with forcefields or landing gear
+                        if LandingGearGroundHeight == 0 then
+                            stopDistance = stopDistance+10 -- Add leeway for large ships with forcefields or landing gear
+                        else
+                            stopDistance = stopDistance + LandingGearGroundHeight + 1 -- Still needs something extra probably
                         local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
                         
                         if knownAltitude then
