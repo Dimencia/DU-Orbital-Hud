@@ -1576,6 +1576,45 @@ function AlignToWorldVector(vector, tolerance, damping)
             return true
         end
         return false
+    elseif inAtmo and rateOfChange <= (minimumRateOfChange+0.08) and hovGndDet == -1 then
+        -- If stalling, align to velocity to fix the stall
+        -- IDK I'm just copy pasting all this
+        vector = vec3(core.getWorldVelocity())
+        local dampingMult = damping
+        if dampingMult == nil then
+            dampingMult = DampingMultiplier
+        end
+
+        if tolerance == nil then
+            tolerance = alignmentTolerance
+        end
+        vector = vec3(vector):normalize()
+        local targetVec = (vec3(core.getConstructWorldOrientationForward()) - vector)
+        local yawAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationRight()) * autopilotStrength
+        local pitchAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationUp()) * autopilotStrength
+        if previousYawAmount == 0 then previousYawAmount = yawAmount / 2 end
+        if previousPitchAmount == 0 then previousPitchAmount = pitchAmount / 2 end
+        -- Skip dampening at very low values, and force it to effectively overshoot so it can more accurately align back
+        -- Instead of taking literal forever to converge
+        if math.abs(yawAmount) < 0.1 then
+            yawInput2 = yawInput2 - yawAmount*5
+        else
+            yawInput2 = yawInput2 - (yawAmount + (yawAmount - previousYawAmount) * dampingMult)
+        end
+        if math.abs(pitchAmount) < 0.1 then
+            pitchInput2 = pitchInput2 + pitchAmount*5
+        else
+            pitchInput2 = pitchInput2 + (pitchAmount + (pitchAmount - previousPitchAmount) * dampingMult)
+        end
+
+
+        previousYawAmount = yawAmount
+        previousPitchAmount = pitchAmount
+        -- Return true or false depending on whether or not we're aligned
+        if math.abs(yawAmount) < tolerance and math.abs(pitchAmount) < tolerance then
+            return true
+        end
+        return false
     end
 end
 
@@ -5746,6 +5785,7 @@ function script.onTick(timerId)
             -- Even better if we smooth based on their velocity
             local minmax = 500 + velMag
             local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch
+
             if not AltitudeHold then
                 targetPitch = 0
             end
@@ -6004,7 +6044,8 @@ function script.onTick(timerId)
                 end
             end
             -- Copied from autoroll let's hope this is how a PID works... 
-            if math.abs(targetPitch - pitch) > autoPitchThreshold then
+            -- Don't pitch if there is significant roll, or if there is stall
+            if math.abs(targetPitch - pitch) > autoPitchThreshold and rateOfChange < minimumRateOfChange+0.08 and getRoll(core.getWorldVertical(), core.getConstructWorldOrientationForward(), core.getConstructWorldOrientationRight()) < 1 then
                 if (pitchPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                     pitchPID = pid.new(8 * 0.01, 0, 8 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                 end
