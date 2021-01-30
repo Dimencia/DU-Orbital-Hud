@@ -5866,7 +5866,7 @@ function script.onTick(timerId)
 
                     -- Funny enough, LastMaxBrakeInAtmo has stuff done to it to convert to a flat value
                     -- But we need the instant one back, to know how good we are at braking at this exact moment
-                    system.print("Max brake Gs: " .. LastMaxBrakeInAtmo/gravity)
+                    --system.print("Max brake Gs: " .. LastMaxBrakeInAtmo/gravity)
                     local curBrake = LastMaxBrakeInAtmo * utils.clamp(velMag/100,0.1,1) * atmosphere()
                     local totalNewtons = maxKinematicUp * atmosphere() + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
                     local brakeNewtons =  curBrake + airFriction - gravity
@@ -5879,7 +5879,7 @@ function script.onTick(timerId)
                     -- No no.  vFinal = vInitial + acceleration*time
                     
                     local speedAfterBraking = velMag - ((brakeNewtons/constructMass()) * brakeTravelTime)
-                    system.print("Speed now: " .. velMag .. " - After braking for 20m, speed will be " .. speedAfterBraking)
+                    --system.print("Speed now: " .. velMag .. " - After braking for 20m, speed will be " .. speedAfterBraking)
                     if speedAfterBraking < 0 then  
                         speedAfterBraking = 0 -- Just in case it gives us negative values
                     end
@@ -5906,6 +5906,7 @@ function script.onTick(timerId)
                         end
 
                         system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
+                        stopDistance = stopDistance+10 -- Add leeway for large ships with forcefields or landing gear
                         local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
                         
                         if knownAltitude then
