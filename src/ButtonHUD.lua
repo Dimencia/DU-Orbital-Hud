@@ -1557,12 +1557,12 @@ function AlignToWorldVector(vector, tolerance, damping)
         -- Skip dampening at very low values, and force it to effectively overshoot so it can more accurately align back
         -- Instead of taking literal forever to converge
         if math.abs(yawAmount) < 0.1 then
-            yawInput2 = yawInput2 - yawAmount*2
+            yawInput2 = yawInput2 - yawAmount*5
         else
             yawInput2 = yawInput2 - (yawAmount + (yawAmount - previousYawAmount) * dampingMult)
         end
         if math.abs(pitchAmount) < 0.1 then
-            pitchInput2 = pitchInput2 + pitchAmount*2
+            pitchInput2 = pitchInput2 + pitchAmount*5
         else
             pitchInput2 = pitchInput2 + (pitchAmount + (pitchAmount - previousPitchAmount) * dampingMult)
         end
@@ -5860,48 +5860,76 @@ function script.onTick(timerId)
                 if maxKinematicUp ~= nil and maxKinematicUp > 0 then
                     -- Calculate a landing rate instead since we know what their hovers can do
                     
-                    local gravity = planet.gravity*9.8*constructMass() -- We'll use a random BS value of a guess
-                    local airFriction = (vec3(core.getWorldAirFrictionAcceleration()):len() * constructMass())/2
-                    -- For our purposes, assume airFriction will fall off linearly over the braking time
+                    local gravity = planet:getGravity(core.getConstructWorldPos()):len() * constructMass() -- We'll use a random BS value of a guess
+                    local airFriction = math.sqrt(vec3(core.getWorldAirFrictionAcceleration()):len() * constructMass())
+                    -- airFriction falls off on a square
 
                     -- Funny enough, LastMaxBrakeInAtmo has stuff done to it to convert to a flat value
                     -- But we need the instant one back, to know how good we are at braking at this exact moment
-
-                    local curBrake = LastMaxBrakeInAtmo * utils.clamp(vSpd/100,0.1,1) * atmosphere()
+                    system.print("Max brake Gs: " .. LastMaxBrakeInAtmo/gravity)
+                    local curBrake = LastMaxBrakeInAtmo * utils.clamp(velMag/100,0.1,1) * atmosphere()
                     local totalNewtons = maxKinematicUp * atmosphere() + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
+                    local brakeNewtons =  curBrake + airFriction - gravity
+
+                    -- Compute the travel time from current speed, with brake acceleration, for 20m
+                    local brakeTravelTime = Kinematic.computeTravelTime(velMag, -brakeNewtons , 20)
+                    -- vFinal^2 = vInitial^2 + 2*acceleration*distance
+                    -- vFinal = math.sqrt(vInitia^2 + 2*acceleration*distance)
+
+                    -- No no.  vFinal = vInitial + acceleration*time
                     
-                    local stopDistance = 0
-                    if vSpd > 100 then
-                        local stopDistance1, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 100, constructMass(), 0, 0, totalNewtons) 
-                        local stopDistance2, _ = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, totalNewtons - curBrake/2) -- Low brake power for the last 100kph
-                        stopDistance = stopDistance1 + stopDistance2
+                    local speedAfterBraking = velMag - ((brakeNewtons/constructMass()) * brakeTravelTime)
+                    system.print("Speed now: " .. velMag .. " - After braking for 20m, speed will be " .. speedAfterBraking)
+                    if speedAfterBraking < 0 then  
+                        speedAfterBraking = 0 -- Just in case it gives us negative values
+                    end
+                    -- So then see if hovers can finish the job in the remaining distance
+
+                    local brakeStopDistance
+                    if velMag > 100 then
+                        local brakeStopDistance1, _ = Kinematic.computeDistanceAndTime(velMag, 100, constructMass(), 0, 0, curBrake)
+                        local brakeStopDistance2, _ = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, math.sqrt(curBrake))
+                        brakeStopDistance = brakeStopDistance1+brakeStopDistance2
                     else
-                        stopDistance, _ = Kinematic.computeDistanceAndTime(math.abs(vSpd), 0, constructMass(), 0, 0, totalNewtons - curBrake/2) 
+                        brakeStopDistance = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, math.sqrt(curBrake))
                     end
-
-                    --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
-                    local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
-                    
-                    if knownAltitude then
-                        local targetAltitude = planet:getAltitude(CustomTarget.position)
-                        local distanceToGround = coreAltitude - targetAltitude - 50 -- Try to aim for 50m above the ground
-                        local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
-                        local horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
-
-                        if horizontalDistance > 100 then
-                            -- We are too far off, don't trust our altitude data
-                            knownAltitude = false
-                        elseif distanceToGround <= stopDistance then
-                            BrakeIsOn = true
+                    if brakeStopDistance < 20 then
+                        BrakeIsOn = false -- We can stop in less than 20m from just brakes, we don't need to do anything
+                    else
+                        local stopDistance = 0
+                        if speedAfterBraking > 100 then
+                            local stopDistance1, _ = Kinematic.computeDistanceAndTime(speedAfterBraking, 100, constructMass(), 0, 0, totalNewtons) 
+                            local stopDistance2, _ = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, maxKinematicUp * atmosphere() + math.sqrt(curBrake) + airFriction - gravity) -- Low brake power for the last 100kph
+                            stopDistance = stopDistance1 + stopDistance2
                         else
-                            BrakeIsOn = false
+                            stopDistance, _ = Kinematic.computeDistanceAndTime(speedAfterBraking, 0, constructMass(), 0, 0, maxKinematicUp * atmosphere() + math.sqrt(curBrake) + airFriction - gravity) 
                         end
-                    end
-                    if not knownAltitude then
-                        if stopDistance >= distanceToStop then
-                            BrakeIsOn = true
-                        else
-                            BrakeIsOn = false
+
+                        system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
+                        local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
+                        
+                        if knownAltitude then
+                            local targetAltitude = planet:getAltitude(CustomTarget.position)
+                            local distanceToGround = coreAltitude - targetAltitude - 50 -- Try to aim for 50m above the ground
+                            local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
+                            local horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
+
+                            if horizontalDistance > 100 then
+                                -- We are too far off, don't trust our altitude data
+                                knownAltitude = false
+                            elseif distanceToGround <= stopDistance then
+                                BrakeIsOn = true
+                            else
+                                BrakeIsOn = false
+                            end
+                        end
+                        
+                        if not knownAltitude then
+                            if stopDistance >= distanceToStop then
+                                BrakeIsOn = true
+                            else
+                                BrakeIsOn = false
+                            end
                         end
                     end
                     skipLandingRate = true
