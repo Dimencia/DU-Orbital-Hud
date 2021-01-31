@@ -6226,13 +6226,13 @@ function script.onFlush()
     if (worldVertical:len() > 0.01 and atmosphere > 0.0) or ProgradeIsOn then
         local autoRollRollThreshold = 1.0
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
-        if autoRoll == true and currentRollDegAbs > autoRollRollThreshold and finalRollInput == 0 then
+        if autoRoll == true and math.abs(TargetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 then
             local targetRollDeg = TargetRoll
             --system.print("Trying to roll to " .. TargetRoll)
             local rollFactor = autoRollFactor
-            if TargetRoll ~= 0 then
-                rollFactor = rollFactor*4
-            end
+            --if TargetRoll ~= 0 then
+            --    rollFactor = rollFactor*4
+            --end
             if (rollPID == nil) then
                 rollPID = pid.new(rollFactor * 0.01, 0, rollFactor * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
             end
