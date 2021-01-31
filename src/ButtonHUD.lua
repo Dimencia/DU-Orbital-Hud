@@ -5852,7 +5852,7 @@ function script.onTick(timerId)
             if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget and not BrakeLanding then -- When do we even need this, just alt hold? lol
                 AlignToWorldVector(vec3(velocity))
             end
-            if VectorToTarget and CustomTarget ~= nil and AutopilotTargetIndex > 0 then
+            if VectorToTarget and CustomTarget ~= nil and AutopilotTargetIndex > 0 and not AutoTakeoff then
                 local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
 
                 -- Okay so, screw AlignToWorldVector.  Pitch is already handled, we just need to detect a Yaw value
