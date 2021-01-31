@@ -52,7 +52,7 @@ AutoTakeoffAltitude = 1000 -- export: (Default: 1000) How high above your ground
 TargetHoverHeight = 50 -- export: (Default: 50) Hover height when retracting landing gear
 LandingGearGroundHeight = 0 --export: (Default: 0) Set to AGL-1 when on ground (or 0)
 MaxGameVelocity = 8333.00 -- export: (Default: 8333.00) Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
-AutopilotTargetOrbit = 50000 -- export: (Default: 50000) How far you want the orbit to be from the planet in m.  200,000 = 1SU (Default 50000)
+TargetOrbitRadius = 1.4 -- export: (Default: 1.4) How tight you want to orbit the planet at end of autopilot.  The smaller the value the tighter the orbit.  1.4 sets an Alioth orbit of 56699m.
 AutopilotInterplanetaryThrottle = 1.0 -- export: (Default: 1.0) How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
 warmup = 32 -- export: (Default: 32) How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
 MouseYSensitivity = 0.003 --export: (Default: 0.003) For virtual joystick only
@@ -82,7 +82,7 @@ UseSatNav = false -- export: (Default: false) Toggle on if using Trog SatNav scr
 apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your autopilot features.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  
 hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate
 ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disabled for performance on very large ships
-CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the entered value
+CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -121,7 +121,7 @@ LastStartTime = 0
 SpaceTarget = false
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
-local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
+local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate", "freeLookToggle", "turnAssist",
                         "PrimaryR", "PrimaryG", "PrimaryB", "warmup", "DeadZone", "circleRad", "MouseXSensitivity",
                         "MouseYSensitivity", "MaxGameVelocity", "showHud", "autoRollPreference", "InvertMouse",
                         "pitchSpeedFactor", "yawSpeedFactor", "rollSpeedFactor", "brakeSpeedFactor",
@@ -2890,13 +2890,19 @@ function UpdateAutopilotTarget()
         AutopilotTargetCoords = CustomTarget.position
     end
     -- Determine the end speed
+    if autopilotTargetPlanet.name ~= "Space" then
+        if autopilotTargetPlanet.hasAtmosphere then 
+            AutopilotTargetOrbit = math.floor(autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.noAtmosphericDensityAltitude)
+        else
+            AutopilotTargetOrbit = math.floor(autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.surfaceMaxAltitude)
+        end
+    end
+    if autopilotTargetPlanet.name ~= "Space" then sprint(autopilotTargetPlanet.name.." Orbit Height: "..AutopilotTargetOrbit) end
     if CustomTarget ~= nil and CustomTarget.planetname == "Space" then 
         AutopilotEndSpeed = 0
     else
         _, AutopilotEndSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed(AutopilotTargetOrbit)
     end
-    -- AutopilotEndSpeed = 0
-    -- AutopilotPlanetGravity = autopilotTargetPlanet:getGravity(autopilotTargetPlanet.center + vec3({1,0,0}) * AutopilotTargetOrbit):len() -- Any direction, at our orbit height
     AutopilotPlanetGravity = 0 -- This is inaccurate unless we integrate and we're not doing that.  
     AutopilotAccelerating = false
     AutopilotBraking = false
@@ -5851,7 +5857,7 @@ function script.onTick(timerId)
             if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget and not BrakeLanding then -- When do we even need this, just alt hold? lol
                 AlignToWorldVector(vec3(velocity))
             end
-            if VectorToTarget and CustomTarget ~= nil and AutopilotTargetIndex > 0 and not AutoTakeoff then
+            if VectorToTarget and CustomTarget ~= nil and AutopilotTargetIndex > 0 then
                 local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
 
                 -- Okay so, screw AlignToWorldVector.  Pitch is already handled, we just need to detect a Yaw value
@@ -5901,7 +5907,7 @@ function script.onTick(timerId)
 
                 local yawDiff = targetYaw
 
-                if not stalling then
+                if not stalling and velMag > 100 then
                     if (yawPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                         yawPID = pid.new(8 * 0.01, 0, 8 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                     end
