@@ -5900,10 +5900,10 @@ function script.onTick(timerId)
                     brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 100, constructMass(), 0, 0,
                                                     curBrake + airFriction - gravity)
                     -- Then add in stopping from 100 to 0 at what averages to half brake power.  Assume no friction for this
-                    local lastDist, brakeTime2 = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, math.sqrt(curBrake) - gravity)
+                    local lastDist, brakeTime2 = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, curBrake/2)
                     brakeDistance = brakeDistance + lastDist
                 else -- Just calculate it regularly assuming the value will be halved while we do it, assuming no friction
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, math.sqrt(curBrake) - gravity)
+                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
                 end
                
 
@@ -6383,11 +6383,7 @@ function script.onActionStart(action)
             end
 
             if hasGear and not BrakeLanding then
-                if GearExtended then
-                    Nav.control.extendLandingGears() -- Actually extend/retract them
-                else
-                    Nav.control.retractLandingGears()
-                end
+                Nav.control.extendLandingGears() -- Actually extend
             end
         else
             if hasGear then
