@@ -1,10 +1,11 @@
 ## ChangeLog - Most recent changes at the top
-Version 4.94 - Atmo autopilot overhaul
+Version 5.000 - Atmo autopilot overhaul including bank turns, smoother autotakeoff, and improved braking features
 - Smooth takeoffs that only pitch up once you have momentum and aren't stalled
 - Better yawing to target to not stall when at low speeds and proceeding to waypoint
 - Will now roll to turn when at high speeds (>100m/s) and proceeding to waypoint, respecting stall limits
 - Improved waypoint accuracy with better yaw/roll convergence
-- New User Variable: CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the BrakeLandingRate user value
+- Further improved BrakeLanding + Waypoint.  If you entered the ship while it was in atmo with hovers/boosters touching the ground, and if you are going to a waypoint and it accurately gets within 100m of that waypoint, and that waypoint has a valid Altitude that's above 0, it will do an Extreme Brake Land.  Since it knows the altitude it's landing at, it will descend in free-fall until just before it reaches the landing area
+- New User Variable: CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be Calculated or use the existing BrakeLandingRate user value
 
 Version 4.935
 - Extremely dangerous BrakeLanding changes.  Brakelanding is now, again, faster - but attempts to put you at effectively 0m above the ground.  Please let me know if this breaks your ship so I can adjust it, but it works fine on all of mine.  May cause issues if things are under your ship when landing and aren't detected by your hovers/vboosters
