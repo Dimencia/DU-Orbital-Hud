@@ -5058,7 +5058,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.935
+    VERSION_NUMBER = 4.94
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5980,7 +5980,7 @@ function script.onTick(timerId)
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                 local skipLandingRate = false
                 local distanceToStop = 30 
-                if maxKinematicUp ~= nil and maxKinematicUp > 0 and CalculateBrakeLandingSpeed then
+                if maxKinematicUp ~= nil and maxKinematicUp > 0 then
                     -- Calculate a landing rate instead since we know what their hovers can do
                     
                     --local gravity = planet:getGravity(core.getConstructWorldPos()):len() * constructMass() -- We'll use a random BS value of a guess
@@ -6061,17 +6061,18 @@ function script.onTick(timerId)
                             else
                                 BrakeIsOn = false
                             end
+                            skipLandingRate = true
                         end
                         
-                        if not knownAltitude then
+                        if not knownAltitude and CalculateBrakeLandingSpeed then
                             if stopDistance >= distanceToStop then -- 10% padding
                                 BrakeIsOn = true
                             else
                                 BrakeIsOn = false
                             end
+                            skipLandingRate = true
                         end
                     end
-                    skipLandingRate = true
                 end
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                     Nav.control.cancelCurrentControlMasterMode()

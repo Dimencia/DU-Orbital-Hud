@@ -1,4 +1,10 @@
 ## ChangeLog - Most recent changes at the top
+Version 4.94 - Atmo autopilot overhaul
+- Smooth takeoffs that only pitch up once you have momentum and aren't stalled
+- Better yawing to target to not stall when at low speeds and proceeding to waypoint
+- Will now roll to turn when at high speeds (>100m/s) and proceeding to waypoint, respecting stall limits
+- Improved waypoint accuracy with better yaw/roll convergence
+
 Version 4.935
 - Extremely dangerous BrakeLanding changes.  Brakelanding is now, again, faster - but attempts to put you at effectively 0m above the ground.  Please let me know if this breaks your ship so I can adjust it, but it works fine on all of mine.  May cause issues if things are under your ship when landing and aren't detected by your hovers/vboosters
 
