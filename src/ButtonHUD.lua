@@ -82,6 +82,7 @@ UseSatNav = false -- export: (Default: false) Toggle on if using Trog SatNav scr
 apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your autopilot features.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  
 hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate
 ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disabled for performance on very large ships
+CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the entered value
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -132,7 +133,7 @@ local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickR
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
-                        "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit"}
+                        "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -272,7 +273,6 @@ local minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
 local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
 local deltaX = system.getMouseDeltaX()
 local deltaY = system.getMouseDeltaY()
-local manualBrakeLanding = false
 local stalling = false
 local lastApTickTime = system.getTime()
 local targetRoll = 0
@@ -6073,7 +6073,7 @@ function script.onTick(timerId)
                             skipLandingRate = true
                         end
                     end
-                    if manualBrakeLanding then skipLandingRate = false end
+                    if not CalculateBrakeLandingSpeed then skipLandingRate = false end
                 end
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                     Nav.control.cancelCurrentControlMasterMode()
@@ -6089,7 +6089,6 @@ function script.onTick(timerId)
                             BrakeLanding = false
                             AltitudeHold = false
                             GearExtended = true
-                            manualBrakeLanding = false
                             Nav.control.extendLandingGears()
                             Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
                             upAmount = 0
@@ -6449,7 +6448,6 @@ function script.onActionStart(action)
                 AutoTakeoff = false
                 AltitudeHold = false
                 BrakeLanding = true
-                manualBrakeLanding = true
                 autoRoll = true
                 GearExtended = false -- Don't actually toggle the gear yet though
             else
