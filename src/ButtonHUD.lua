@@ -997,7 +997,7 @@ function ToggleAltitudeHold()
             HoldAltitude = coreAltitude + AutoTakeoffAltitude
             GearExtended = false
             Nav.control.retractLandingGears()
-            Nav.axisCommandManager:setTargetGroundAltitude(500)
+            Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
             BrakeIsOn = true -- Engage brake for warmup
         end
         if spaceLaunch then HoldAltitude = 100000 end
@@ -6107,7 +6107,7 @@ function script.onTick(timerId)
                 end
             end
             if AutoTakeoff or spaceLaunch then
-                if targetPitch < 15 then
+                if targetPitch < 15 and (coreAltitude/HoldAltitude) > 0.75 then
                     AutoTakeoff = false -- No longer in ascent
                     if not spaceLaunch then 
                         if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
