@@ -275,6 +275,7 @@ local minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
 local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
 local deltaX = system.getMouseDeltaX()
 local deltaY = system.getMouseDeltaY()
+local manualBrakeLanding = false
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -6074,6 +6075,7 @@ function script.onTick(timerId)
                             skipLandingRate = true
                         end
                     end
+                    if manualBrakeLanding then skipLandingRate = false end
                 end
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                     Nav.control.cancelCurrentControlMasterMode()
@@ -6089,6 +6091,7 @@ function script.onTick(timerId)
                             BrakeLanding = false
                             AltitudeHold = false
                             GearExtended = true
+                            manualBrakeLanding = false
                             Nav.control.extendLandingGears()
                             Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
                             upAmount = 0
@@ -6448,6 +6451,7 @@ function script.onActionStart(action)
                 AutoTakeoff = false
                 AltitudeHold = false
                 BrakeLanding = true
+                manualBrakeLanding = true
                 autoRoll = true
                 GearExtended = false -- Don't actually toggle the gear yet though
             else
