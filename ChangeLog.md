@@ -1,5 +1,30 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.000 - Major Atmo autopilot overhaul including bank turns, smoother autotakeoff, and improved braking features
+- Factor for low FPS situations to help mechanics perform better due to the high element ships losing FPS while flying.
+- Smooth takeoffs that only pitch up once you have momentum and aren't stalled
+- Better yawing to target to not stall when at low speeds and proceeding to waypoint
+- Will now roll to turn when at high speeds (>100m/s) and proceeding to waypoint, respecting stall limits
+- Improved waypoint accuracy with better yaw/roll convergence
+- Further improved BrakeLanding + Waypoint.  If you entered the ship while it was in atmo with hovers/boosters touching the ground, and if you are going to a waypoint and 
+it accurately gets within 100m of that waypoint, and that waypoint has a valid Altitude that's above 0, it will do an Extreme Brake Land.  
+Since it knows the altitude it's landing at, it will descend in free-fall until just before it reaches the landing area
+- New User Variable: CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be Calculated or use the existing BrakeLandingRate user value
+- Orbit Height is now calculated rather than set.  This allows better support for different planets and moons
+- New User Variable: TargetOrbitRadius = 1.4 -- export: (Default: 1.4) How tight you want to orbit the planet at end of autopilot.  The smaller the value the tighter the orbit.  1.4 sets an Alioth orbit of 56699m.
+Formula is autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.noAtmosphericDensityAltitude if atmo or 
+autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.surfaceMaxAltitude if no atmo on target planet.
+
+Version 4.935
+- Extremely dangerous BrakeLanding changes.  Brakelanding is now, again, faster - but attempts to put you at effectively 0m above the ground.  Please let me know if this breaks your ship so I can adjust it, but it works fine on all of mine.  May cause issues if things are under your ship when landing and aren't detected by your hovers/vboosters
+
+Version 4.934
+- More BrakeLanding and Waypoint improvements.  Waypoint and space autopilot alignment should now be more aggressive when it is very close to the target.  BrakeLanding should now be slightly safer and slower, particularly on ships that had a telemeter
+- BrakeLanding will end and lower you to the ground as soon as your vSpd is no longer negative, instead of waiting until you raise back up
+
+Version 4.933
+- Further improved BrakeLanding + Waypoint.  If you entered the ship while it was in atmo with hovers/boosters touching the ground, and if you are going to a waypoint and it accurately gets within 100m of that waypoint, and that waypoint has a valid Altitude that's above 0, it will do an Extreme Brake Land.  Since it knows the altitude it's landing at, it will descend in free-fall until just before it reaches the landing area
+
 Version 4.932
 - Changed Prograde and Retrograde from white/red dot to KSP markers
 - Changed when prograde is behind to change to Arrow pointing direction
