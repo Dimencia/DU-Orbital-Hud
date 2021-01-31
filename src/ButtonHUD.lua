@@ -6383,14 +6383,16 @@ function script.onActionStart(action)
             end
 
             if hasGear and not BrakeLanding then
-                Nav.control.retractLandingGears() -- Actually extend/retract them
-                GearExtended = false
-            else
-                Nav.control.extendLandingGears()
-                GearExtended = true
+                if GearExtended then
+                    Nav.control.extendLandingGears() -- Actually extend/retract them
+                else
+                    Nav.control.retractLandingGears()
+                end
             end
         else
-            Nav.control.retractLandingGears()
+            if hasGear then
+                Nav.control.retractLandingGears()
+            end
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
         end
     elseif action == "light" then
