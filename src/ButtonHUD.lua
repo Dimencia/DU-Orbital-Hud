@@ -5910,7 +5910,7 @@ function script.onTick(timerId)
                 --StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
                 StrongBrakes = true -- We don't care about this or glide landing anymore and idk where all it gets used
                 system.print(distanceToTarget .. " to target, can brake to 0 in " .. brakeDistance)
-                if distanceToTarget <= brakeDistance then -- Since we're now accurate on this, we need to just brake-land immediately.  
+                if distanceToTarget <= brakeDistance+(velMag*apTickRate) then -- Since we're now accurate on this, we need to just brake-land immediately.  
                     VectorStatus = "Finalizing Approach" -- Left for compatibility
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
                         Nav.control.cancelCurrentControlMasterMode()
