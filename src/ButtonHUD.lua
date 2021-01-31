@@ -6058,13 +6058,14 @@ function script.onTick(timerId)
                                 knownAltitude = false
                             elseif distanceToGround <= stopDistance or stopDistance == -1 then
                                 BrakeIsOn = true
+                                skipLandingRate = true
                             else
                                 BrakeIsOn = false
+                                skipLandingRate = true
                             end
-                            skipLandingRate = true
                         end
                         
-                        if not knownAltitude then
+                        if not knownAltitude and CalculateBrakeLandingSpeed then
                             if stopDistance >= distanceToStop then -- 10% padding
                                 BrakeIsOn = true
                             else
@@ -6073,7 +6074,6 @@ function script.onTick(timerId)
                             skipLandingRate = true
                         end
                     end
-                    if not CalculateBrakeLandingSpeed then skipLandingRate = false end
                 end
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                     Nav.control.cancelCurrentControlMasterMode()
