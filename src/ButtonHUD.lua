@@ -6030,6 +6030,7 @@ function script.onTick(timerId)
                     end
                     if brakeStopDistance < 20 then
                         BrakeIsOn = false -- We can stop in less than 20m from just brakes, we don't need to do anything
+                        -- This gets overridden later if we don't know the altitude or don't want to calculate
                     else
                         local stopDistance = 0
                         if speedAfterBraking > 100 then
