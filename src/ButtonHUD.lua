@@ -119,8 +119,6 @@ LastMaxBrakeInAtmo = 0
 AntigravTargetAltitude = core.getAltitude()
 LastStartTime = 0
 SpaceTarget = false
-LastApTickTime = system.getTime()
-TargetRoll = 0
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
@@ -276,6 +274,9 @@ local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one lo
 local deltaX = system.getMouseDeltaX()
 local deltaY = system.getMouseDeltaY()
 local manualBrakeLanding = false
+local stalling = false
+local lastApTickTime = system.getTime()
+local targetRoll = 0
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -1609,8 +1610,6 @@ function AlignToWorldVector(vector, tolerance, damping)
         else
             pitchInput2 = pitchInput2 + (pitchAmount + (pitchAmount - previousPitchAmount) * dampingMult)
         end
-
-
         previousYawAmount = yawAmount
         previousPitchAmount = pitchAmount
         -- Return true or false depending on whether or not we're aligned
@@ -5403,8 +5402,8 @@ function script.onTick(timerId)
         inAtmo = (atmosphere() > 0)
 
         local time = system.getTime()
-        local deltaTick = time - LastApTickTime
-        LastApTickTime = time
+        local deltaTick = time - lastApTickTime
+        lastApTickTime = time
 
         local localVel = core.getVelocity()
         local currentYaw = getRelativeYaw(localVel)
@@ -5429,7 +5428,7 @@ function script.onTick(timerId)
         local worldV = vec3(core.getWorldVertical())
         local pitch = getPitch(worldV, constrF, constrR)
         local gravity = planet:getGravity(core.getConstructWorldPos()):len() * constructMass()
-        TargetRoll = 0
+        targetRoll = 0
         local roll = getRoll(worldV, constrF, constrR)
         local radianRoll = math.abs((roll / 180) * math.pi)
         local corrX = math.cos(radianRoll)
@@ -5886,7 +5885,7 @@ function script.onTick(timerId)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > 100 then
-                    TargetRoll = utils.clamp(targetYaw, -90, 90)
+                    targetRoll = utils.clamp(targetYaw, -90, 90)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
                     -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  
@@ -6229,11 +6228,11 @@ function script.onFlush()
     if (worldVertical:len() > 0.01 and atmosphere > 0.0) or ProgradeIsOn then
         local autoRollRollThreshold = 1.0
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
-        if autoRoll == true and math.abs(TargetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 then
-            local targetRollDeg = TargetRoll
-            --system.print("Trying to roll to " .. TargetRoll)
+        if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 then
+            local targetRollDeg = targetRoll
+            --system.print("Trying to roll to " .. targetRoll)
             local rollFactor = autoRollFactor
-            --if TargetRoll ~= 0 then
+            --if targetRoll ~= 0 then
             --    rollFactor = rollFactor*4
             --end
             if (rollPID == nil) then
