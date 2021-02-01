@@ -1,7 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
 Version 5.002
-- Modified Alt-4 and Alt-6 take offs to set cruise control to AtmoSpeedLimit setting and release brake.  Alt-4 or Alt-6 while flying will not change speed.  Speed can be lowered after it sets like normal.
+- When activating autopilot, the on-screen waypoint is changed to show the autopilot destination.  This is a show thing only, no effect on AP destination, so can be changed if wanted via normal waypoint usage.
 
 Version 5.001
 - Readded autoRollThreshold parameter

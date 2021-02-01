@@ -277,7 +277,6 @@ local deltaY = system.getMouseDeltaY()
 local stalling = false
 local lastApTickTime = system.getTime()
 local targetRoll = 0
-local initialSpeedSet = false
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -624,6 +623,46 @@ function AddLocationsToAtlas() -- Just called once during init really
     UpdateAtlasLocationsList()
 end
 
+function float_eq(a, b)
+    if a == 0 then
+        return math.abs(b) < 1e-09
+    end
+    if b == 0 then
+        return math.abs(a) < 1e-09
+    end
+    return math.abs(a - b) < math.max(math.abs(a), math.abs(b)) * epsilon
+end
+
+function zeroConvertToMapPosition(planet, worldCoordinates)
+    local worldVec = vec3(worldCoordinates)
+    if planet.bodyId == 0 then
+        return setmetatable({
+            latitude = worldVec.x,
+            longitude = worldVec.y,
+            altitude = worldVec.z,
+            bodyId = 0,
+            systemId = planet.planetarySystemId
+        }, MapPosition)
+    end
+    local coords = worldVec - planet.center
+    local distance = coords:len()
+    local altitude = distance - planet.radius
+    local latitude = 0
+    local longitude = 0
+    if not float_eq(distance, 0) then
+        local phi = math.atan(coords.y, coords.x)
+        longitude = phi >= 0 and phi or (2 * math.pi + phi)
+        latitude = math.pi / 2 - math.acos(coords.z / distance)
+    end
+    return setmetatable({
+        latitude = math.deg(latitude),
+        longitude = math.deg(longitude),
+        altitude = altitude,
+        bodyId = planet.bodyId,
+        systemId = planet.planetarySystemId
+    }, MapPosition)
+end
+
 function zeroConvertToWorldCoordinates(pos) -- Many thanks to SilverZero for this.
     local num  = ' *([+-]?%d+%.?%d*e?[+-]?%d*)'
     local posPattern = '::pos{' .. num .. ',' .. num .. ',' ..  num .. ',' .. num ..  ',' .. num .. '}'    
@@ -858,7 +897,6 @@ function ToggleWidgets()
     end
 end
 
-
 function SetupInterplanetaryPanel() -- Interplanetary helper
     panelInterplanetary = system.createWidgetPanel("Interplanetary Helper")
     interplanetaryHeader = system.createWidget(panelInterplanetary, "value")
@@ -980,7 +1018,6 @@ end
 
 function ToggleAltitudeHold()
     AltitudeHold = not AltitudeHold
-    initialSpeedSet = false
     if AltitudeHold then
         Autopilot = false
         ProgradeIsOn = false
@@ -1001,12 +1038,8 @@ function ToggleAltitudeHold()
             HoldAltitude = coreAltitude + AutoTakeoffAltitude
             GearExtended = false
             Nav.control.retractLandingGears()
+            BrakeIsOn = true
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
-            if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
-                Nav.control.cancelCurrentControlMasterMode()
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, AtmoSpeedLimit)
-            end
-            BrakeIsOn = false -- Engage brake for warmup
         end
         if spaceLaunch then HoldAltitude = 100000 end
     else
@@ -1063,6 +1096,9 @@ function ToggleAutopilot()
         -- e. If our velocity vector is lined up to go over the target position, calculate our brake distance at current speed in atmo
         -- f. If our distance to the target (ignoring altitude) is within our current brakeDistance, engage brake-landing
         -- f2. Should we even try to let this happen on ships with bad brakes.  Eventually, try that.  For now just don't let them use this
+        local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, AutopilotTargetCoords)
+        waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+        system.setWaypoint(waypoint)
         if CustomTarget ~= nil then
             LockPitch = nil
             SpaceTarget = (CustomTarget.planetname == "Space")
@@ -2904,7 +2940,6 @@ function UpdateAutopilotTarget()
             AutopilotTargetOrbit = math.floor(autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.surfaceMaxAltitude)
         end
     end
-    if autopilotTargetPlanet.name ~= "Space" then sprint(autopilotTargetPlanet.name.." Orbit Height: "..AutopilotTargetOrbit) end
     if CustomTarget ~= nil and CustomTarget.planetname == "Space" then 
         AutopilotEndSpeed = 0
     else
@@ -6123,7 +6158,9 @@ function script.onTick(timerId)
                 if targetPitch < 15 and (coreAltitude/HoldAltitude) > 0.75 then
                     AutoTakeoff = false -- No longer in ascent
                     if not spaceLaunch then 
-                        initialSpeedSet = false
+                        if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+                            Nav.control.cancelCurrentControlMasterMode()
+                        end
                     elseif spaceLaunch and velMag < minAutopilotSpeed then
                         Autopilot = true
                         spaceLaunch = false
@@ -6147,14 +6184,6 @@ function script.onTick(timerId)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 1500)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
-                    end
-                elseif not initialSpeedSet then
-                    if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= AtmoSpeedLimit then -- This thing is dumb.
-                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, AtmoSpeedLimit)
-                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
-                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
-                    else
-                        initialSpeedSet = true
                     end
                 end
             end
