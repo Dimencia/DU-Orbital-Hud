@@ -83,6 +83,7 @@ apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for you
 hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate
 ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disabled for performance on very large ships
 CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
+autoRollRollThreshold = 1.0 --export: (Default: 1.0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -6230,7 +6231,6 @@ function script.onFlush()
 
     -- In atmosphere or aligning prograde with orbit?
     if (worldVertical:len() > 0.01 and atmosphere > 0.0) or ProgradeIsOn then
-        local autoRollRollThreshold = 1.0
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
         if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 then
             local targetRollDeg = targetRoll
