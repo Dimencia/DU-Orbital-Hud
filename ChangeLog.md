@@ -1,4 +1,6 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.001
+- Readded autoRollThreshold parameter
 
 Version 5.000 - Major Atmo autopilot overhaul including bank turns, smoother autotakeoff, and improved braking features
 - Factor for low FPS situations to help mechanics perform better due to the high element ships losing FPS while flying.
@@ -6,9 +8,7 @@ Version 5.000 - Major Atmo autopilot overhaul including bank turns, smoother aut
 - Better yawing to target to not stall when at low speeds and proceeding to waypoint
 - Will now roll to turn when at high speeds (>100m/s) and proceeding to waypoint, respecting stall limits
 - Improved waypoint accuracy with better yaw/roll convergence
-- Further improved BrakeLanding + Waypoint.  If you are going to a waypoint and 
-it accurately gets within 100m of that waypoint, and that waypoint has a valid Altitude that's above 0, it will do an Extreme Brake Land.  
-Since it knows the altitude it's landing at, it will descend in free-fall until just before it reaches the landing area
+- Further improved BrakeLanding + Waypoint.  If you are going to a waypoint and it accurately gets within 100m of that waypoint, and that waypoint has a valid Altitude that's above 0, it will do an Extreme Brake Land.  Since it knows the altitude it's landing at, it will descend in free-fall until 100m before it reaches the landing area.
 - New User Variable: CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be Calculated or use the existing BrakeLandingRate user value
 - Orbit Height is now calculated rather than set.  This allows better support for different planets and moons
 - New User Variable: TargetOrbitRadius = 1.4 -- export: (Default: 1.4) How many planet radiuses you want Autopilot to orbit above any given planet.  Values below 1 imply orbiting inside of the planet - do not do this.  Default of 1.4 should result in Alioth orbit of 56699m.  Atmosphere and mountains on moons are handled automatically
