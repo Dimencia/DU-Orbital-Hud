@@ -277,6 +277,7 @@ local deltaY = system.getMouseDeltaY()
 local stalling = false
 local lastApTickTime = system.getTime()
 local targetRoll = 0
+local ahDoubleClick = 0
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -534,7 +535,7 @@ function SetupChecks()
         maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("ground", core.getConstructOrientationUp())[1]
     end
     -- For now, for simplicity, we only do this once at startup and store it.  If it's nonzero, later we use it. 
-
+    userControlScheme = string.lower(userControlScheme)
     WasInAtmo = inAtmo
 end
 
@@ -633,20 +634,20 @@ function float_eq(a, b)
     return math.abs(a - b) < math.max(math.abs(a), math.abs(b)) * epsilon
 end
 
-function zeroConvertToMapPosition(planet, worldCoordinates)
+function zeroConvertToMapPosition(targetplanet, worldCoordinates)
     local worldVec = vec3(worldCoordinates)
-    if planet.bodyId == 0 then
+    if targetplanet.bodyId == 0 then
         return setmetatable({
             latitude = worldVec.x,
             longitude = worldVec.y,
             altitude = worldVec.z,
             bodyId = 0,
-            systemId = planet.planetarySystemId
+            systemId = targetplanet.planetarySystemId
         }, MapPosition)
     end
-    local coords = worldVec - planet.center
+    local coords = worldVec - targetplanet.center
     local distance = coords:len()
-    local altitude = distance - planet.radius
+    local altitude = distance - targetplanet.radius
     local latitude = 0
     local longitude = 0
     if not float_eq(distance, 0) then
@@ -658,8 +659,8 @@ function zeroConvertToMapPosition(planet, worldCoordinates)
         latitude = math.deg(latitude),
         longitude = math.deg(longitude),
         altitude = altitude,
-        bodyId = planet.bodyId,
-        systemId = planet.planetarySystemId
+        bodyId = targetplanet.bodyId,
+        systemId = targetplanet.planetarySystemId
     }, MapPosition)
 end
 
@@ -1017,6 +1018,18 @@ function ToggleLockPitch()
 end
 
 function ToggleAltitudeHold()
+    local time = system.getTime()
+    if (time - ahDoubleClick) < 1.5 then
+        if planet.hasAtmosphere then
+            HoldAltitude = planet.spaceEngineMinAltitude - 50
+            ahDoubleClick = -1
+            if AltitudeHold then 
+                return 
+            end
+        end
+    else
+        ahDoubleClick = time
+    end
     AltitudeHold = not AltitudeHold
     if AltitudeHold then
         Autopilot = false
@@ -1029,13 +1042,13 @@ function ToggleAltitudeHold()
         LockPitch = nil
         if (not GearExtended and not BrakeIsOn) or not inAtmo then -- Never autotakeoff in space
             AutoTakeoff = false
-            HoldAltitude = coreAltitude
-           if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+            if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
+            if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                 Nav.control.cancelCurrentControlMasterMode()
             end
         else
             AutoTakeoff = true
-            HoldAltitude = coreAltitude + AutoTakeoffAltitude
+            if ahDoubleClick > -1 then HoldAltitude = coreAltitude + AutoTakeoffAltitude end
             GearExtended = false
             Nav.control.retractLandingGears()
             BrakeIsOn = true
@@ -5141,6 +5154,7 @@ function script.onStart()
         -- That was a lot of work with dirty strings and json.  Clean up
         collectgarbage("collect")
         -- Start timers
+        coroutine.yield()
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("hudTick", hudTickRate)
         unit.setTimer("oneSecond", 1)
@@ -5148,7 +5162,9 @@ function script.onStart()
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
+        msgText = msgText.."\nSTARUP SEQUENCE COMPLETE"
     end)
+
 end
 
 function SaveDataBank(copy)
