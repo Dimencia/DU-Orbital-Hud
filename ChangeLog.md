@@ -1,4 +1,8 @@
 ## ChangeLog - Most recent changes at the top
+
+Version 5.002
+- Modified Alt-4 and Alt-6 take offs to set cruise control to AtmoSpeedLimit setting and release brake.  Alt-4 or Alt-6 while flying will not change speed.  Speed can be lowered after it sets like normal.
+
 Version 5.001
 - Readded autoRollThreshold parameter
 

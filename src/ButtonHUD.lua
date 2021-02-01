@@ -277,6 +277,7 @@ local deltaY = system.getMouseDeltaY()
 local stalling = false
 local lastApTickTime = system.getTime()
 local targetRoll = 0
+local initialSpeedSet = false
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -979,6 +980,7 @@ end
 
 function ToggleAltitudeHold()
     AltitudeHold = not AltitudeHold
+    initialSpeedSet = false
     if AltitudeHold then
         Autopilot = false
         ProgradeIsOn = false
@@ -1000,7 +1002,11 @@ function ToggleAltitudeHold()
             GearExtended = false
             Nav.control.retractLandingGears()
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
-            BrakeIsOn = true -- Engage brake for warmup
+            if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+                Nav.control.cancelCurrentControlMasterMode()
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, AtmoSpeedLimit)
+            end
+            BrakeIsOn = false -- Engage brake for warmup
         end
         if spaceLaunch then HoldAltitude = 100000 end
     else
@@ -5064,7 +5070,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.001
+    VERSION_NUMBER = 5.002
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6117,9 +6123,7 @@ function script.onTick(timerId)
                 if targetPitch < 15 and (coreAltitude/HoldAltitude) > 0.75 then
                     AutoTakeoff = false -- No longer in ascent
                     if not spaceLaunch then 
-                        if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
-                            Nav.control.cancelCurrentControlMasterMode()
-                        end
+                        initialSpeedSet = false
                     elseif spaceLaunch and velMag < minAutopilotSpeed then
                         Autopilot = true
                         spaceLaunch = false
@@ -6143,6 +6147,14 @@ function script.onTick(timerId)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 1500)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
+                    end
+                elseif not initialSpeedSet then
+                    if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= AtmoSpeedLimit then -- This thing is dumb.
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, AtmoSpeedLimit)
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
+                    else
+                        initialSpeedSet = true
                     end
                 end
             end
