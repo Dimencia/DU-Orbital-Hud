@@ -277,6 +277,7 @@ local deltaY = system.getMouseDeltaY()
 local stalling = false
 local lastApTickTime = system.getTime()
 local targetRoll = 0
+local ahDoubleClick = 0
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -534,7 +535,7 @@ function SetupChecks()
         maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("ground", core.getConstructOrientationUp())[1]
     end
     -- For now, for simplicity, we only do this once at startup and store it.  If it's nonzero, later we use it. 
-
+    userControlScheme = string.lower(userControlScheme)
     WasInAtmo = inAtmo
 end
 
@@ -621,6 +622,46 @@ function AddLocationsToAtlas() -- Just called once during init really
         table.insert(atlas[0], v)
     end
     UpdateAtlasLocationsList()
+end
+
+function float_eq(a, b)
+    if a == 0 then
+        return math.abs(b) < 1e-09
+    end
+    if b == 0 then
+        return math.abs(a) < 1e-09
+    end
+    return math.abs(a - b) < math.max(math.abs(a), math.abs(b)) * epsilon
+end
+
+function zeroConvertToMapPosition(targetplanet, worldCoordinates)
+    local worldVec = vec3(worldCoordinates)
+    if targetplanet.bodyId == 0 then
+        return setmetatable({
+            latitude = worldVec.x,
+            longitude = worldVec.y,
+            altitude = worldVec.z,
+            bodyId = 0,
+            systemId = targetplanet.planetarySystemId
+        }, MapPosition)
+    end
+    local coords = worldVec - targetplanet.center
+    local distance = coords:len()
+    local altitude = distance - targetplanet.radius
+    local latitude = 0
+    local longitude = 0
+    if not float_eq(distance, 0) then
+        local phi = math.atan(coords.y, coords.x)
+        longitude = phi >= 0 and phi or (2 * math.pi + phi)
+        latitude = math.pi / 2 - math.acos(coords.z / distance)
+    end
+    return setmetatable({
+        latitude = math.deg(latitude),
+        longitude = math.deg(longitude),
+        altitude = altitude,
+        bodyId = targetplanet.bodyId,
+        systemId = targetplanet.planetarySystemId
+    }, MapPosition)
 end
 
 function zeroConvertToWorldCoordinates(pos) -- Many thanks to SilverZero for this.
@@ -857,7 +898,6 @@ function ToggleWidgets()
     end
 end
 
-
 function SetupInterplanetaryPanel() -- Interplanetary helper
     panelInterplanetary = system.createWidgetPanel("Interplanetary Helper")
     interplanetaryHeader = system.createWidget(panelInterplanetary, "value")
@@ -978,6 +1018,18 @@ function ToggleLockPitch()
 end
 
 function ToggleAltitudeHold()
+    local time = system.getTime()
+    if (time - ahDoubleClick) < 1.5 then
+        if planet.hasAtmosphere then
+            HoldAltitude = planet.spaceEngineMinAltitude - 50
+            ahDoubleClick = -1
+            if AltitudeHold then 
+                return 
+            end
+        end
+    else
+        ahDoubleClick = time
+    end
     AltitudeHold = not AltitudeHold
     if AltitudeHold then
         Autopilot = false
@@ -990,17 +1042,17 @@ function ToggleAltitudeHold()
         LockPitch = nil
         if (not GearExtended and not BrakeIsOn) or not inAtmo then -- Never autotakeoff in space
             AutoTakeoff = false
-            HoldAltitude = coreAltitude
-           if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+            if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
+            if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                 Nav.control.cancelCurrentControlMasterMode()
             end
         else
             AutoTakeoff = true
-            HoldAltitude = coreAltitude + AutoTakeoffAltitude
+            if ahDoubleClick > -1 then HoldAltitude = coreAltitude + AutoTakeoffAltitude end
             GearExtended = false
             Nav.control.retractLandingGears()
+            BrakeIsOn = true
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
-            BrakeIsOn = true -- Engage brake for warmup
         end
         if spaceLaunch then HoldAltitude = 100000 end
     else
@@ -1057,6 +1109,9 @@ function ToggleAutopilot()
         -- e. If our velocity vector is lined up to go over the target position, calculate our brake distance at current speed in atmo
         -- f. If our distance to the target (ignoring altitude) is within our current brakeDistance, engage brake-landing
         -- f2. Should we even try to let this happen on ships with bad brakes.  Eventually, try that.  For now just don't let them use this
+        local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, AutopilotTargetCoords)
+        waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+        system.setWaypoint(waypoint)
         if CustomTarget ~= nil then
             LockPitch = nil
             SpaceTarget = (CustomTarget.planetname == "Space")
@@ -2898,7 +2953,6 @@ function UpdateAutopilotTarget()
             AutopilotTargetOrbit = math.floor(autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.surfaceMaxAltitude)
         end
     end
-    if autopilotTargetPlanet.name ~= "Space" then sprint(autopilotTargetPlanet.name.." Orbit Height: "..AutopilotTargetOrbit) end
     if CustomTarget ~= nil and CustomTarget.planetname == "Space" then 
         AutopilotEndSpeed = 0
     else
@@ -5064,7 +5118,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.001
+    VERSION_NUMBER = 5.002
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5100,6 +5154,7 @@ function script.onStart()
         -- That was a lot of work with dirty strings and json.  Clean up
         collectgarbage("collect")
         -- Start timers
+        coroutine.yield()
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("hudTick", hudTickRate)
         unit.setTimer("oneSecond", 1)
@@ -5107,7 +5162,9 @@ function script.onStart()
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
+        msgText = msgText.."\nSTARUP SEQUENCE COMPLETE"
     end)
+
 end
 
 function SaveDataBank(copy)

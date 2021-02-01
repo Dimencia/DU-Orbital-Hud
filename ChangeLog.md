@@ -1,4 +1,9 @@
 ## ChangeLog - Most recent changes at the top
+
+Version 5.002
+- When activating autopilot, the on-screen waypoint is changed to show the autopilot destination.  This is a show thing only, no effect on AP destination, so can be changed if wanted via normal waypoint usage.
+- Hitting alt-6 2x withing 1.5 seconds will set HoldAltitude to 50m below space engine min atmosphere height (generally 11% atmo density).
+
 Version 5.001
 - Readded autoRollThreshold parameter
 
