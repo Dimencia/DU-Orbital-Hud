@@ -1,4 +1,8 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.1
+- Autopilot alignment improved, should now efficiently realign orbits, and more effectively get to the desired Projected Altitude
+- Autopilot widget now shows target orbit altitude
+- AtmoSpeedLimit no longer brakes upon reaching max speed, but goes into cruise.  This saves fuel and works smoothly.  As always, alt+r cancels cruise mode
 
 Version 5.002
 - When activating autopilot, the on-screen waypoint is changed to show the autopilot destination.  This is a show thing only, no effect on AP destination, so can be changed if wanted via normal waypoint usage.
