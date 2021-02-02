@@ -367,7 +367,9 @@ function ProcessElements()
     local checkTanks = (fuelX ~= 0 and fuelY ~= 0)
     for k in pairs(elementsID) do
         local type = eleType(elementsID[k])
+        sprint(type)
         if (type == "Landing Gear") then
+            sprint("HERE1")
             hasGear = true
         end
         if (type == "Dynamic Core Unit") then
@@ -495,6 +497,7 @@ function SetupChecks()
         system.freeze(0)
     end
     if hasGear then
+        sprint("HERE2")
         GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
         if GearExtended then
             Nav.control.extendLandingGears()
@@ -1048,7 +1051,7 @@ function ToggleAltitudeHold()
         Reentry = false
         autoRoll = true
         LockPitch = nil
-        if (not GearExtended and not BrakeIsOn) or not inAtmo then -- Never autotakeoff in space
+        if (not GearExtended and not BrakeIsOn) or not inAtmo or (antigrav and antigrav.getState() == 1) then -- Never autotakeoff in space
             AutoTakeoff = false
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
@@ -5139,27 +5142,24 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.1
+    VERSION_NUMBER = 5.100
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
             {1000, 5000, 10000, 20000, 30000})
 
-        SetupChecks() -- All the if-thens to set up for particular ship.  Specifically override these with the saved variables if available
-
         -- Load Saved Variables
         LoadVariables()
-
         coroutine.yield() -- Give it some time to breathe before we do the rest
 
         -- Find elements we care about
         ProcessElements()
-
         coroutine.yield() -- Give it some time to breathe before we do the rest
 
+        SetupChecks() -- All the if-thens to set up for particular ship.  Specifically override these with the saved variables if available
         SetupButtons() -- Set up all the pushable buttons.
-
         coroutine.yield() -- Just to make sure
+
         -- Set up Jaylebreak and atlas
         SetupAtlas()
         PlanetaryReference = PlanetRef()
@@ -5170,20 +5170,23 @@ function script.onStart()
         UpdateAtlasLocationsList()
         UpdateAutopilotTarget()
         coroutine.yield()
+
         unit.hide()
         system.showScreen(1)
         -- That was a lot of work with dirty strings and json.  Clean up
         collectgarbage("collect")
         -- Start timers
         coroutine.yield()
+
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("hudTick", hudTickRate)
         unit.setTimer("oneSecond", 1)
         unit.setTimer("tenthSecond", 1/10)
+
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
-        --msgText = msgText.."\nSTARTUP SEQUENCE COMPLETE"
+
     end)
 
 end
