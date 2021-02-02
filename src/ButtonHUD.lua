@@ -367,7 +367,9 @@ function ProcessElements()
     local checkTanks = (fuelX ~= 0 and fuelY ~= 0)
     for k in pairs(elementsID) do
         local type = eleType(elementsID[k])
+        sprint(type)
         if (type == "Landing Gear") then
+            sprint("HERE1")
             hasGear = true
         end
         if (type == "Dynamic Core Unit") then
@@ -467,7 +469,8 @@ function SetupChecks()
         end
     end
     -- Close door and retract ramp if available
-    if door then
+    local atmo = atmosphere()
+    if door and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(door) do
             v.toggle()
         end
@@ -477,7 +480,7 @@ function SetupChecks()
             v.toggle()
         end
     end
-    if forcefield then
+    if forcefield and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(forcefield) do
             v.toggle()
         end
@@ -494,6 +497,7 @@ function SetupChecks()
         system.freeze(0)
     end
     if hasGear then
+        sprint("HERE2")
         GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
         if GearExtended then
             Nav.control.extendLandingGears()
@@ -938,6 +942,13 @@ function SetupInterplanetaryPanel() -- Interplanetary helper
     if not inAtmo then
         system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
     end
+
+
+    widgetTargetOrbit = system.createWidget(panelInterplanetary, "value")
+    widgetTargetOrbitText = system.createData('{"label": "Target Altitude", "value": "N/A", "unit":""}')
+    if not inAtmo then
+        system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit)
+    end
 end
 
 function Contains(mousex, mousey, x, y, width, height)
@@ -1040,7 +1051,7 @@ function ToggleAltitudeHold()
         Reentry = false
         autoRoll = true
         LockPitch = nil
-        if (not GearExtended and not BrakeIsOn) or not inAtmo then -- Never autotakeoff in space
+        if (not GearExtended and not BrakeIsOn) or not inAtmo or (antigrav and antigrav.getState() == 1) then -- Never autotakeoff in space
             AutoTakeoff = false
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
@@ -1326,6 +1337,11 @@ function getPitch(gravityDirection, forward, right)
         pitch = -pitch
     end -- Cross right dot forward?
     return pitch
+end
+
+local atan = math.atan
+local function signedRotationAngle(normal, vecA, vecB)
+  return atan(vecA:cross(vecB):dot(normal), vecA:dot(vecB))
 end
 
 function clearAll()
@@ -1678,8 +1694,9 @@ end
 function getAPEnableName()
     local name = AutopilotTargetName
     if name == nil then
-        name = CustomTarget.name .. " " ..
-                   getDistanceDisplayString((vec3(core.getConstructWorldPos()) - CustomTarget.position):len())
+        local displayText, displayUnit = getDistanceDisplayString((vec3(core.getConstructWorldPos()) - CustomTarget.position):len())
+        name = CustomTarget.name .. " " .. displayText .. displayUnit
+                   
     end
     if name == nil then
         name = "None"
@@ -2648,9 +2665,10 @@ function DrawWarnings(newContent)
             newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Landed (G: Takeoff)</text>]], warningX,
                                               gearY)
         end
+        local displayText, displayUnit = getDistanceDisplayString(Nav:getTargetGroundAltitude())
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Hover Height: %s</text>]],
                                           warningX, hoverY,
-                                          getDistanceDisplayString(Nav:getTargetGroundAltitude()))
+                                          displayText.. displayUnit)
     end
     if isBoosting then
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">ROCKET BOOST ENABLED</text>]],
@@ -2679,16 +2697,18 @@ function DrawWarnings(newContent)
     end
     if AltitudeHold then
         if AutoTakeoff then
+            local displayText, displayUnit = getDistanceDisplayString(HoldAltitude)
             newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Ascent to %s</text>]],
-                                              warningX, apY, getDistanceDisplayString(HoldAltitude))
+                                              warningX, apY, displayText.. displayUnit)
             if BrakeIsOn then
                 newContent[#newContent + 1] = stringf(
                                                   [[<text class="crit" x="%d" y="%d">Throttle Up and Disengage Brake For Takeoff</text>]],
                                                   warningX, apY + 50)
             end
         else
+            local displayText, displayUnit = getDistanceDisplayString2(HoldAltitude)
             newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Altitude Hold: %s</text>]],
-                                              warningX, apY, getDistanceDisplayString2(HoldAltitude))
+                                              warningX, apY, displayText.. displayUnit)
         end
     end
     if BrakeLanding then
@@ -2768,8 +2788,9 @@ function DisplayOrbitScreen(newContent)
                                               x - 35, y - 5, orbitMapX + orbitMapSize / 2 + rx + xOffset, y - 5)
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">Apoapsis</text>]], x, y)
             y = y + orbitInfoYOffset
+            local displayText, displayUnit = getDistanceDisplayString(orbit.apoapsis.altitude)
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">%s</text>]], x, y,
-                                              getDistanceDisplayString(orbit.apoapsis.altitude))
+                                              displayText.. displayUnit)
             y = y + orbitInfoYOffset
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">%s</text>]], x, y,
                                               FormatTimeString(orbit.timeToApoapsis))
@@ -2787,8 +2808,9 @@ function DisplayOrbitScreen(newContent)
                                               x + 35, y - 5, orbitMapX + orbitMapSize / 2 - rx + xOffset, y - 5)
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">Periapsis</text>]], x, y)
             y = y + orbitInfoYOffset
+            local displayText, displayUnit = getDistanceDisplayString(orbit.periapsis.altitude)
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">%s</text>]], x, y,
-                                              getDistanceDisplayString(orbit.periapsis.altitude))
+                                              displayText.. displayUnit)
             y = y + orbitInfoYOffset
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">%s</text>]], x, y,
                                               FormatTimeString(orbit.timeToPeriapsis))
@@ -2822,34 +2844,34 @@ end
 
 function getDistanceDisplayString(distance)
     local su = distance > 100000
-    local result = ""
+    local result, displayUnit = ""
     if su then
         -- Convert to SU
-        result = round(distance / 1000 / 200, 1) .. " SU"
+        result, displayUnit = round(distance / 1000 / 200, 1),"SU"
     elseif distance < 1000 then
-        result = round(distance, 1) .. " M"
+        result, displayUnit = round(distance, 1),"m"
     else
         -- Convert to KM
-        result = round(distance / 1000, 1) .. " KM"
+        result, displayUnit = round(distance / 1000, 1),"Km"
     end
 
-    return result
+    return result, displayUnit
 end
 
 function getDistanceDisplayString2(distance)
     local su = distance > 100000
-    local result = ""
+    local result, displayUnit = ""
     if su then
         -- Convert to SU
-        result = round(distance / 1000 / 200, 2) .. " SU"
+        result, displayUnit = round(distance / 1000 / 200, 2)," SU"
     elseif distance < 1000 then
-        result = round(distance, 2) .. " M"
+        result, displayUnit = round(distance, 2)," M"
     else
         -- Convert to KM
-        result = round(distance / 1000, 2) .. " KM"
+        result, displayUnit = round(distance / 1000, 2)," KM"
     end
 
-    return result
+    return result, displayUnit
 end
 
 function getSpeedDisplayString(speed) -- TODO: Allow options, for now just do kph
@@ -2919,6 +2941,8 @@ function UpdateAutopilotTarget()
                     system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
                 if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) ~= 1 then
                     system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
+                if system.updateData(widgetTargetOrbitText, widgetTargetOrbit) ~= 1 then
+                    system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit) end
             end
             if system.updateData(widgetMaxMassText, widgetMaxMass) ~= 1 then
                 system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
@@ -5118,27 +5142,24 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.002
+    VERSION_NUMBER = 5.100
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
             {1000, 5000, 10000, 20000, 30000})
 
-        SetupChecks() -- All the if-thens to set up for particular ship.  Specifically override these with the saved variables if available
-
         -- Load Saved Variables
         LoadVariables()
-
         coroutine.yield() -- Give it some time to breathe before we do the rest
 
         -- Find elements we care about
         ProcessElements()
-
         coroutine.yield() -- Give it some time to breathe before we do the rest
 
+        SetupChecks() -- All the if-thens to set up for particular ship.  Specifically override these with the saved variables if available
         SetupButtons() -- Set up all the pushable buttons.
-
         coroutine.yield() -- Just to make sure
+
         -- Set up Jaylebreak and atlas
         SetupAtlas()
         PlanetaryReference = PlanetRef()
@@ -5149,20 +5170,23 @@ function script.onStart()
         UpdateAtlasLocationsList()
         UpdateAutopilotTarget()
         coroutine.yield()
+
         unit.hide()
         system.showScreen(1)
         -- That was a lot of work with dirty strings and json.  Clean up
         collectgarbage("collect")
         -- Start timers
         coroutine.yield()
+
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("hudTick", hudTickRate)
         unit.setTimer("oneSecond", 1)
         unit.setTimer("tenthSecond", 1/10)
+
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
-        msgText = msgText.."\nSTARUP SEQUENCE COMPLETE"
+
     end)
 
 end
@@ -5247,20 +5271,26 @@ function script.onTick(timerId)
                     brakeDistance, brakeTime = GetAutopilotTBBrakeDistanceAndTime(velMag)
                     maxBrakeDistance, maxBrakeTime = GetAutopilotTBBrakeDistanceAndTime(MaxGameVelocity)
                 end
-                system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
-                    getDistanceDisplayString(distance) .. '", "unit":""}')
+                local displayText, displayUnit = getDistanceDisplayString(distance)
+                system.updateData(widgetDistanceText, '{"label": "distance", "value": "' .. displayText
+                     .. '", "unit":"' .. displayUnit .. '"}')
                 system.updateData(widgetTravelTimeText, '{"label": "Travel Time", "value": "' ..
                     FormatTimeString(travelTime) .. '", "unit":""}')
+                displayText, displayUnit = getDistanceDisplayString(brakeDistance)
                 system.updateData(widgetCurBrakeDistanceText, '{"label": "Cur Brake distance", "value": "' ..
-                    getDistanceDisplayString(brakeDistance) .. '", "unit":""}')
+                    displayText.. '", "unit":"' .. displayUnit .. '"}')
                 system.updateData(widgetCurBrakeTimeText, '{"label": "Cur Brake Time", "value": "' ..
                     FormatTimeString(brakeTime) .. '", "unit":""}')
+                displayText, displayUnit = getDistanceDisplayString(maxBrakeDistance)
                 system.updateData(widgetMaxBrakeDistanceText, '{"label": "Max Brake distance", "value": "' ..
-                    getDistanceDisplayString(maxBrakeDistance) .. '", "unit":""}')
+                    displayText.. '", "unit":"' .. displayUnit .. '"}')
                 system.updateData(widgetMaxBrakeTimeText, '{"label": "Max Brake Time", "value": "' ..
                     FormatTimeString(maxBrakeTime) .. '", "unit":""}')
                 system.updateData(widgetMaxMassText, '{"label": "Maximum Mass", "value": "' ..
-                    stringf("%.2f tons", (planetMaxMass / 1000)) .. '", "unit":""}')
+                    stringf("%.2f", (planetMaxMass / 1000)) .. '", "unit":" Tons"}')
+                displayText, displayUnit = getDistanceDisplayString(AutopilotTargetOrbit)
+                system.updateData(widgetTargetOrbitText, '{"label": "Target Orbit", "value": "' ..
+                stringf("%.2f", displayText) .. '", "unit":"' .. displayUnit .. '"}')
                 if atmosphere() > 0 and not WasInAtmo then
                     system.removeDataFromWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
                     system.removeDataFromWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
@@ -5488,6 +5518,7 @@ function script.onTick(timerId)
         hovGndDet = hoverDetectGround() 
         local constrF = vec3(core.getConstructWorldOrientationForward())
         local constrR = vec3(core.getConstructWorldOrientationRight())
+        local constrUp = vec3(core.getConstructWorldOrientationUp())
         local worldV = vec3(core.getWorldVertical())
         local pitch = getPitch(worldV, constrF, constrR)
         local gravity = planet:getGravity(core.getConstructWorldPos()):len() * constructMass()
@@ -5580,17 +5611,20 @@ function script.onTick(timerId)
         end
         LastIsWarping = isWarping
         if inAtmo and atmosphere() > 0.09 then
-            if not speedLimitBreaking  then
-                if velMag > (AtmoSpeedLimit / 3.6) then
-                    BrakeIsOn = true
-                    speedLimitBreaking  = true
+            --if not speedLimitBreaking  then
+            if velMag > (AtmoSpeedLimit / 3.6) then
+            --        BrakeIsOn = true
+            --        speedLimitBreaking  = true
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                    Nav.control.cancelCurrentControlMasterMode()
                 end
-            else
-                if velMag < (AtmoSpeedLimit / 3.6) then
-                    BrakeIsOn = false
-                    speedLimitBreaking = false
-                end
-            end    
+            end
+            --else
+            --    if velMag < (AtmoSpeedLimit / 3.6) then
+            --        BrakeIsOn = false
+            --        speedLimitBreaking = false
+            --    end
+            --end    
         end
         if BrakeIsOn then
             brakeInput = 1
@@ -5659,6 +5693,22 @@ function script.onTick(timerId)
             -- This is gonna be hard to get the negatives right.
             -- If we're still in orbit, don't do anything, that velocity will suck
             local targetCoords = AutopilotTargetCoords
+            local skipAlign = false
+            AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
+            local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
+            local displayText, displayUnit = getDistanceDisplayString(displayDistance)
+            system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
+                displayText.. '", "unit":"' .. displayUnit .. '"}')
+            local aligned = true -- It shouldn't be used if the following condition isn't met, but just in case
+
+            local projectedAltitude = (autopilotTargetPlanet.center -
+                                          (vec3(core.getConstructWorldPos()) +
+                                              (vec3(velocity):normalize() * AutopilotDistance))):len() -
+                                          autopilotTargetPlanet.radius
+            displayText, displayUnit = getDistanceDisplayString(projectedAltitude)
+            system.updateData(widgetTrajectoryAltitudeText, '{"label": "Projected Altitude", "value": "' ..
+                displayText.. '", "unit":"' .. displayUnit .. '"}')
+
             if orbit.apoapsis == nil and velMag > 300 and AutopilotAccelerating then
                 -- Get the angle between forward and velocity
                 -- Get the magnitude for each of yaw and pitch
@@ -5676,32 +5726,79 @@ function script.onTick(timerId)
                 -- Get the components in each of the stored shipright and shipup directions
                 -- Get the ratio of velocity to normalized velocity and scale up that component (Hey this is just velmag btw)
                 -- Add that component * shipright or shipup
-                local velVectorOffset = (vec3(AutopilotTargetCoords) - vec3(core.getConstructWorldPos())):normalize() -
-                                            vec3(velocity):normalize()
-                local pitchComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipUp)
-                local yawComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipRight)
-                local leftAmount = -yawComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
-                local downAmount = -pitchComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
-                targetCoords = AutopilotTargetCoords + (-leftAmount * vec3(AutopilotShipRight)) +
-                                   (-downAmount * vec3(AutopilotShipUp))
+                --local velVectorOffset = (vec3(AutopilotTargetCoords) - vec3(core.getConstructWorldPos())):normalize() -
+                --                            vec3(velocity):normalize()
+                --local pitchComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipUp)
+                --local yawComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipRight)
+                --local leftAmount = -yawComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
+                --local downAmount = -pitchComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
+                --targetCoords = AutopilotTargetCoords + (-leftAmount * vec3(AutopilotShipRight)) +
+                --                   (-downAmount * vec3(AutopilotShipUp))
+
+                -- All of that's stupid.  Use signedRotationAngle to get the yaw and pitch angles with shipUp and shipRight as the normals, respectively
+                -- Then use a PID
+                local targetVec = (vec3(targetCoords) - vec3(core.getConstructWorldPos()))
+                local targetYaw = utils.clamp(math.deg(signedRotationAngle(constrUp, velocity:normalize(), targetVec:normalize()))*(velMag/500),-90,90)
+                local targetPitch = utils.clamp(math.deg(signedRotationAngle(constrR, velocity:normalize(), targetVec:normalize()))*(velMag/500),-90,90)
+
+                -- If the values are particularly small, give us a lot of extra oomph
+                --if math.abs(targetYaw) < 1 then
+                --    targetYaw = utils.clamp(targetYaw*10,-90,90)
+                --end
+                --if math.abs(targetPitch) < 1 then
+                --    targetPitch = utils.clamp(targetPitch*10,-90,90)
+                --end
+
+                -- If they're both very small, scale them both up a lot to converge that last bit
+                if math.abs(targetYaw) < 5 and math.abs(targetPitch) < 5 then
+                    targetYaw = targetYaw * 2
+                    targetPitch = targetPitch * 2
+                end
+                -- If they're both very very small even after scaling them the first time, do it again
+                if math.abs(targetYaw) < 2 and math.abs(targetPitch) < 2 then
+                    targetYaw = targetYaw * 2
+                    targetPitch = targetPitch * 2
+                end
+
+                -- We'll do our own currentYaw and Pitch
+                local currentYaw = -math.deg(signedRotationAngle(constrUp, constrF, velocity:normalize()))
+                local currentPitch = -math.deg(signedRotationAngle(constrR, constrF, velocity:normalize()))
+
+                --system.print("Target yaw " .. targetYaw .. " - Target pitch " .. targetPitch)
+                --system.print ("Current " .. currentYaw .. " - " .. currentPitch)
+                if (apPitchPID == nil) then
+                    apPitchPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                end
+                apPitchPID:inject(targetPitch - currentPitch)
+                local autoPitchInput = utils.clamp(apPitchPID:get(),-1,1)
+
+                pitchInput2 = pitchInput2 + autoPitchInput
+
+                if (apYawPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
+                    apYawPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                end
+                --yawPID:inject(yawDiff) -- Aim for 85% stall angle, not full
+                apYawPID:inject(targetYaw - currentYaw)
+                local autoYawInput = utils.clamp(apYawPID:get(),-1,1) -- Keep it reasonable so player can override
+                yawInput2 = yawInput2 + autoYawInput
+                
+
+                skipAlign = true
+                
             end
-            -- If we're here, sadly, we really need to calc the distance every update (or tick)
-            AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
-            local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
-            system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
-                getDistanceDisplayString(displayDistance) .. '", "unit":""}')
-            local aligned = true -- It shouldn't be used if the following condition isn't met, but just in case
 
-            local projectedAltitude = (autopilotTargetPlanet.center -
-                                          (vec3(core.getConstructWorldPos()) +
-                                              (vec3(velocity):normalize() * AutopilotDistance))):len() -
-                                          autopilotTargetPlanet.radius
-            system.updateData(widgetTrajectoryAltitudeText, '{"label": "Projected Altitude", "value": "' ..
-                getDistanceDisplayString(projectedAltitude) .. '", "unit":""}')
+            if projectedAltitude < AutopilotTargetOrbit*1.5 then
+                -- Recalc end speeds for the projectedAltitude since it's reasonable... 
+                if CustomTarget ~= nil and CustomTarget.planetname == "Space" then 
+                    AutopilotEndSpeed = 0
+                else
+                    _, AutopilotEndSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed(projectedAltitude)
+                end
+            end
 
-            if not AutopilotCruising and not AutopilotBraking then
+            if not AutopilotCruising and not AutopilotBraking and not skipAlign then
                 aligned = AlignToWorldVector((targetCoords - vec3(core.getConstructWorldPos())):normalize())
-            elseif TurnBurn then
+            elseif TurnBurn and not skipAlign then
                 aligned = AlignToWorldVector(-vec3(velocity):normalize())
             end
             if AutopilotAccelerating then
@@ -5710,17 +5807,17 @@ function script.onTick(timerId)
                 else
                     AutopilotStatus = "Accelerating"
                 end
-                if vec3(core.getConstructWorldOrientationForward()):dot(velocity) < 0 and velMag > 300 then
-                    BrakeIsOn = true
-                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-                    apThrottleSet = false
-                elseif not apThrottleSet then
+                --if vec3(core.getConstructWorldOrientationForward()):dot(velocity) < 0 and velMag > 300 then
+                --    BrakeIsOn = true
+                --    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                --    apThrottleSet = false
+                --elseif not apThrottleSet then
+                if not apThrottleSet then
                     BrakeIsOn = false
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, AutopilotInterplanetaryThrottle)
                     apThrottleSet = true
                 end
-                -- Only disengage acceleration if we're within 1km of our target
-                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs(projectedAltitude-AutopilotTargetOrbit) < 1000)) or (unit.getThrottle() == 0 and apThrottleSet) then
+                if (vec3(core.getVelocity()):len() >= MaxGameVelocity or (unit.getThrottle() == 0 and apThrottleSet)) then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
@@ -5753,8 +5850,12 @@ function script.onTick(timerId)
                     AutopilotStatus = "Aligning" -- Disable autopilot and reset
                 elseif (CustomTarget ==nil or (CustomTarget ~= nil and CustomTarget.planetname ~= "Space")) and orbit.periapsis ~= nil and orbit.eccentricity < 1 then
                     AutopilotStatus = "Circularizing"
-                    if orbit.eccentricity > lastEccentricity or
-                        (orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude <
+                    -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
+                    local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
+                    --system.print("Ecc " .. orbit.eccentricity .. ", last: " .. lastEccentricity .. ", apo " .. orbit.apoapsis.altitude .. ", peri " .. orbit.periapsis.altitude .. ", target " .. AutopilotTargetOrbit)
+                    --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
+                    if velMag <= endSpeed or
+                    (orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude <
                             AutopilotTargetOrbit) then
                         BrakeIsOn = false
                         AutopilotBraking = false
@@ -5923,8 +6024,8 @@ function script.onTick(timerId)
                 -- Of course, only works if speed is high enough
 
                 local constrUp = vec3(core.getConstructWorldOrientationUp())
-                local vectorInYawDirection = targetVec:project_on_plane(worldV):normalize()
-                local flatForward = velocity:normalize():project_on_plane(worldV):normalize() -- Possibly necessary after 3d to 2d conversion
+                --local vectorInYawDirection = targetVec:project_on_plane(worldV):normalize()
+                --local flatForward = velocity:normalize():project_on_plane(worldV):normalize() -- Possibly necessary after 3d to 2d conversion
                 -- :angle_to uses only .x and .y, literal 2d
                 -- So project it on a plane first, with ship up as the normal
 
@@ -5932,11 +6033,12 @@ function script.onTick(timerId)
                 --local targetYaw = math.deg(constrF:angle_to(vectorInYawDirection))
                 -- And is wrong?
                 --local targetYaw = math.deg(math.atan(flatForward.y-vectorInYawDirection.y, flatForward.x-vectorInYawDirection.x))
-                local targetYaw = math.deg(math.acos((vectorInYawDirection:dot(flatForward)))) * -utils.sign(targetVec:dot(velocity:cross(worldV)))*2
+                local targetYaw = math.deg(signedRotationAngle(worldV,velocity:normalize(),targetVec:normalize()))*2
+                --local targetYaw = math.deg(math.acos((vectorInYawDirection:dot(flatForward)))) * -utils.sign(targetVec:dot(velocity:cross(worldV)))*2
                 
                 -- Let's go twice what they tell us to, which should converge quickly, within our clamp
 
-                
+                local minVelocity = 50
 
 
                 --if stalling then
@@ -5947,7 +6049,7 @@ function script.onTick(timerId)
                 --system.print("Roll is " .. roll .. " - Target yaw is " .. targetYaw .. " - Current: " .. currentYaw .. " - Prev targetPitch is " .. targetPitch)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
-                if velMag > 100 then
+                if velMag > minVelocity then
                     targetRoll = utils.clamp(targetYaw/2, -90, 90)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
@@ -5965,15 +6067,15 @@ function script.onTick(timerId)
 
                 local yawDiff = targetYaw
 
-                if not stalling and velMag > 100 then
+                if not stalling and velMag > minVelocity then
                     if (yawPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
-                        yawPID = pid.new(8 * 0.01, 0, 8 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                        yawPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                     end
                     --yawPID:inject(yawDiff) -- Aim for 85% stall angle, not full
                     yawPID:inject(yawDiff)
                     local autoYawInput = utils.clamp(yawPID:get(),-1,1) -- Keep it reasonable so player can override
                     yawInput2 = yawInput2 + autoYawInput
-                elseif hovGndDet > -1 then
+                elseif hovGndDet > -1 or velMag < minVelocity then
                     AlignToWorldVector(targetVec) -- Point to the target if on the ground and 'stalled'
                 else
                     AlignToWorldVector(velocity) -- Otherwise try to pull out of the stall

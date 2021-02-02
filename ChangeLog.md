@@ -1,4 +1,10 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.100 - INCREDIBLY improved space autopilot to orbit
+- Autopilot alignment improved, should now efficiently realign orbits, and more effectively get to the desired Projected Altitude
+- Autopilot widget now shows target orbit altitude
+- AtmoSpeedLimit no longer brakes upon reaching max speed, but goes into cruise.  This saves fuel and works smoothly.  As always, alt+r cancels cruise mode
+- Fixed a ship with active AGG to not do Takeoff on sitting into seat and activating alt-hold
+- Fixed startup sequence to recognize gear or no gear amoung other things.
 
 Version 5.002
 - When activating autopilot, the on-screen waypoint is changed to show the autopilot destination.  This is a show thing only, no effect on AP destination, so can be changed if wanted via normal waypoint usage.
