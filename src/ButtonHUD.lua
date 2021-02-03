@@ -2976,6 +2976,8 @@ function UpdateAutopilotTarget()
         else
             AutopilotTargetOrbit = math.floor(autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.surfaceMaxAltitude)
         end
+    else
+        AutopilotTargetOrbit = 1000
     end
     if CustomTarget ~= nil and CustomTarget.planetname == "Space" then 
         AutopilotEndSpeed = 0
@@ -5142,7 +5144,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.100
+    VERSION_NUMBER = 5.101
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,

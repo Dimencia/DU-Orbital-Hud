@@ -1,4 +1,7 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.101
+- Fixed issue with space waypoints causing an exception
+
 Version 5.100 - INCREDIBLY improved space autopilot to orbit
 - Autopilot alignment improved, should now efficiently realign orbits, and more effectively get to the desired Projected Altitude
 - Autopilot widget now shows target orbit altitude
