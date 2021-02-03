@@ -1,4 +1,10 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.11
+- Improved orbits and waypoints - waypoints may feather brakes again
+
+Version 5.102
+- Adjusted pitch and yaw calculations to use a different formula, though it should be equivalent.  Attempt to fix incorrect stall warnings
+
 Version 5.101
 - Fixed issue with space waypoints causing an exception
 
