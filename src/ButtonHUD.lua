@@ -5500,10 +5500,27 @@ function script.onTick(timerId)
         local deltaTick = time - lastApTickTime
         lastApTickTime = time
 
+        local constrF = vec3(core.getConstructWorldOrientationForward())
+        local constrR = vec3(core.getConstructWorldOrientationRight())
+        local constrUp = vec3(core.getConstructWorldOrientationUp())
+        local worldV = vec3(core.getWorldVertical())
+
         local localVel = core.getVelocity()
-        local currentYaw = getRelativeYaw(localVel)
-        local currentPitch = getRelativePitch(localVel)
+        --local currentYaw = getRelativeYaw(localVel)
+        --local currentPitch = getRelativePitch(localVel)
+        local roll = getRoll(worldV, constrF, constrR)
+        local radianRoll = (roll / 180) * math.pi
+        local corrX = math.cos(radianRoll)
+        local corrY = math.sin(radianRoll)
+        local pitch = getPitch(worldV, constrF, constrR) -- Left in for compat, but we should really use adjustedPitch
+        local adjustedPitch = getPitch(worldV, constrF, (constrR * corrX) + (constrUp * corrY)) 
+
+        local currentYaw = -math.deg(signedRotationAngle(constrUp, velocity, constrF))
+        local currentPitch = math.deg(signedRotationAngle(constrR, velocity, constrF)) -- Let's use a consistent func that uses global velocity
+
         stalling = inAtmo and currentYaw < -StallAngle or currentYaw > StallAngle or currentPitch < -StallAngle or currentPitch > StallAngle
+        local minRollVelocity = 50 -- Min velocity over which advanced rolling can occur
+
         deltaX = system.getMouseDeltaX()
         deltaY = system.getMouseDeltaY()
         if InvertMouse and not holdingCtrl then deltaY = -deltaY end
@@ -5518,18 +5535,10 @@ function script.onTick(timerId)
         kepPlanet = Kep(planet)
         orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
         hovGndDet = hoverDetectGround() 
-        local constrF = vec3(core.getConstructWorldOrientationForward())
-        local constrR = vec3(core.getConstructWorldOrientationRight())
-        local constrUp = vec3(core.getConstructWorldOrientationUp())
-        local worldV = vec3(core.getWorldVertical())
-        local pitch = getPitch(worldV, constrF, constrR)
         local gravity = planet:getGravity(core.getConstructWorldPos()):len() * constructMass()
         targetRoll = 0
-        local roll = getRoll(worldV, constrF, constrR)
-        local radianRoll = math.abs((roll / 180) * math.pi)
-        local corrX = math.cos(radianRoll)
-        local corrY = math.sin(radianRoll)
-        local adjustedPitch = getPitch(worldV, constrF, (constrR * corrX) + (vec3(core.getConstructWorldOrientationUp()) * corrY)) 
+        
+        
 
         maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("ground", core.getConstructOrientationUp())[1]
 
@@ -6040,8 +6049,6 @@ function script.onTick(timerId)
                 
                 -- Let's go twice what they tell us to, which should converge quickly, within our clamp
 
-                local minVelocity = 50
-
 
                 --if stalling then
                 --    system.print("Stalled - Target yaw is " .. targetYaw .. " - Current: " .. currentYaw)
@@ -6051,7 +6058,7 @@ function script.onTick(timerId)
                 --system.print("Roll is " .. roll .. " - Target yaw is " .. targetYaw .. " - Current: " .. currentYaw .. " - Prev targetPitch is " .. targetPitch)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
-                if velMag > minVelocity then
+                if velMag > minRollVelocity then
                     targetRoll = utils.clamp(targetYaw/2, -90, 90)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
@@ -6069,7 +6076,7 @@ function script.onTick(timerId)
 
                 local yawDiff = targetYaw
 
-                if not stalling and velMag > minVelocity then
+                if not stalling and velMag > minRollVelocity then
                     if (yawPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                         yawPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                     end
@@ -6077,7 +6084,7 @@ function script.onTick(timerId)
                     yawPID:inject(yawDiff)
                     local autoYawInput = utils.clamp(yawPID:get(),-1,1) -- Keep it reasonable so player can override
                     yawInput2 = yawInput2 + autoYawInput
-                elseif hovGndDet > -1 or velMag < minVelocity then
+                elseif hovGndDet > -1 or velMag < minRollVelocity then
                     AlignToWorldVector(targetVec) -- Point to the target if on the ground and 'stalled'
                 else
                     AlignToWorldVector(velocity) -- Otherwise try to pull out of the stall
@@ -6312,7 +6319,7 @@ function script.onTick(timerId)
             local onGround = hoverDetectGround() > -1
             local pitchToUse = pitch
 
-            if VectorToTarget and not onGround and velMag > 100 then
+            if VectorToTarget and not onGround and velMag > minRollVelocity then
                 local rollRad = math.rad(math.abs(roll))
                 pitchToUse = pitch*math.cos(rollRad)+currentPitch*math.sin(rollRad)
                 --pitchToUse = adjustedPitch -- Use velocity vector pitch instead, we're potentially sideways
