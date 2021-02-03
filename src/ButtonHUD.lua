@@ -5865,9 +5865,7 @@ function script.onTick(timerId)
                     local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
                     --system.print("Ecc " .. orbit.eccentricity .. ", last: " .. lastEccentricity .. ", apo " .. orbit.apoapsis.altitude .. ", peri " .. orbit.periapsis.altitude .. ", target " .. AutopilotTargetOrbit)
                     --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
-                    if velMag <= endSpeed or
-                    (orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude <
-                            AutopilotTargetOrbit) then
+                    if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
                         BrakeIsOn = false
                         AutopilotBraking = false
                         Autopilot = false
@@ -6128,7 +6126,7 @@ function script.onTick(timerId)
                 --system.print(distanceToTarget .. " to target, can brake to 0 in " .. brakeDistance .. " , deltaVelocity is " .. (velMag*deltaTick))
                 
                 -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
-                if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then -- Since we're now accurate on this, we need to just brake-land immediately.  
+                if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then 
                     VectorStatus = "Finalizing Approach" -- Left for compatibility
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
                         Nav.control.cancelCurrentControlMasterMode()
@@ -6136,9 +6134,14 @@ function script.onTick(timerId)
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- Kill throttle in case they weren't in cruise
                     if AltitudeHold then
                         ToggleAltitudeHold() -- Don't need this anymore
+                        VectorToTarget = true -- But keep this on
                     end
-                    BrakeLanding = true
-                    VectorToTarget = false
+                    BrakeIsOn = true
+
+                    if hSpd < 1 or distanceToTarget < 1 then
+                        BrakeLanding = true
+                        VectorToTarget = false
+                    end
 
                 elseif not AutoTakeoff then
                     BrakeIsOn = false
