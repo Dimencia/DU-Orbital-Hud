@@ -84,6 +84,7 @@ hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for yo
 ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disabled for performance on very large ships
 CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
 autoRollRollThreshold = 1.0 --export: (Default: 1.0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
+HeadlightGroundHeight = 150 --export: (Default: 150) Controls altitude to turn on/off Headlights. Turns off above value
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -278,6 +279,10 @@ local stalling = false
 local lastApTickTime = system.getTime()
 local targetRoll = 0
 local ahDoubleClick = 0
+local navBlinkSwitch = nil
+local navLightSwitch = nil
+local headLightSwitch = nil
+local fuelDisplaySwitch = nil
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -475,11 +480,23 @@ function SetupChecks()
             v.toggle()
         end
     end
-    if switch then
+    if switch then 
         for _, v in pairs(switch) do
-            v.toggle()
+            local eID = v.getId()
+            local name = core.getElementNameById(eID)
+            if (name == "navBlinkSwitch") then
+                navBlinkSwitch = v
+            elseif (name == "navLightSwitch") then
+                navLightSwitch = v
+            elseif (name == "headLightSwitch") then
+                headLightSwitch = v
+            elseif (name == "fuelDisplaySwitch") then
+                fuelDisplaySwitch = v
+            else
+                v.toggle()
+            end
         end
-    end
+    end    
     if forcefield and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(forcefield) do
             v.toggle()
@@ -5188,7 +5205,9 @@ function script.onStart()
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
-
+        navLightSwitch.activate()
+        headLightSwitch.activate()
+        fuelDisplaySwitch.activate()
     end)
 
 end
@@ -5233,11 +5252,6 @@ function script.onStop()
             v.toggle()
         end
     end
-    if switch then
-        for _, v in pairs(switch) do
-            v.toggle()
-        end
-    end
     if forcefield and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(forcefield) do
             v.toggle()
@@ -5247,10 +5261,14 @@ function script.onStop()
     if button then
         button.activate()
     end
+    navLightSwitch.deactivate()
+    fuelDisplaySwitch.deactivate()
+
 end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
+        navBlinkSwitch.deactivate()
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -5328,6 +5346,7 @@ function script.onTick(timerId)
             end
         end        
     elseif timerId == "oneSecond" then
+        navBlinkSwitch.activate()
         -- Timer for evaluation every 1 second
         clearAllCheck = false
         RefreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
@@ -6354,6 +6373,12 @@ function script.onTick(timerId)
                     desiredBaseAltitude = AntigravTargetAltitude
                     antigrav.setBaseAltitude(desiredBaseAltitude)
                 end
+        end
+
+        if (groundHeight < HeadlightGroundHeight) then
+            headLightSwitch.activate()
+        else
+            headLightSwitch.deactivate()
         end
     end
 end
