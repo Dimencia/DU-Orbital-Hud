@@ -51,9 +51,8 @@ ReentryAltitude = 2500 -- export: (Default: 2500) Target alititude when using re
 AutoTakeoffAltitude = 1000 -- export: (Default: 1000) How high above your ground starting position AutoTakeoff tries to put you
 TargetHoverHeight = 50 -- export: (Default: 50) Hover height when retracting landing gear
 LandingGearGroundHeight = 0 --export: (Default: 0) Set to AGL-1 when on ground (or 0)
-HeadlightGroundHeight = 150 --export: (Default: 150) Controls altitude to turn on/off Headlights. Turns off above value
 MaxGameVelocity = 8333.00 -- export: (Default: 8333.00) Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
-AutopilotTargetOrbit = 50000 -- export: (Default: 50000) How far you want the orbit to be from the planet in m.  200,000 = 1SU (Default 50000)
+TargetOrbitRadius = 1.4 -- export: (Default: 1.4) How tight you want to orbit the planet at end of autopilot.  The smaller the value the tighter the orbit.  1.4 sets an Alioth orbit of 56699m.
 AutopilotInterplanetaryThrottle = 1.0 -- export: (Default: 1.0) How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
 warmup = 32 -- export: (Default: 32) How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
 MouseYSensitivity = 0.003 --export: (Default: 0.003) For virtual joystick only
@@ -82,6 +81,9 @@ ExternalAGG = false -- export: (Default: false) Toggle On if using an external A
 UseSatNav = false -- export: (Default: false) Toggle on if using Trog SatNav script.  This will provide SatNav support.
 apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your autopilot features.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  
 hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate
+ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disabled for performance on very large ships
+CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
+autoRollRollThreshold = 1.0 --export: (Default: 1.0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -120,26 +122,26 @@ LastStartTime = 0
 SpaceTarget = false
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
-local saveableVariables = {"userControlScheme", "AutopilotTargetOrbit", "apTickRate", "freeLookToggle", "turnAssist",
+local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate", "freeLookToggle", "turnAssist",
                         "PrimaryR", "PrimaryG", "PrimaryB", "warmup", "DeadZone", "circleRad", "MouseXSensitivity",
                         "MouseYSensitivity", "MaxGameVelocity", "showHud", "autoRollPreference", "InvertMouse",
                         "pitchSpeedFactor", "yawSpeedFactor", "rollSpeedFactor", "brakeSpeedFactor",
                         "brakeFlatFactor", "autoRollFactor", "turnAssistFactor", "torqueFactor",
                         "AutoTakeoffAltitude", "TargetHoverHeight", "AutopilotInterplanetaryThrottle",
-                        "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo",
+                        "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo", "ExternalAGG", "ShouldCheckDamage",
                         "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze", "hudTickRate",
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
-                        "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit"}
+                        "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
                     "Reentry", "AutoTakeoff", "HoldAltitude", "AutopilotAccelerating", "AutopilotBraking",
                     "AutopilotCruising", "AutopilotRealigned", "AutopilotEndSpeed", "AutopilotStatus",
                     "AutopilotPlanetGravity", "PrevViewLock", "AutopilotTargetName", "AutopilotTargetCoords",
-                    "AutopilotTargetIndex", "GearExtended", "TotalDistanceTravelled",
+                    "AutopilotTargetIndex", "TotalDistanceTravelled",
                     "TotalFlightTime", "SavedLocations", "VectorToTarget", "LocationIndex", "LastMaxBrake", 
                     "LockPitch", "LastMaxBrakeInAtmo", "AntigravTargetAltitude", "LastStartTime"}
 
@@ -260,6 +262,7 @@ local YouAreHere = nil
 local PlanetaryReference = nil
 local galaxyReference = nil
 local Kinematic = nil
+local maxKinematicUp = nil
 local Kep = nil
 local Animating = false
 local Animated = false
@@ -271,10 +274,10 @@ local minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
 local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
 local deltaX = system.getMouseDeltaX()
 local deltaY = system.getMouseDeltaY()
-local navBlinkSwitch = nil
-local navLightSwitch = nil
-local headLightSwitch = nil
-local fuelDisplaySwitch = nil
+local stalling = false
+local lastApTickTime = system.getTime()
+local targetRoll = 0
+local ahDoubleClick = 0
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -361,12 +364,15 @@ function CalculateFuelVolume(curMass, vanillaMaxVolume)
 end
 
 function ProcessElements()
+    local checkTanks = (fuelX ~= 0 and fuelY ~= 0)
     for k in pairs(elementsID) do
         local type = eleType(elementsID[k])
-        if (type == "landing gear") then
+        sprint(type)
+        if (type == "Landing Gear") then
+            sprint("HERE1")
             hasGear = true
         end
-        if (type == "dynamic core") then
+        if (type == "Dynamic Core Unit") then
             local hp = eleMaxHp(elementsID[k])
             if hp > 10000 then
                 coreOffset = 128
@@ -377,72 +383,70 @@ function ProcessElements()
             end
         end
         eleTotalMaxHp = eleTotalMaxHp + eleMaxHp(elementsID[k])
-        if (fuelX ~= 0 and fuelY ~= 0) then
-            if (type == "Atmospheric Fuel Tank" or type == "Space Fuel Tank" or type == "Rocket Fuel Tank") then
-                local hp = eleMaxHp(elementsID[k])
-                local mass = eleMass(elementsID[k])
-                local curMass = 0
-                local curTime = system.getTime()
-                if (type == "Atmospheric Fuel Tank") then
-                    local vanillaMaxVolume = 400
-                    local massEmpty = 35.03
-                    if hp > 10000 then
-                        vanillaMaxVolume = 51200 -- volume in kg of L tank
-                        massEmpty = 5480
-                    elseif hp > 1300 then
-                        vanillaMaxVolume = 6400 -- volume in kg of M
-                        massEmpty = 988.67
-                    elseif hp > 150 then
-                        vanillaMaxVolume = 1600 --- volume in kg small
-                        massEmpty = 182.67
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingAtmo > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
-                    end
-                    vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
-                    atmoTanks[#atmoTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+        if checkTanks and (type == "Atmospheric Fuel Tank" or type == "Space Fuel Tank" or type == "Rocket Fuel Tank") then
+            local hp = eleMaxHp(elementsID[k])
+            local mass = eleMass(elementsID[k])
+            local curMass = 0
+            local curTime = system.getTime()
+            if (type == "Atmospheric Fuel Tank") then
+                local vanillaMaxVolume = 400
+                local massEmpty = 35.03
+                if hp > 10000 then
+                    vanillaMaxVolume = 51200 -- volume in kg of L tank
+                    massEmpty = 5480
+                elseif hp > 1300 then
+                    vanillaMaxVolume = 6400 -- volume in kg of M
+                    massEmpty = 988.67
+                elseif hp > 150 then
+                    vanillaMaxVolume = 1600 --- volume in kg small
+                    massEmpty = 182.67
+                end
+                curMass = mass - massEmpty
+                if fuelTankHandlingAtmo > 0 then
+                    vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingAtmo * 0.2))
+                end
+                vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
+                atmoTanks[#atmoTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+                                            vanillaMaxVolume, massEmpty, curMass, curTime}
+            end
+            if (type == "Rocket Fuel Tank") then
+                local vanillaMaxVolume = 320
+                local massEmpty = 173.42
+                if hp > 65000 then
+                    vanillaMaxVolume = 40000 -- volume in kg of L tank
+                    massEmpty = 25740
+                elseif hp > 6000 then
+                    vanillaMaxVolume = 5120 -- volume in kg of M
+                    massEmpty = 4720
+                elseif hp > 700 then
+                    vanillaMaxVolume = 640 --- volume in kg small
+                    massEmpty = 886.72
+                end
+                curMass = mass - massEmpty
+                if fuelTankHandlingRocket > 0 then
+                    vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.1))
+                end
+                vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
+                rocketTanks[#rocketTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
                                                 vanillaMaxVolume, massEmpty, curMass, curTime}
+            end
+            if (type == "Space Fuel Tank") then
+                local vanillaMaxVolume = 2400
+                local massEmpty = 182.67
+                if hp > 10000 then
+                    vanillaMaxVolume = 76800 -- volume in kg of L tank
+                    massEmpty = 5480
+                elseif hp > 1300 then
+                    vanillaMaxVolume = 9600 -- volume in kg of M
+                    massEmpty = 988.67
                 end
-                if (type == "Rocket Fuel Tank") then
-                    local vanillaMaxVolume = 320
-                    local massEmpty = 173.42
-                    if hp > 65000 then
-                        vanillaMaxVolume = 40000 -- volume in kg of L tank
-                        massEmpty = 25740
-                    elseif hp > 6000 then
-                        vanillaMaxVolume = 5120 -- volume in kg of M
-                        massEmpty = 4720
-                    elseif hp > 700 then
-                        vanillaMaxVolume = 640 --- volume in kg small
-                        massEmpty = 886.72
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingRocket > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingRocket * 0.2))
-                    end
-                    vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
-                    rocketTanks[#rocketTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
-                                                    vanillaMaxVolume, massEmpty, curMass, curTime}
+                curMass = mass - massEmpty
+                if fuelTankHandlingSpace > 0 then
+                    vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
                 end
-                if (type == "Space Fuel Tank") then
-                    local vanillaMaxVolume = 2400
-                    local massEmpty = 182.67
-                    if hp > 10000 then
-                        vanillaMaxVolume = 76800 -- volume in kg of L tank
-                        massEmpty = 5480
-                    elseif hp > 1300 then
-                        vanillaMaxVolume = 9600 -- volume in kg of M
-                        massEmpty = 988.67
-                    end
-                    curMass = mass - massEmpty
-                    if fuelTankHandlingSpace > 0 then
-                        vanillaMaxVolume = vanillaMaxVolume + (vanillaMaxVolume * (fuelTankHandlingSpace * 0.2))
-                    end
-                    vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
-                    spaceTanks[#spaceTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
-                                                vanillaMaxVolume, massEmpty, curMass, curTime}
-                end
+                vanillaMaxVolume =  CalculateFuelVolume(curMass, vanillaMaxVolume)
+                spaceTanks[#spaceTanks + 1] = {elementsID[k], core.getElementNameById(elementsID[k]),
+                                            vanillaMaxVolume, massEmpty, curMass, curTime}
             end
         end
     end
@@ -457,9 +461,6 @@ function SetupChecks()
     else
         system.lockView(0)
     end
-    if inAtmo then
-        BrakeIsOn = true
-    end
     if radar_1 then
         if eleType(radar_1.getId()) == "Space Radar" then
             hasSpaceRadar = true
@@ -467,29 +468,19 @@ function SetupChecks()
             hasAtmoRadar = true
         end
     end
-    if switch then 
-        for _, v in pairs(switch) do
-            local eID = v.getId()
-            local name = core.getElementNameById(eID)
-            if (name == "navBlinkSwitch") then
-                navBlinkSwitch = v
-            elseif (name == "navLightSwitch") then
-                navLightSwitch = v
-            elseif (name == "headLightSwitch") then
-                headLightSwitch = v
-            elseif (name == "fuelDisplaySwitch") then
-                fuelDisplaySwitch = v
-            else
-                v.toggle()
-            end
-        end
-    end
-    if door then
+    -- Close door and retract ramp if available
+    local atmo = atmosphere()
+    if door and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(door) do
             v.toggle()
         end
     end
-    if forcefield then
+    if switch then
+        for _, v in pairs(switch) do
+            v.toggle()
+        end
+    end
+    if forcefield and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(forcefield) do
             v.toggle()
         end
@@ -506,6 +497,7 @@ function SetupChecks()
         system.freeze(0)
     end
     if hasGear then
+        sprint("HERE2")
         GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
         if GearExtended then
             Nav.control.extendLandingGears()
@@ -514,23 +506,40 @@ function SetupChecks()
         end
     end
     
+    local aboveGroundLevel = AboveGroundLevel()
+
+    -- Engage brake and extend Gear if either a hover detects something, or they're in space and moving very slowly
+    if aboveGroundLevel ~= -1 or (not inAtmo and vec3(core.getVelocity()):len() < 50) then
+        BrakeIsOn = true
+        if not hasGear then
+            GearExtended = true
+        end
+    else
+        BrakeIsOn = false
+    end
+
     if targetGroundAltitude ~= nil then
         Nav.axisCommandManager:setTargetGroundAltitude(targetGroundAltitude)
         if targetGroundAltitude == 0 and not hasGear then 
-            GearExtended = true 
+            GearExtended = true
+            BrakeIsOn = true -- If they were hovering at 0 and have no gear, consider them landed 
         end
     else
         targetGroundAltitude = Nav:getTargetGroundAltitude() 
-        if GearExtended or not hasGear then
+        if GearExtended then -- or not hasGear then -- And we already tagged GearExtended if they don't have gear, we can just use this
             Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
-            GearExtended = true
+            --GearExtended = true -- We don't need to extend gear just because they have a databank, that would have been done earlier if necessary
         else
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
         end
     end
-    if inAtmo and not dbHud_1 and (GearExtended or not hasGear) then
-        BrakeIsOn = true
+
+    -- Store their max kinematic parameters in ship-up direction for use in brake-landing
+    if inAtmo and aboveGroundLevel ~= -1 then 
+        maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("ground", core.getConstructOrientationUp())[1]
     end
+    -- For now, for simplicity, we only do this once at startup and store it.  If it's nonzero, later we use it. 
+    userControlScheme = string.lower(userControlScheme)
     WasInAtmo = inAtmo
 end
 
@@ -563,7 +572,17 @@ function RefreshLastMaxBrake(gravity, force)
         if maxBrake ~= nil and maxBrake > 0 and inAtmo then 
             maxBrake = maxBrake / utils.clamp(speed/100, 0.1, 1)
             maxBrake = maxBrake / atmoden
-            if maxBrake > LastMaxBrakeInAtmo and atmoden > 0.10 then LastMaxBrakeInAtmo = maxBrake end
+            --if maxBrake > LastMaxBrakeInAtmo and atmoden > 0.10 then LastMaxBrakeInAtmo = maxBrake end
+            if atmoden > 0.10 then 
+                if LastMaxBrakeInAtmo then
+                    LastMaxBrakeInAtmo = (LastMaxBrakeInAtmo + maxBrake) / 2
+                else
+                    LastMaxBrakeInAtmo = maxBrake 
+                end
+            end -- Now that we're calculating actual brake values, we want this updated
+                -- We were ignoring real brake calculations and overriding them with previous wrong, but higher, brake calculations
+                -- Also, ideally this would always give us the same value, but because it's DU they don't.  Sometimes it's a bit off.  
+                -- We should keep a rolling average to smooth any offness.
         end
         if maxBrake ~= nil and maxBrake > 0 then
             LastMaxBrake = maxBrake
@@ -609,6 +628,46 @@ function AddLocationsToAtlas() -- Just called once during init really
     UpdateAtlasLocationsList()
 end
 
+function float_eq(a, b)
+    if a == 0 then
+        return math.abs(b) < 1e-09
+    end
+    if b == 0 then
+        return math.abs(a) < 1e-09
+    end
+    return math.abs(a - b) < math.max(math.abs(a), math.abs(b)) * epsilon
+end
+
+function zeroConvertToMapPosition(targetplanet, worldCoordinates)
+    local worldVec = vec3(worldCoordinates)
+    if targetplanet.bodyId == 0 then
+        return setmetatable({
+            latitude = worldVec.x,
+            longitude = worldVec.y,
+            altitude = worldVec.z,
+            bodyId = 0,
+            systemId = targetplanet.planetarySystemId
+        }, MapPosition)
+    end
+    local coords = worldVec - targetplanet.center
+    local distance = coords:len()
+    local altitude = distance - targetplanet.radius
+    local latitude = 0
+    local longitude = 0
+    if not float_eq(distance, 0) then
+        local phi = math.atan(coords.y, coords.x)
+        longitude = phi >= 0 and phi or (2 * math.pi + phi)
+        latitude = math.pi / 2 - math.acos(coords.z / distance)
+    end
+    return setmetatable({
+        latitude = math.deg(latitude),
+        longitude = math.deg(longitude),
+        altitude = altitude,
+        bodyId = targetplanet.bodyId,
+        systemId = targetplanet.planetarySystemId
+    }, MapPosition)
+end
+
 function zeroConvertToWorldCoordinates(pos) -- Many thanks to SilverZero for this.
     local num  = ' *([+-]?%d+%.?%d*e?[+-]?%d*)'
     local posPattern = '::pos{' .. num .. ',' .. num .. ',' ..  num .. ',' .. num ..  ',' .. num .. '}'    
@@ -642,7 +701,7 @@ function AddNewLocationByWaypoint(savename, planet, pos)
             }
         else
             local atmo = false
-            if planet.atmos then
+            if planet.hasAtmosphere then
                 atmo = true 
             else 
                 atmo = false 
@@ -676,7 +735,7 @@ function AddNewLocation() -- Don't call this unless they have a databank or it's
         end
         local newLocation = {}
         local atmo = false
-        if planet.atmos then
+        if planet.hasAtmosphere then
             atmo = true 
         end
         newLocation = {
@@ -720,7 +779,7 @@ function UpdatePosition(newName)
             newLocation = {
                 position = vec3(core.getConstructWorldPos()),
                 name = SavedLocations[index].name,
-                atmosphere = unit.getAtmosphereDensity(),
+                atmosphere = atmosphere(),
                 planetname = planet.name,
                 gravity = unit.getClosestPlanetInfluence()
             }   
@@ -843,7 +902,6 @@ function ToggleWidgets()
     end
 end
 
-
 function SetupInterplanetaryPanel() -- Interplanetary helper
     panelInterplanetary = system.createWidgetPanel("Interplanetary Helper")
     interplanetaryHeader = system.createWidget(panelInterplanetary, "value")
@@ -883,6 +941,13 @@ function SetupInterplanetaryPanel() -- Interplanetary helper
                                        '{"label": "Projected Altitude", "value": "N/A", "unit":""}')
     if not inAtmo then
         system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
+    end
+
+
+    widgetTargetOrbit = system.createWidget(panelInterplanetary, "value")
+    widgetTargetOrbitText = system.createData('{"label": "Target Altitude", "value": "N/A", "unit":""}')
+    if not inAtmo then
+        system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit)
     end
 end
 
@@ -964,6 +1029,18 @@ function ToggleLockPitch()
 end
 
 function ToggleAltitudeHold()
+    local time = system.getTime()
+    if (time - ahDoubleClick) < 1.5 then
+        if planet.hasAtmosphere then
+            HoldAltitude = planet.spaceEngineMinAltitude - 50
+            ahDoubleClick = -1
+            if AltitudeHold then 
+                return 
+            end
+        end
+    else
+        ahDoubleClick = time
+    end
     AltitudeHold = not AltitudeHold
     if AltitudeHold then
         Autopilot = false
@@ -974,19 +1051,19 @@ function ToggleAltitudeHold()
         Reentry = false
         autoRoll = true
         LockPitch = nil
-        if (not GearExtended and not BrakeIsOn) or not inAtmo then -- Never autotakeoff in space
+        if (not GearExtended and not BrakeIsOn) or not inAtmo or (antigrav and antigrav.getState() == 1) then -- Never autotakeoff in space
             AutoTakeoff = false
-            HoldAltitude = coreAltitude
-           if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+            if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
+            if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
                 Nav.control.cancelCurrentControlMasterMode()
             end
         else
             AutoTakeoff = true
-            HoldAltitude = coreAltitude + AutoTakeoffAltitude
+            if ahDoubleClick > -1 then HoldAltitude = coreAltitude + AutoTakeoffAltitude end
             GearExtended = false
             Nav.control.retractLandingGears()
-            Nav.axisCommandManager:setTargetGroundAltitude(500)
-            BrakeIsOn = true -- Engage brake for warmup
+            BrakeIsOn = true
+            Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
         end
         if spaceLaunch then HoldAltitude = 100000 end
     else
@@ -1043,6 +1120,9 @@ function ToggleAutopilot()
         -- e. If our velocity vector is lined up to go over the target position, calculate our brake distance at current speed in atmo
         -- f. If our distance to the target (ignoring altitude) is within our current brakeDistance, engage brake-landing
         -- f2. Should we even try to let this happen on ships with bad brakes.  Eventually, try that.  For now just don't let them use this
+        local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, AutopilotTargetCoords)
+        waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+        system.setWaypoint(waypoint)
         if CustomTarget ~= nil then
             LockPitch = nil
             SpaceTarget = (CustomTarget.planetname == "Space")
@@ -1257,6 +1337,11 @@ function getPitch(gravityDirection, forward, right)
         pitch = -pitch
     end -- Cross right dot forward?
     return pitch
+end
+
+local atan = math.atan
+local function signedRotationAngle(normal, vecA, vecB)
+  return atan(vecA:cross(vecB):dot(normal), vecA:dot(vecB))
 end
 
 function clearAll()
@@ -1527,23 +1612,75 @@ function getRelativeYaw(velocity)
     return yaw
 end
 
-function AlignToWorldVector(vector, tolerance)
+function AlignToWorldVector(vector, tolerance, damping)
     -- Sets inputs to attempt to point at the autopilot target
     -- Meant to be called from Update or Tick repeatedly
-    if not inAtmo or rateOfChange > (minimumRateOfChange+0.08) or hovGndDet ~= -1 then
+    if not inAtmo or not stalling or hovGndDet ~= -1 or velMag < minAutopilotSpeed then
+        local dampingMult = damping
+        if dampingMult == nil then
+            dampingMult = DampingMultiplier
+        end
+
         if tolerance == nil then
             tolerance = alignmentTolerance
         end
         vector = vec3(vector):normalize()
         local targetVec = (vec3(core.getConstructWorldOrientationForward()) - vector)
-        local yawAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationRight()) *
-                            autopilotStrength
-        local pitchAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationUp()) *
-                                autopilotStrength
+        local yawAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationRight()) * autopilotStrength
+        local pitchAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationUp()) * autopilotStrength
         if previousYawAmount == 0 then previousYawAmount = yawAmount / 2 end
         if previousPitchAmount == 0 then previousPitchAmount = pitchAmount / 2 end
-        yawInput2 = yawInput2 - (yawAmount + (yawAmount - previousYawAmount) * DampingMultiplier)
-        pitchInput2 = pitchInput2 + (pitchAmount + (pitchAmount - previousPitchAmount) * DampingMultiplier)
+        -- Skip dampening at very low values, and force it to effectively overshoot so it can more accurately align back
+        -- Instead of taking literal forever to converge
+        if math.abs(yawAmount) < 0.1 then
+            yawInput2 = yawInput2 - yawAmount*2
+        else
+            yawInput2 = yawInput2 - (yawAmount + (yawAmount - previousYawAmount) * dampingMult)
+        end
+        if math.abs(pitchAmount) < 0.1 then
+            pitchInput2 = pitchInput2 + pitchAmount*2
+        else
+            pitchInput2 = pitchInput2 + (pitchAmount + (pitchAmount - previousPitchAmount) * dampingMult)
+        end
+
+
+        previousYawAmount = yawAmount
+        previousPitchAmount = pitchAmount
+        -- Return true or false depending on whether or not we're aligned
+        if math.abs(yawAmount) < tolerance and math.abs(pitchAmount) < tolerance then
+            return true
+        end
+        return false
+    elseif stalling and hovGndDet == -1 then
+        -- If stalling, align to velocity to fix the stall
+        -- IDK I'm just copy pasting all this
+        vector = vec3(core.getWorldVelocity())
+        local dampingMult = damping
+        if dampingMult == nil then
+            dampingMult = DampingMultiplier
+        end
+
+        if tolerance == nil then
+            tolerance = alignmentTolerance
+        end
+        vector = vec3(vector):normalize()
+        local targetVec = (vec3(core.getConstructWorldOrientationForward()) - vector)
+        local yawAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationRight()) * autopilotStrength
+        local pitchAmount = -getMagnitudeInDirection(targetVec, core.getConstructWorldOrientationUp()) * autopilotStrength
+        if previousYawAmount == 0 then previousYawAmount = yawAmount / 2 end
+        if previousPitchAmount == 0 then previousPitchAmount = pitchAmount / 2 end
+        -- Skip dampening at very low values, and force it to effectively overshoot so it can more accurately align back
+        -- Instead of taking literal forever to converge
+        if math.abs(yawAmount) < 0.1 then
+            yawInput2 = yawInput2 - yawAmount*5
+        else
+            yawInput2 = yawInput2 - (yawAmount + (yawAmount - previousYawAmount) * dampingMult)
+        end
+        if math.abs(pitchAmount) < 0.1 then
+            pitchInput2 = pitchInput2 + pitchAmount*5
+        else
+            pitchInput2 = pitchInput2 + (pitchAmount + (pitchAmount - previousPitchAmount) * dampingMult)
+        end
         previousYawAmount = yawAmount
         previousPitchAmount = pitchAmount
         -- Return true or false depending on whether or not we're aligned
@@ -1557,8 +1694,9 @@ end
 function getAPEnableName()
     local name = AutopilotTargetName
     if name == nil then
-        name = CustomTarget.name .. " " ..
-                   getDistanceDisplayString((vec3(core.getConstructWorldPos()) - CustomTarget.position):len())
+        local displayText, displayUnit = getDistanceDisplayString((vec3(core.getConstructWorldPos()) - CustomTarget.position):len())
+        name = CustomTarget.name .. " " .. displayText .. displayUnit
+                   
     end
     if name == nil then
         name = "None"
@@ -1599,7 +1737,7 @@ function BeginReentry()
         Reentry = false
         autoRoll = autoRollPreference
         AltitudeHold = false
-    elseif atmosphere() ~= 0 or unit.getClosestPlanetInfluence() <= 0 or Reentry or not planet.atmos then
+    elseif atmosphere() ~= 0 or unit.getClosestPlanetInfluence() <= 0 or Reentry or not planet.hasAtmosphere then
         msgText = "Re-Entry requirements not met: you must start out of atmosphere\n and within a planets gravity well over a planet with atmosphere"
         msgTimer = 5
     elseif not reentryMode then-- Parachute ReEntry
@@ -2377,12 +2515,15 @@ end
 
 function DrawPrograde (newContent, velocity, speed, centerX, centerY)
     if (speed > 5 and not inAtmo) or (speed > minAutopilotSpeed) then
-        local horizonRadius = circleRad -- Aliased globa
+        local horizonRadius = circleRad -- Aliased global
         local pitchRange = 20
         local yawRange = 20
         local velo = vec3(velocity)
         local relativePitch = getRelativePitch(velo)
         local relativeYaw = getRelativeYaw(velo)
+
+        local dotSize = 14
+        local dotRadius = dotSize/2
         
         local dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
         local dy = (relativePitch/pitchRange)*horizonRadius
@@ -2390,43 +2531,88 @@ function DrawPrograde (newContent, velocity, speed, centerX, centerY)
         local y = centerY + dy
 
         local distance = math.sqrt((dx)^2 + (dy)^2)
+
+        local progradeDot = [[<circle
+        cx="]] .. x .. [["
+        cy="]] .. y .. [["
+        r="]] .. dotRadius/dotSize .. [["
+        style="fill:#d7fe00;stroke:none;fill-opacity:1"/>
+     <circle
+        cx="]] .. x .. [["
+        cy="]] .. y .. [["
+        r="]] .. dotRadius .. [["
+        style="stroke:#d7fe00;stroke-opacity:1;fill:none" />
+     <path
+        d="M ]] .. x-dotSize .. [[,]] .. y .. [[ h ]] .. dotRadius .. [["
+        style="stroke:#d7fe00;stroke-opacity:1" />
+     <path
+        d="M ]] .. x+dotRadius .. [[,]] .. y .. [[ h ]] .. dotRadius .. [["
+        style="stroke:#d7fe00;stroke-opacity:1" />
+     <path
+        d="M ]] .. x .. [[,]] .. y-dotSize .. [[ v ]] .. dotRadius .. [["
+        style="stroke:#d7fe00;stroke-opacity:1" />]]
             
         if distance < horizonRadius then
-            newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', x, y)
+            newContent[#newContent + 1] = progradeDot
             -- Draw a dot or whatever at x,y, it's inside the AH
         else
             -- x,y is outside the AH.  Figure out how to draw an arrow on the edge of the circle pointing to it.
             -- First get the angle
             -- tan(ang) = o/a, tan(ang) = x/y
             -- atan(x/y) = ang (in radians)
-            -- There is a special overload for doing this on a circle and setting up the signs correctly for the quadrants
-            local angle = math.atan(dy,dx) 
+            -- This is a special overload for doing this on a circle and setting up the signs correctly for the quadrants
+            local angle = math.atan(dy,dx)
              -- Project this onto the circle
             -- These are backwards from what they're supposed to be.  Don't know why, that's just what makes it work apparently
-            local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
-            local projectedY = centerY + horizonRadius*math.sin(angle)
-                newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', projectedX, projectedY)
-        end
-        relativePitch = getRelativePitch(-velo)
-        relativeYaw = getRelativeYaw(-velo)
-        
-        dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
-        dy = (relativePitch/pitchRange)*horizonRadius
-        x = centerX + dx
-        y = centerY + dy
+            local arrowSize = 4
+            local projectedX = centerX + (horizonRadius)*math.cos(angle) -- Needs to be converted to deg?  Probably not
+            local projectedY = centerY + (horizonRadius)*math.sin(angle)
+            -- Draw an arrow that we will rotate by angle
+            -- Convert angle to degrees
+            newContent[#newContent + 1] = stringf('<g transform="rotate(%f %f %f)"><rect x="%f" y="%f" width="%f" height="%f" stroke="#d7fe00" fill="#d7fe00" /><path d="M %f %f l %f %f l %f %f z" fill="#d7fe00" stroke="#d7fe00"></g>', angle*(180/math.pi), projectedX, projectedY, projectedX-arrowSize, projectedY-arrowSize/2, arrowSize*2, arrowSize,
+                                                                                                                                                projectedX+arrowSize, projectedY - arrowSize, arrowSize, arrowSize, -arrowSize, arrowSize)
 
-        distance = math.sqrt((dx)^2 + (dy)^2)
-        -- Retrograde Dot
-        if( not inAtmo) then
+            --newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="white" stroke-width="2" fill="white" />', projectedX, projectedY)
+        end
+
+        if(not inAtmo) then
+            relativePitch = getRelativePitch(-velo)
+            relativeYaw = getRelativeYaw(-velo)
+            
+            dx = (-relativeYaw/yawRange)*horizonRadius -- Values from -1 to 1 indicating offset from the center
+            dy = (relativePitch/pitchRange)*horizonRadius
+            x = centerX + dx
+            y = centerY + dy
+
+            distance = math.sqrt((dx)^2 + (dy)^2)
+            -- Retrograde Dot
+            
             if distance < horizonRadius then
-                newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', x, y)
+                local retrogradeDot = [[<circle
+                cx="]] .. x .. [["
+                cy="]] .. y .. [["
+                r="]] .. dotRadius .. [["
+                style="stroke:#d7fe00;stroke-opacity:1;fill:none" />
+             <path
+                d="M ]] .. x .. [[,]] .. y-dotSize .. [[ v ]] .. dotRadius .. [["
+                style="stroke:#d7fe00;stroke-opacity:1" id="l"/>
+             <use
+                xlink:href="#l"
+                transform="rotate(120,]] .. x .. [[,]] .. y .. [[)" />
+             <use
+                xlink:href="#l"
+                transform="rotate(-120,]] .. x .. [[,]] .. y .. [[)" />
+             <path
+                d="M ]] .. x-dotRadius .. [[,]] .. y .. [[ h ]] .. dotSize .. [["
+                style="stroke-width:0.5;stroke:#d7fe00;stroke-opacity:1"
+                transform="rotate(-45,]] .. x .. [[,]] .. y .. [[)" id="c"/>
+            <use
+                xlink:href="#c"
+                transform="rotate(-90,]] .. x .. [[,]] .. y .. [[)"/>]]
+                newContent[#newContent + 1] = retrogradeDot
                 -- Draw a dot or whatever at x,y, it's inside the AH
-            else
-                local angle = math.atan(dy,dx) 
-                local projectedX = centerX + horizonRadius*math.cos(angle) -- Needs to be converted to deg?  Probably not
-                local projectedY = centerY + horizonRadius*math.sin(angle)
-                newContent[#newContent + 1] = stringf('<circle cx="%f" cy="%f" r="2" stroke="red" stroke-width="2" fill="red" />', projectedX, projectedY)
-            end
+            end -- Don't draw an arrow for this one, only prograde is that important
+
         end
     end
 end
@@ -2465,7 +2651,7 @@ function DrawWarnings(newContent)
     if BrakeIsOn then
         newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Brake Engaged</text>]], warningX, brakeY)
     end
-    if inAtmo and rateOfChange < minimumRateOfChange and velMag > brakeLandingRate+5 then
+    if inAtmo and stalling and hoverDetectGround() == -1 then
         newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+50)
     end
     if gyroIsOn then
@@ -2479,9 +2665,10 @@ function DrawWarnings(newContent)
             newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Landed (G: Takeoff)</text>]], warningX,
                                               gearY)
         end
+        local displayText, displayUnit = getDistanceDisplayString(Nav:getTargetGroundAltitude())
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Hover Height: %s</text>]],
                                           warningX, hoverY,
-                                          getDistanceDisplayString(Nav:getTargetGroundAltitude()))
+                                          displayText.. displayUnit)
     end
     if isBoosting then
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">ROCKET BOOST ENABLED</text>]],
@@ -2510,16 +2697,18 @@ function DrawWarnings(newContent)
     end
     if AltitudeHold then
         if AutoTakeoff then
+            local displayText, displayUnit = getDistanceDisplayString(HoldAltitude)
             newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Ascent to %s</text>]],
-                                              warningX, apY, getDistanceDisplayString(HoldAltitude))
+                                              warningX, apY, displayText.. displayUnit)
             if BrakeIsOn then
                 newContent[#newContent + 1] = stringf(
                                                   [[<text class="crit" x="%d" y="%d">Throttle Up and Disengage Brake For Takeoff</text>]],
                                                   warningX, apY + 50)
             end
         else
+            local displayText, displayUnit = getDistanceDisplayString2(HoldAltitude)
             newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Altitude Hold: %s</text>]],
-                                              warningX, apY, getDistanceDisplayString2(HoldAltitude))
+                                              warningX, apY, displayText.. displayUnit)
         end
     end
     if BrakeLanding then
@@ -2599,8 +2788,9 @@ function DisplayOrbitScreen(newContent)
                                               x - 35, y - 5, orbitMapX + orbitMapSize / 2 + rx + xOffset, y - 5)
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">Apoapsis</text>]], x, y)
             y = y + orbitInfoYOffset
+            local displayText, displayUnit = getDistanceDisplayString(orbit.apoapsis.altitude)
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">%s</text>]], x, y,
-                                              getDistanceDisplayString(orbit.apoapsis.altitude))
+                                              displayText.. displayUnit)
             y = y + orbitInfoYOffset
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">%s</text>]], x, y,
                                               FormatTimeString(orbit.timeToApoapsis))
@@ -2618,8 +2808,9 @@ function DisplayOrbitScreen(newContent)
                                               x + 35, y - 5, orbitMapX + orbitMapSize / 2 - rx + xOffset, y - 5)
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">Periapsis</text>]], x, y)
             y = y + orbitInfoYOffset
+            local displayText, displayUnit = getDistanceDisplayString(orbit.periapsis.altitude)
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">%s</text>]], x, y,
-                                              getDistanceDisplayString(orbit.periapsis.altitude))
+                                              displayText.. displayUnit)
             y = y + orbitInfoYOffset
             newContent[#newContent + 1] = stringf([[<text x="%f" y="%f">%s</text>]], x, y,
                                               FormatTimeString(orbit.timeToPeriapsis))
@@ -2653,34 +2844,34 @@ end
 
 function getDistanceDisplayString(distance)
     local su = distance > 100000
-    local result = ""
+    local result, displayUnit = ""
     if su then
         -- Convert to SU
-        result = round(distance / 1000 / 200, 1) .. " SU"
+        result, displayUnit = round(distance / 1000 / 200, 1),"SU"
     elseif distance < 1000 then
-        result = round(distance, 1) .. " M"
+        result, displayUnit = round(distance, 1),"m"
     else
         -- Convert to KM
-        result = round(distance / 1000, 1) .. " KM"
+        result, displayUnit = round(distance / 1000, 1),"Km"
     end
 
-    return result
+    return result, displayUnit
 end
 
 function getDistanceDisplayString2(distance)
     local su = distance > 100000
-    local result = ""
+    local result, displayUnit = ""
     if su then
         -- Convert to SU
-        result = round(distance / 1000 / 200, 2) .. " SU"
+        result, displayUnit = round(distance / 1000 / 200, 2)," SU"
     elseif distance < 1000 then
-        result = round(distance, 2) .. " M"
+        result, displayUnit = round(distance, 2)," M"
     else
         -- Convert to KM
-        result = round(distance / 1000, 2) .. " KM"
+        result, displayUnit = round(distance / 1000, 2)," KM"
     end
 
-    return result
+    return result, displayUnit
 end
 
 function getSpeedDisplayString(speed) -- TODO: Allow options, for now just do kph
@@ -2750,6 +2941,8 @@ function UpdateAutopilotTarget()
                     system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
                 if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) ~= 1 then
                     system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
+                if system.updateData(widgetTargetOrbitText, widgetTargetOrbit) ~= 1 then
+                    system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit) end
             end
             if system.updateData(widgetMaxMassText, widgetMaxMass) ~= 1 then
                 system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
@@ -2777,13 +2970,20 @@ function UpdateAutopilotTarget()
         AutopilotTargetCoords = CustomTarget.position
     end
     -- Determine the end speed
+    if autopilotTargetPlanet.name ~= "Space" then
+        if autopilotTargetPlanet.hasAtmosphere then 
+            AutopilotTargetOrbit = math.floor(autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.noAtmosphericDensityAltitude)
+        else
+            AutopilotTargetOrbit = math.floor(autopilotTargetPlanet.radius*(TargetOrbitRadius-1) + autopilotTargetPlanet.surfaceMaxAltitude)
+        end
+    else
+        AutopilotTargetOrbit = 1000
+    end
     if CustomTarget ~= nil and CustomTarget.planetname == "Space" then 
         AutopilotEndSpeed = 0
     else
         _, AutopilotEndSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed(AutopilotTargetOrbit)
     end
-    -- AutopilotEndSpeed = 0
-    -- AutopilotPlanetGravity = autopilotTargetPlanet:getGravity(autopilotTargetPlanet.center + vec3({1,0,0}) * AutopilotTargetOrbit):len() -- Any direction, at our orbit height
     AutopilotPlanetGravity = 0 -- This is inaccurate unless we integrate and we're not doing that.  
     AutopilotAccelerating = false
     AutopilotBraking = false
@@ -2926,7 +3126,7 @@ end
 
 function AboveGroundLevel()
     local groundDistance = -1
-    local hgroundDet = hovGndDet
+    local hgroundDet = hoverDetectGround()
     if telemeter_1 then 
         groundDistance = telemeter_1.getDistance()
     end
@@ -3101,429 +3301,1119 @@ function Atlas()
                 name = 'Space',
                 planetarySystemId = 0,
                 radius = 0,
-                atmos = false,
+                hasAtmosphere = false,
                 gravity = 0
             },
-            [1] = {
-                GM = 6930729684,
-                bodyId = 1,
-                center = {
-                    x = 17465536.000,
-                    y = 22665536.000,
-                    z = -34464.000
-                },
-                name = 'Madis',
-                planetarySystemId = 0,
-                radius = 44300,
-                atmos = true,
-                gravity = 0.36
-            },
             [2] = {
-                GM = 157470826617,
+                name = "Alioth",
+                description = "Alioth is the planet selected by the arkship for landfall; it is a typical goldilocks planet where humanity may rebuild in the coming decades. The arkship geological survey reports mountainous regions alongside deep seas and lush forests. This is where it all starts.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.9401,
+                atmosphericEngineMaxAltitude = 5580,
+                biosphere = "Forest",
+                classification = "Mesoplanet",
                 bodyId = 2,
+                GM = 157470826617,
+                gravity = 1.0082568597356114,
+                fullAtmosphericDensityMaxAltitude = -10,
+                habitability = "High",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 6272,
+                numSatellites = 2,
+                positionFromSun = 2,
                 center = {
-                    x = -8.000,
-                    y = -8.000,
-                    z = -126303.000
+                    x = -8,
+                    y = -8,
+                    z = -126303
                 },
-                name = 'Alioth',
-                planetarySystemId = 0,
-                radius = 126068,
-                atmos = true,
-                gravity = 1.01
+                radius = 126067.8984375,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 3410,
+                surfaceArea = 199718780928,
+                surfaceAverageAltitude = 200,
+                surfaceMaxAltitude = 1100,
+                surfaceMinAltitude = -330,
+                systemZone = "High",
+                territories = 259472,
+                type = "Planet",
+                waterLevel = 0,
+                planetarySystemId = 0
             },
-            [3] = {
-                GM = 11776905000,
-                bodyId = 3,
+            [21] = {
+                name = "Alioth Moon 1",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 21,
+                GM = 2118960000,
+                gravity = 0.24006116402380084,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = 29165536.000,
-                    y = 10865536.000,
-                    z = 65536.000
+                    x = 457933,
+                    y = -1509011,
+                    z = 115524
                 },
-                name = 'Thades',
-                planetarySystemId = 0,
-                radius = 49000,
-                atmos = true,
-                gravity = 0.50
+                radius = 30000,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 11309733888,
+                surfaceAverageAltitude = 140,
+                surfaceMaxAltitude = 200,
+                surfaceMinAltitude = 10,
+                systemZone = nil,
+                territories = 14522,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
-            [4] = {
-                GM = 14893847582,
-                bodyId = 4,
+            [22] = {
+                name = "Alioth Moon 4",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 22,
+                GM = 2165833514,
+                gravity = 0.2427018259886451,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = -13234464.000,
-                    y = 55765536.000,
-                    z = 465536.000
+                    x = -1692694,
+                    y = 729681,
+                    z = -411464
                 },
-                name = 'Talemai',
-                planetarySystemId = 0,
-                radius = 57450,
-                atmos = true,
-                gravity = 0.46                    
+                radius = 30330,
+                safeAreaEdgeAltitude = 500000,
+                size = "L",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 11559916544,
+                surfaceAverageAltitude = -15,
+                surfaceMaxAltitude = -5,
+                surfaceMinAltitude = -50,
+                systemZone = nil,
+                territories = 14522,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
             [5] = {
-                GM = 16951680000,
+                name = "Feli",
+                description = "Feli is easily identified by its massive and deep crater. Outside of the crater, the arkship geological survey reports a fairly bland and uniform planet, it also cannot explain the existence of the crater. Feli is particular for having an extremely small atmosphere, allowing life to develop in the deeper areas of its crater but limiting it drastically on the actual surface.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.5488,
+                atmosphericEngineMaxAltitude = 66725,
+                biosphere = "Barren",
+                classification = "Mesoplanet",
                 bodyId = 5,
+                GM = 16951680000,
+                gravity = 0.4801223280476017,
+                fullAtmosphericDensityMaxAltitude = 30,
+                habitability = "Low",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 78500,
+                numSatellites = 1,
+                positionFromSun = 5,
                 center = {
-                    x = -43534464.000,
-                    y = 22565536.000,
-                    z = -48934464.000
+                    x = -43534464,
+                    y = 22565536,
+                    z = -48934464
                 },
-                name = 'Feli',
-                planetarySystemId = 0,
-                radius = 60000,
-                atmos = true,
-                gravity = 0.48                    
+                radius = 41800,
+                safeAreaEdgeAltitude = 500000,
+                size = "S",
+                spaceEngineMinAltitude = 42800,
+                surfaceArea = 21956466688,
+                surfaceAverageAltitude = 18300,
+                surfaceMaxAltitude = 18500,
+                surfaceMinAltitude = 46,
+                systemZone = "Low",
+                territories = 27002,
+                type = "Planet",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
-            [6] = {
-                GM = 10502547741,
-                bodyId = 6,
+            [50] = {
+                name = "Feli Moon 1",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 50,
+                GM = 499917600,
+                gravity = 0.11202853997062348,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = 52765536.000,
-                    y = 27165538.000,
-                    z = 52065535.000
+                    x = -43902841.78,
+                    y = 22261034.7,
+                    z = -48862386
                 },
-                name = 'Sicari',
-                planetarySystemId = 0,
-                radius = 51100,
-                atmos = true,
-                gravity = 0.41                    
+                radius = 14000,
+                safeAreaEdgeAltitude = 500000,
+                size = "S",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 2463008768,
+                surfaceAverageAltitude = 800,
+                surfaceMaxAltitude = 900,
+                surfaceMinAltitude = 0,
+                systemZone = nil,
+                territories = 3002,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
-            [7] = {
-                GM = 13033380591,
-                bodyId = 7,
+            [120] = {
+                name = "Ion",
+                description = "Ion is nothing more than an oversized ice cube frozen through and through. It is a largely inhospitable planet due to its extremely low temperatures. The arkship geological survey reports extremely rough mountainous terrain with little habitable land.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.9522,
+                atmosphericEngineMaxAltitude = 10480,
+                biosphere = "Ice",
+                classification = "Hypopsychroplanet",
+                bodyId = 120,
+                GM = 7135606629,
+                gravity = 0.36009174603570127,
+                fullAtmosphericDensityMaxAltitude = -30,
+                habitability = "Average",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 17700,
+                numSatellites = 2,
+                positionFromSun = 12,
                 center = {
-                    x = 58665538.000,
-                    y = 29665535.000,
-                    z = 58165535.000
+                    x = 2865536.7,
+                    y = -99034464,
+                    z = -934462.02
                 },
-                name = 'Sinnen',
-                planetarySystemId = 0,
-                radius = 54950,
-                atmos = true,
-                gravity = 0.44                    
+                radius = 44950,
+                safeAreaEdgeAltitude = 500000,
+                size = "XS",
+                spaceEngineMinAltitude = 6410,
+                surfaceArea = 25390383104,
+                surfaceAverageAltitude = 500,
+                surfaceMaxAltitude = 1300,
+                surfaceMinAltitude = 250,
+                systemZone = "Average",
+                territories = 32672,
+                type = "Planet",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
-            [8] = {
-                GM = 18477723600,
-                bodyId = 8,
+            [121] = {
+                name = "Ion Moon 1",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 121,
+                GM = 106830900,
+                gravity = 0.08802242599860607,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = 80865538.000,
-                    y = 54665536.000,
-                    z = -934463.940
+                    x = 2472916.8,
+                    y = -99133747,
+                    z = -1133582.8
                 },
-                name = 'Teoma',
-                planetarySystemId = 0,
-                radius = 62000,
-                atmos = true,
-                gravity = 0.49
+                radius = 11000,
+                safeAreaEdgeAltitude = 500000,
+                size = "XS",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 1520530944,
+                surfaceAverageAltitude = 100,
+                surfaceMaxAltitude = 200,
+                surfaceMinAltitude = 3,
+                systemZone = nil,
+                territories = 1922,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
+            },
+            [122] = {
+                name = "Ion Moon 2",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 122,
+                GM = 176580000,
+                gravity = 0.12003058201190042,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
+                center = {
+                    x = 2995424.5,
+                    y = -99275010,
+                    z = -1378480.7
+                },
+                radius = 15000,
+                safeAreaEdgeAltitude = 500000,
+                size = "XS",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 2827433472,
+                surfaceAverageAltitude = -1900,
+                surfaceMaxAltitude = -1400,
+                surfaceMinAltitude = -2100,
+                systemZone = nil,
+                territories = 3632,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
             [9] = {
-                GM = 18606274330,
+                name = "Jago",
+                description = "Jago is a water planet. The large majority of the planet&apos;s surface is covered by large oceans dotted by small areas of landmass across the planet. The arkship geological survey reports deep seas across the majority of the planet with sub 15 percent coverage of solid ground.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.9835,
+                atmosphericEngineMaxAltitude = 9695,
+                biosphere = "Water",
+                classification = "Mesoplanet",
                 bodyId = 9,
+                GM = 18606274330,
+                gravity = 0.5041284298678057,
+                fullAtmosphericDensityMaxAltitude = -90,
+                habitability = "Very High",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 10900,
+                numSatellites = 0,
+                positionFromSun = 9,
                 center = {
-                    x = -94134462.000,
-                    y = 12765534.000,
-                    z = -3634464.000
+                    x = -94134462,
+                    y = 12765534,
+                    z = -3634464
                 },
-                name = 'Jago',
-                planetarySystemId = 0,
                 radius = 61590,
-                atmos = true,
-                gravity = 0.50
+                safeAreaEdgeAltitude = 500000,
+                size = "XL",
+                spaceEngineMinAltitude = 5900,
+                surfaceArea = 47668367360,
+                surfaceAverageAltitude = 0,
+                surfaceMaxAltitude = 1200,
+                surfaceMinAltitude = -500,
+                systemZone = "Very High",
+                territories = 60752,
+                type = "Planet",
+                waterLevel = 0,
+                planetarySystemId = 0
+            },
+            [100] = {
+                name = "Lacobus",
+                description = "Lacobus is an ice planet that also features large bodies of water. The arkship geological survey reports deep oceans alongside a frozen and rough mountainous environment. Lacobus seems to feature regional geothermal activity allowing for the presence of water on the surface.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.7571,
+                atmosphericEngineMaxAltitude = 11120,
+                biosphere = "Ice",
+                classification = "Psychroplanet",
+                bodyId = 100,
+                GM = 13975172474,
+                gravity = 0.45611622622739767,
+                fullAtmosphericDensityMaxAltitude = -20,
+                habitability = "Average",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 12510,
+                numSatellites = 3,
+                positionFromSun = 10,
+                center = {
+                    x = 98865536,
+                    y = -13534464,
+                    z = -934461.99
+                },
+                radius = 55650,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 6790,
+                surfaceArea = 38917074944,
+                surfaceAverageAltitude = 800,
+                surfaceMaxAltitude = 1660,
+                surfaceMinAltitude = 250,
+                systemZone = "Average",
+                territories = 50432,
+                type = "Planet",
+                waterLevel = 0,
+                planetarySystemId = 0
+            },
+            [102] = {
+                name = "Lacobus Moon 1",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 102,
+                GM = 444981600,
+                gravity = 0.14403669598391783,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
+                center = {
+                    x = 99180968,
+                    y = -13783862,
+                    z = -926156.4
+                },
+                radius = 18000,
+                safeAreaEdgeAltitude = 500000,
+                size = "XL",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 4071504128,
+                surfaceAverageAltitude = 150,
+                surfaceMaxAltitude = 300,
+                surfaceMinAltitude = 10,
+                systemZone = nil,
+                territories = 5072,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
+            },
+            [103] = {
+                name = "Lacobus Moon 2",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 103,
+                GM = 211503600,
+                gravity = 0.11202853997062348,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
+                center = {
+                    x = 99250052,
+                    y = -13629215,
+                    z = -1059341.4
+                },
+                radius = 14000,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 2463008768,
+                surfaceAverageAltitude = -1380,
+                surfaceMaxAltitude = -1280,
+                surfaceMinAltitude = -1880,
+                systemZone = nil,
+                territories = 3002,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
+            },
+            [101] = {
+                name = "Lacobus Moon 3",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 101,
+                GM = 264870000,
+                gravity = 0.12003058201190042,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
+                center = {
+                    x = 98905288.17,
+                    y = -13950921.1,
+                    z = -647589.53
+                },
+                radius = 15000,
+                safeAreaEdgeAltitude = 500000,
+                size = "L",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 2827433472,
+                surfaceAverageAltitude = 500,
+                surfaceMaxAltitude = 820,
+                surfaceMinAltitude = 3,
+                systemZone = nil,
+                territories = 3632,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
+            },
+            [1] = {
+                name = "Madis",
+                description = "Madis is a barren wasteland of a rock; it sits closest to the sun and temperatures reach extreme highs during the day. The arkship geological survey reports long rocky valleys intermittently separated by small ravines.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.8629,
+                atmosphericEngineMaxAltitude = 7165,
+                biosphere = "Barren",
+                classification = "hyperthermoplanet",
+                bodyId = 1,
+                GM = 6930729684,
+                gravity = 0.36009174603570127,
+                fullAtmosphericDensityMaxAltitude = 220,
+                habitability = "Low",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 8050,
+                numSatellites = 3,
+                positionFromSun = 1,
+                center = {
+                    x = 17465536,
+                    y = 22665536,
+                    z = -34464
+                },
+                radius = 44300,
+                safeAreaEdgeAltitude = 500000,
+                size = "XS",
+                spaceEngineMinAltitude = 4480,
+                surfaceArea = 24661377024,
+                surfaceAverageAltitude = 750,
+                surfaceMaxAltitude = 850,
+                surfaceMinAltitude = 670,
+                systemZone = "Low",
+                territories = 30722,
+                type = "Planet",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
             [10] = {
-                GM = 78480000,
+                name = "Madis Moon 1",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
                 bodyId = 10,
+                GM = 78480000,
+                gravity = 0.08002039003323584,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
                     x = 17448118.224,
                     y = 22966846.286,
-                    z = 143078.820
+                    z = 143078.82
                 },
-                name = 'Madis Moon 1',
-                planetarySystemId = 0,
                 radius = 10000,
-                atmos = false,
-                gravity = 0.08
+                safeAreaEdgeAltitude = 500000,
+                size = "XL",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 1256637056,
+                surfaceAverageAltitude = 210,
+                surfaceMaxAltitude = 420,
+                surfaceMinAltitude = 0,
+                systemZone = nil,
+                territories = 1472,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
             [11] = {
-                GM = 237402000,
+                name = "Madis Moon 2",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
                 bodyId = 11,
+                GM = 237402000,
+                gravity = 0.09602446196397631,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = 17194626.000,
-                    y = 22243633.880,
-                    z = -214962.810
+                    x = 17194626,
+                    y = 22243633.88,
+                    z = -214962.81
                 },
-                name = 'Madis Moon 2',
-                planetarySystemId = 0,
-                radius = 11000,
-                atmos = false,
-                gravity = 0.10
+                radius = 12000,
+                safeAreaEdgeAltitude = 500000,
+                size = "S",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 1809557376,
+                surfaceAverageAltitude = -700,
+                surfaceMaxAltitude = 300,
+                surfaceMinAltitude = -2900,
+                systemZone = nil,
+                territories = 1922,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
             [12] = {
-                GM = 265046609,
+                name = "Madis Moon 3",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
                 bodyId = 12,
+                GM = 265046609,
+                gravity = 0.12003058201190042,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = 17520614.000,
-                    y = 22184730.000,
-                    z = -309989.990
+                    x = 17520614,
+                    y = 22184730,
+                    z = -309989.99
                 },
-                name = 'Madis Moon 3',
-                planetarySystemId = 0,
-                radius = 15005,
-                atmos = false,
-                gravity = 0.12
-            },
-            [21] = {
-                GM = 2118960000,
-                bodyId = 21,
-                center = {
-                    x = 457933.000,
-                    y = -1509011.000,
-                    z = 115524.000
-                },
-                name = 'Alioth Moon 1',
-                planetarySystemId = 0,
-                radius = 30000,
-                atmos = false,
-                gravity = 0.24
-            },
-            [22] = {
-                GM = 2165833514,
-                bodyId = 22,
-                center = {
-                    x = -1692694.000,
-                    y = 729681.000,
-                    z = -411464.000
-                },
-                name = 'Alioth Moon 4',
-                planetarySystemId = 0,
-                radius = 30330,
-                atmos = false,
-                gravity = 0.24
+                radius = 15000,
+                safeAreaEdgeAltitude = 500000,
+                size = "S",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 2827433472,
+                surfaceAverageAltitude = 700,
+                surfaceMaxAltitude = 1100,
+                surfaceMinAltitude = 0,
+                systemZone = nil,
+                territories = 3632,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
             [26] = {
-                GM = 68234043600,
+                name = "Sanctuary",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.9666,
+                atmosphericEngineMaxAltitude = 6935,
+                biosphere = "",
+                classification = "",
                 bodyId = 26,
+                GM = 68234043600,
+                gravity = 1.0000000427743831,
+                fullAtmosphericDensityMaxAltitude = -30,
+                habitability = "",
+                hasAtmosphere = true,
+                isSanctuary = true,
+                noAtmosphericDensityAltitude = 7800,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = -1404835.000,
-                    y = 562655.000,
-                    z = -285074.000
+                    x = -1404835,
+                    y = 562655,
+                    z = -285074
                 },
-                name = 'Sanctuary',
-                planetarySystemId = 0,
                 radius = 83400,
-                atmos = true,
-                gravity = 1.00
+                safeAreaEdgeAltitude = 0,
+                size = "L",
+                spaceEngineMinAltitude = 4230,
+                surfaceArea = 87406149632,
+                surfaceAverageAltitude = 80,
+                surfaceMaxAltitude = 500,
+                surfaceMinAltitude = -60,
+                systemZone = nil,
+                territories = 111632,
+                type = "",
+                waterLevel = 0,
+                planetarySystemId = 0
             },
-            [30] = {
-                GM = 211564034,
-                bodyId = 30,
+            [6] = {
+                name = "Sicari",
+                description = "Sicari is a typical desert planet; it has survived for millenniums and will continue to endure. While not the most habitable of environments it remains a relatively untouched and livable planet of the Alioth sector. The arkship geological survey reports large flatlands alongside steep plateaus.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.897,
+                atmosphericEngineMaxAltitude = 7725,
+                biosphere = "Desert",
+                classification = "Mesoplanet",
+                bodyId = 6,
+                GM = 10502547741,
+                gravity = 0.4081039739797361,
+                fullAtmosphericDensityMaxAltitude = -625,
+                habitability = "Average",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 8770,
+                numSatellites = 0,
+                positionFromSun = 6,
                 center = {
-                    x = 29214402.000,
-                    y = 10907080.695,
-                    z = 433858.200
+                    x = 52765536,
+                    y = 27165538,
+                    z = 52065535
                 },
-                name = 'Thades Moon 1',
-                planetarySystemId = 0,
-                radius = 14002,
-                atmos = false,
-                gravity = 0.11
+                radius = 51100,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 4480,
+                surfaceArea = 32813432832,
+                surfaceAverageAltitude = 130,
+                surfaceMaxAltitude = 220,
+                surfaceMinAltitude = 50,
+                systemZone = "Average",
+                territories = 41072,
+                type = "Planet",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
-            [31] = {
-                GM = 264870000,
-                bodyId = 31,
+            [7] = {
+                name = "Sinnen",
+                description = "Sinnen is a an empty and rocky hell. With no atmosphere to speak of it is one of the least hospitable planets in the sector. The arkship geological survey reports mostly flatlands alongside deep ravines which look to have once been riverbeds. This planet simply looks to have dried up and died, likely from solar winds.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.9226,
+                atmosphericEngineMaxAltitude = 10335,
+                biosphere = "Desert",
+                classification = "Mesoplanet",
+                bodyId = 7,
+                GM = 13033380591,
+                gravity = 0.4401121421448438,
+                fullAtmosphericDensityMaxAltitude = -120,
+                habitability = "Average",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 11620,
+                numSatellites = 1,
+                positionFromSun = 7,
                 center = {
-                    x = 29404193.000,
-                    y = 10432768.000,
-                    z = 19554.131
+                    x = 58665538,
+                    y = 29665535,
+                    z = 58165535
                 },
-                name = 'Thades Moon 2',
-                planetarySystemId = 0,
-                radius = 15000,
-                atmos = false,
-                gravity = 0.12
-            },
-            [40] = {
-                GM = 141264000,
-                bodyId = 40,
-                center = {
-                    x = -13503090.000,
-                    y = 55594325.000,
-                    z = 769838.640
-                },
-                name = 'Talemai Moon 2',
-                planetarySystemId = 0,
-                radius = 12000,
-                atmos = false,
-                gravity = 0.10
-            },
-            [41] = {
-                GM = 106830900,
-                bodyId = 41,
-                center = {
-                    x = -12800515.000,
-                    y = 55700259.000,
-                    z = 325207.840
-                },
-                name = 'Talemai Moon 3',
-                planetarySystemId = 0,
-                radius = 11000,
-                atmos = false,
-                gravity = 0.09
-            },
-            [42] = {
-                GM = 264870000,
-                bodyId = 42,
-                center = {
-                    x = -13058408.000,
-                    y = 55781856.000,
-                    z = 740177.760
-                },
-                name = 'Talemai Moon 1',
-                planetarySystemId = 0,
-                radius = 15000,
-                atmos = false,
-                gravity = 0.12
-            },
-            [50] = {
-                GM = 499917600,
-                bodyId = 50,
-                center = {
-                    x = -43902841.780,
-                    y = 22261034.700,
-                    z = -48862386.000
-                },
-                name = 'Feli Moon 1',
-                planetarySystemId = 0,
-                radius = 14000,
-                atmos = false,
-                gravity = 0.11
+                radius = 54950,
+                safeAreaEdgeAltitude = 500000,
+                size = "S",
+                spaceEngineMinAltitude = 6270,
+                surfaceArea = 37944188928,
+                surfaceAverageAltitude = 317,
+                surfaceMaxAltitude = 360,
+                surfaceMinAltitude = 23,
+                systemZone = "Average",
+                territories = 48002,
+                type = "Planet",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
             [70] = {
-                GM = 396912600,
+                name = "Sinnen Moon 1",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
                 bodyId = 70,
+                GM = 396912600,
+                gravity = 0.1360346539426409,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = 58969616.000,
-                    y = 29797945.000,
-                    z = 57969449.000
+                    x = 58969616,
+                    y = 29797945,
+                    z = 57969449
                 },
-                name = 'Sinnen Moon 1',
-                planetarySystemId = 0,
                 radius = 17000,
-                atmos = false,
-                gravity = 0.14
-            },
-            [100] = {
-                GM = 13975172474,
-                bodyId = 100,
-                center = {
-                    x = 98865536.000,
-                    y = -13534464.000,
-                    z = -934461.990
-                },
-                name = 'Lacobus',
-                planetarySystemId = 0,
-                radius = 55650,
-                atmos = true,
-                gravity = 0.46
-            },
-            [101] = {
-                GM = 264870000,
-                bodyId = 101,
-                center = {
-                    x = 98905288.170,
-                    y = -13950921.100,
-                    z = -647589.530
-                },
-                name = 'Lacobus Moon 3',
-                planetarySystemId = 0,
-                radius = 15000,
-                atmos = false,
-                gravity = 0.12
-            },
-            [102] = {
-                GM = 444981600,
-                bodyId = 102,
-                center = {
-                    x = 99180968.000,
-                    y = -13783862.000,
-                    z = -926156.400
-                },
-                name = 'Lacobus Moon 1',
-                planetarySystemId = 0,
-                radius = 18000,
-                atmos = false,
-                gravity = 0.14
-            },
-            [103] = {
-                GM = 211503600,
-                bodyId = 103,
-                center = {
-                    x = 99250052.000,
-                    y = -13629215.000,
-                    z = -1059341.400
-                },
-                name = 'Lacobus Moon 2',
-                planetarySystemId = 0,
-                radius = 14000,
-                atmos = false,
-                gravity = 0.11
+                safeAreaEdgeAltitude = 500000,
+                size = "S",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 3631681280,
+                surfaceAverageAltitude = -2050,
+                surfaceMaxAltitude = -1950,
+                surfaceMinAltitude = -2150,
+                systemZone = nil,
+                territories = 4322,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
             [110] = {
-                GM = 9204742375,
+                name = "Symeon",
+                description = "Symeon is an ice planet mysteriously split at the equator by a band of solid desert. Exactly how this phenomenon is possible is unclear but some sort of weather anomaly may be responsible. The arkship geological survey reports a fairly diverse mix of flat-lands alongside mountainous formations.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.9559,
+                atmosphericEngineMaxAltitude = 6920,
+                biosphere = "Ice, Desert",
+                classification = "Hybrid",
                 bodyId = 110,
+                GM = 9204742375,
+                gravity = 0.3920998898971822,
+                fullAtmosphericDensityMaxAltitude = -30,
+                habitability = "High",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 7800,
+                numSatellites = 0,
+                positionFromSun = 11,
                 center = {
-                    x = 14165536.000,
-                    y = -85634465.000,
-                    z = -934464.300
+                    x = 14165536,
+                    y = -85634465,
+                    z = -934464.3
                 },
-                name = 'Symeon',
-                planetarySystemId = 0,
                 radius = 49050,
-                atmos = true,
-                gravity = 0.39
+                safeAreaEdgeAltitude = 500000,
+                size = "S",
+                spaceEngineMinAltitude = 4230,
+                surfaceArea = 30233462784,
+                surfaceAverageAltitude = 39,
+                surfaceMaxAltitude = 450,
+                surfaceMinAltitude = 126,
+                systemZone = "High",
+                territories = 38882,
+                type = "Planet",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
-            [120] = {
-                GM = 7135606629,
-                bodyId = 120,
+            [4] = {
+                name = "Talemai",
+                description = "Talemai is a planet in the final stages of an Ice Age. It seems likely that the planet was thrown into tumult by a cataclysmic volcanic event which resulted in its current state. The arkship geological survey reports large mountainous regions across the entire planet.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.8776,
+                atmosphericEngineMaxAltitude = 9685,
+                biosphere = "Barren",
+                classification = "Psychroplanet",
+                bodyId = 4,
+                GM = 14893847582,
+                gravity = 0.4641182439650478,
+                fullAtmosphericDensityMaxAltitude = -78,
+                habitability = "Average",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 10890,
+                numSatellites = 3,
+                positionFromSun = 4,
                 center = {
-                    x = 2865536.700,
-                    y = -99034464.000,
-                    z = -934462.020
+                    x = -13234464,
+                    y = 55765536,
+                    z = 465536
                 },
-                name = 'Ion',
-                planetarySystemId = 0,
-                radius = 44950,
-                atmos = true,
-                gravity = 0.36
+                radius = 57500,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 5890,
+                surfaceArea = 41547563008,
+                surfaceAverageAltitude = 580,
+                surfaceMaxAltitude = 610,
+                surfaceMinAltitude = 520,
+                systemZone = "Average",
+                territories = 52922,
+                type = "Planet",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
-            [121] = {
-                GM = 106830900,
-                bodyId = 121,
+            [42] = {
+                name = "Talemai Moon 1",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 42,
+                GM = 264870000,
+                gravity = 0.12003058201190042,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
                 center = {
-                    x = 2472916.800,
-                    y = -99133747.000,
-                    z = -1133582.800
+                    x = -13058408,
+                    y = 55781856,
+                    z = 740177.76
                 },
-                name = 'Ion Moon 1',
-                planetarySystemId = 0,
-                radius = 11000,
-                atmos = false,
-                gravity = 0.09
-            },
-            [122] = {
-                GM = 176580000,
-                bodyId = 122,
-                center = {
-                    x = 2995424.500,
-                    y = -99275010.000,
-                    z = -1378480.700
-                },
-                name = 'Ion Moon 2',
-                planetarySystemId = 0,
                 radius = 15000,
-                atmos = false,
-                gravity = 0.12
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 2827433472,
+                surfaceAverageAltitude = 720,
+                surfaceMaxAltitude = 850,
+                surfaceMinAltitude = 0,
+                systemZone = nil,
+                territories = 3632,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
             },
+            [40] = {
+                name = "Talemai Moon 2",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 40,
+                GM = 141264000,
+                gravity = 0.09602446196397631,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
+                center = {
+                    x = -13503090,
+                    y = 55594325,
+                    z = 769838.64
+                },
+                radius = 12000,
+                safeAreaEdgeAltitude = 500000,
+                size = "S",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 1809557376,
+                surfaceAverageAltitude = 250,
+                surfaceMaxAltitude = 450,
+                surfaceMinAltitude = 0,
+                systemZone = nil,
+                territories = 1922,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
+            },
+            [41] = {
+                name = "Talemai Moon 3",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 41,
+                GM = 106830900,
+                gravity = 0.08802242599860607,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
+                center = {
+                    x = -12800515,
+                    y = 55700259,
+                    z = 325207.84
+                },
+                radius = 11000,
+                safeAreaEdgeAltitude = 500000,
+                size = "XS",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 1520530944,
+                surfaceAverageAltitude = 190,
+                surfaceMaxAltitude = 400,
+                surfaceMinAltitude = 0,
+                systemZone = nil,
+                territories = 1922,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
+            },
+            [8] = {
+                name = "Teoma",
+                description = "[REDACTED] The arkship geological survey [REDACTED]. This planet should not be here.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.7834,
+                atmosphericEngineMaxAltitude = 5580,
+                biosphere = "Forest",
+                classification = "Mesoplanet",
+                bodyId = 8,
+                GM = 18477723600,
+                gravity = 0.48812434578525177,
+                fullAtmosphericDensityMaxAltitude = 15,
+                habitability = "High",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 6280,
+                numSatellites = 0,
+                positionFromSun = 8,
+                center = {
+                    x = 80865538,
+                    y = 54665536,
+                    z = -934463.94
+                },
+                radius = 62000,
+                safeAreaEdgeAltitude = 500000,
+                size = "L",
+                spaceEngineMinAltitude = 3420,
+                surfaceArea = 48305131520,
+                surfaceAverageAltitude = 700,
+                surfaceMaxAltitude = 1100,
+                surfaceMinAltitude = -200,
+                systemZone = "High",
+                territories = 60752,
+                type = "Planet",
+                waterLevel = 0,
+                planetarySystemId = 0
+            },
+            [3] = {
+                name = "Thades",
+                description = "Thades is a scorched desert planet. Perhaps it was once teaming with life but now all that remains is ash and dust. The arkship geological survey reports a rocky mountainous planet bisected by a massive unnatural ravine; something happened to this planet.",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0.03552,
+                atmosphericEngineMaxAltitude = 32180,
+                biosphere = "Desert",
+                classification = "Thermoplanet",
+                bodyId = 3,
+                GM = 11776905000,
+                gravity = 0.49612641213015557,
+                fullAtmosphericDensityMaxAltitude = 150,
+                habitability = "Low",
+                hasAtmosphere = true,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 32800,
+                numSatellites = 2,
+                positionFromSun = 3,
+                center = {
+                    x = 29165536,
+                    y = 10865536,
+                    z = 65536
+                },
+                radius = 49000,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 21400,
+                surfaceArea = 30171856896,
+                surfaceAverageAltitude = 13640,
+                surfaceMaxAltitude = 13690,
+                surfaceMinAltitude = 370,
+                systemZone = "Low",
+                territories = 38882,
+                type = "Planet",
+                waterLevel = nil,
+                planetarySystemId = 0
+            },
+            [30] = {
+                name = "Thades Moon 1",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 30,
+                GM = 211564034,
+                gravity = 0.11202853997062348,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
+                center = {
+                    x = 29214402,
+                    y = 10907080.695,
+                    z = 433858.2
+                },
+                radius = 14000,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 2463008768,
+                surfaceAverageAltitude = 60,
+                surfaceMaxAltitude = 300,
+                surfaceMinAltitude = 0,
+                systemZone = nil,
+                territories = 3002,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
+            },
+            [31] = {
+                name = "Thades Moon 2",
+                description = "",
+                antiGravMinAltitude = 1000,
+                atmosphericDensityAboveSurface = 0,
+                atmosphericEngineMaxAltitude = 0,
+                biosphere = "",
+                classification = "",
+                bodyId = 31,
+                GM = 264870000,
+                gravity = 0.12003058201190042,
+                fullAtmosphericDensityMaxAltitude = 0,
+                habitability = "",
+                hasAtmosphere = false,
+                isSanctuary = false,
+                noAtmosphericDensityAltitude = 0,
+                numSatellites = 0,
+                positionFromSun = 0,
+                center = {
+                    x = 29404193,
+                    y = 10432768,
+                    z = 19554.131
+                },
+                radius = 15000,
+                safeAreaEdgeAltitude = 500000,
+                size = "M",
+                spaceEngineMinAltitude = 0,
+                surfaceArea = 2827433472,
+                surfaceAverageAltitude = 70,
+                surfaceMaxAltitude = 350,
+                surfaceMinAltitude = 0,
+                systemZone = nil,
+                territories = 3632,
+                type = "",
+                waterLevel = nil,
+                planetarySystemId = 0
+            }
         }
     }
 end
@@ -3920,7 +4810,7 @@ function PlanetRef()
         local coord = vec3(coordinates)
         for _, params in pairs(self) do
             local distance2 = (params.center - coord):len2()
-            if not body or distance2 < minDistance2 then
+            if (not body or distance2 < minDistance2) and params.name ~= "Space" then -- Never return space.  
                 body = params
                 minDistance2 = distance2
             end
@@ -4236,6 +5126,7 @@ function Kinematics()
         if distance == 0 then
             return 0
         end
+        -- So then what's with all the weird ass sines and cosines?
         if acceleration > 0 then
             local k1 = C * math.asin(initial / C)
             local k2 = C2 * math.cos(k1 / C) / acceleration
@@ -4253,7 +5144,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 4.927 
+    VERSION_NUMBER = 5.11
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -4261,19 +5152,16 @@ function script.onStart()
 
         -- Load Saved Variables
         LoadVariables()
-
         coroutine.yield() -- Give it some time to breathe before we do the rest
 
         -- Find elements we care about
         ProcessElements()
-
         coroutine.yield() -- Give it some time to breathe before we do the rest
 
-        SetupChecks() -- All the if-thens to set up for particular ship
-
+        SetupChecks() -- All the if-thens to set up for particular ship.  Specifically override these with the saved variables if available
         SetupButtons() -- Set up all the pushable buttons.
-
         coroutine.yield() -- Just to make sure
+
         -- Set up Jaylebreak and atlas
         SetupAtlas()
         PlanetaryReference = PlanetRef()
@@ -4284,22 +5172,48 @@ function script.onStart()
         UpdateAtlasLocationsList()
         UpdateAutopilotTarget()
         coroutine.yield()
+
         unit.hide()
         system.showScreen(1)
         -- That was a lot of work with dirty strings and json.  Clean up
         collectgarbage("collect")
         -- Start timers
+        coroutine.yield()
+
         unit.setTimer("apTick", apTickRate)
         unit.setTimer("hudTick", hudTickRate)
         unit.setTimer("oneSecond", 1)
         unit.setTimer("tenthSecond", 1/10)
+
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
-        navLightSwitch.activate()
-        headLightSwitch.activate()
-        fuelDisplaySwitch.activate()
+
     end)
+
+end
+
+function SaveDataBank(copy)
+    if dbHud_1 then
+        if not wipedDatabank then
+            for k, v in pairs(autoVariables) do
+                dbHud_1.setStringValue(v, jencode(_G[v]))
+                if copy and dbHud_2 then
+                    dbHud_2.setStringValue(v, jencode(_G[v]))
+                end
+            end
+            for k, v in pairs(saveableVariables) do
+                dbHud_1.setStringValue(v, jencode(_G[v]))
+                if copy and dbHud_2 then
+                    dbHud_2.setStringValue(v, jencode(_G[v]))
+                end
+            end
+            sprint("Saved Variables to Datacore")
+            if copy and dbHud_2 then
+                msgText = "Databank copied.  Remove copy when ready."
+            end
+        end
+    end
 end
 
 function script.onStop()
@@ -4311,10 +5225,16 @@ function script.onStop()
         warpdrive.hide()
     end
     core.hide()
+    Nav.control.switchOffHeadlights()
     -- Open door and extend ramp if available
     local atmo = atmosphere()
     if door and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(door) do
+            v.toggle()
+        end
+    end
+    if switch then
+        for _, v in pairs(switch) do
             v.toggle()
         end
     end
@@ -4323,28 +5243,14 @@ function script.onStop()
             v.toggle()
         end
     end
-    -- Save variables
-    if dbHud_1 then
-        if not wipedDatabank then
-            for k, v in pairs(autoVariables) do
-                dbHud_1.setStringValue(v, jencode(_G[v]))
-            end
-            for k, v in pairs(saveableVariables) do
-                dbHud_1.setStringValue(v, jencode(_G[v]))
-            end
-            sprint("Saved Variables to Datacore")
-        end
-    end
+    SaveDataBank()
     if button then
         button.activate()
     end
-    navLightSwitch.deactivate()
-    fuelDisplaySwitch.deactivate()
 end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
-        navBlinkSwitch.deactivate()
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -4367,20 +5273,26 @@ function script.onTick(timerId)
                     brakeDistance, brakeTime = GetAutopilotTBBrakeDistanceAndTime(velMag)
                     maxBrakeDistance, maxBrakeTime = GetAutopilotTBBrakeDistanceAndTime(MaxGameVelocity)
                 end
-                system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
-                    getDistanceDisplayString(distance) .. '", "unit":""}')
+                local displayText, displayUnit = getDistanceDisplayString(distance)
+                system.updateData(widgetDistanceText, '{"label": "distance", "value": "' .. displayText
+                     .. '", "unit":"' .. displayUnit .. '"}')
                 system.updateData(widgetTravelTimeText, '{"label": "Travel Time", "value": "' ..
                     FormatTimeString(travelTime) .. '", "unit":""}')
+                displayText, displayUnit = getDistanceDisplayString(brakeDistance)
                 system.updateData(widgetCurBrakeDistanceText, '{"label": "Cur Brake distance", "value": "' ..
-                    getDistanceDisplayString(brakeDistance) .. '", "unit":""}')
+                    displayText.. '", "unit":"' .. displayUnit .. '"}')
                 system.updateData(widgetCurBrakeTimeText, '{"label": "Cur Brake Time", "value": "' ..
                     FormatTimeString(brakeTime) .. '", "unit":""}')
+                displayText, displayUnit = getDistanceDisplayString(maxBrakeDistance)
                 system.updateData(widgetMaxBrakeDistanceText, '{"label": "Max Brake distance", "value": "' ..
-                    getDistanceDisplayString(maxBrakeDistance) .. '", "unit":""}')
+                    displayText.. '", "unit":"' .. displayUnit .. '"}')
                 system.updateData(widgetMaxBrakeTimeText, '{"label": "Max Brake Time", "value": "' ..
                     FormatTimeString(maxBrakeTime) .. '", "unit":""}')
                 system.updateData(widgetMaxMassText, '{"label": "Maximum Mass", "value": "' ..
-                    stringf("%.2f tons", (planetMaxMass / 1000)) .. '", "unit":""}')
+                    stringf("%.2f", (planetMaxMass / 1000)) .. '", "unit":" Tons"}')
+                displayText, displayUnit = getDistanceDisplayString(AutopilotTargetOrbit)
+                system.updateData(widgetTargetOrbitText, '{"label": "Target Orbit", "value": "' ..
+                stringf("%.2f", displayText) .. '", "unit":"' .. displayUnit .. '"}')
                 if atmosphere() > 0 and not WasInAtmo then
                     system.removeDataFromWidget(widgetMaxBrakeTimeText, widgetMaxBrakeTime)
                     system.removeDataFromWidget(widgetMaxBrakeDistanceText, widgetMaxBrakeDistance)
@@ -4426,9 +5338,10 @@ function script.onTick(timerId)
         local newContent = {}
         local flightStyle = GetFlightStyle()
         DrawOdometer(newContent, totalDistanceTrip, TotalDistanceTravelled, flightStyle, flightTime)
-        CheckDamage(newContent)
+        if ShouldCheckDamage then
+            CheckDamage(newContent)
+        end
         lastOdometerOutput = table.concat(newContent, "")
-        navBlinkSwitch.activate()
         collectgarbage("collect")
     elseif timerId == "fiveSecond" then
         -- Support for SatNav by Trog
@@ -4582,6 +5495,32 @@ function script.onTick(timerId)
         -- Localized Functions
         rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
         inAtmo = (atmosphere() > 0)
+
+        local time = system.getTime()
+        local deltaTick = time - lastApTickTime
+        lastApTickTime = time
+
+        local constrF = vec3(core.getConstructWorldOrientationForward())
+        local constrR = vec3(core.getConstructWorldOrientationRight())
+        local constrUp = vec3(core.getConstructWorldOrientationUp())
+        local worldV = vec3(core.getWorldVertical())
+
+        local localVel = core.getVelocity()
+        --local currentYaw = getRelativeYaw(localVel)
+        --local currentPitch = getRelativePitch(localVel)
+        local roll = getRoll(worldV, constrF, constrR)
+        local radianRoll = (roll / 180) * math.pi
+        local corrX = math.cos(radianRoll)
+        local corrY = math.sin(radianRoll)
+        local pitch = getPitch(worldV, constrF, constrR) -- Left in for compat, but we should really use adjustedPitch
+        local adjustedPitch = getPitch(worldV, constrF, (constrR * corrX) + (constrUp * corrY)) 
+
+        local currentYaw = -math.deg(signedRotationAngle(constrUp, velocity, constrF))
+        local currentPitch = math.deg(signedRotationAngle(constrR, velocity, constrF)) -- Let's use a consistent func that uses global velocity
+
+        stalling = inAtmo and currentYaw < -StallAngle or currentYaw > StallAngle or currentPitch < -StallAngle or currentPitch > StallAngle
+        local minRollVelocity = 50 -- Min velocity over which advanced rolling can occur
+
         deltaX = system.getMouseDeltaX()
         deltaY = system.getMouseDeltaY()
         if InvertMouse and not holdingCtrl then deltaY = -deltaY end
@@ -4592,10 +5531,16 @@ function script.onTick(timerId)
         velMag = vec3(velocity):len()
         sys = galaxyReference[0]
         planet = sys:closestBody(core.getConstructWorldPos())
-        if planet.name == "Space" then planet = atlas[0][2] end -- Assign to Alioth since otherwise Space gets returned if at Alioth.
+        --if planet.name == "Space" then planet = atlas[0][2] end -- Assign to Alioth since otherwise Space gets returned if at Alioth.
         kepPlanet = Kep(planet)
         orbit = kepPlanet:orbitalParameters(core.getConstructWorldPos(), velocity)
         hovGndDet = hoverDetectGround() 
+        local gravity = planet:getGravity(core.getConstructWorldPos()):len() * constructMass()
+        targetRoll = 0
+        
+        
+
+        maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("ground", core.getConstructOrientationUp())[1]
 
         if isRemote() == 1 and screen_1 and screen_1.getMouseY() ~= -1 then
             simulatedX = screen_1.getMouseX() * ResolutionX
@@ -4677,17 +5622,20 @@ function script.onTick(timerId)
         end
         LastIsWarping = isWarping
         if inAtmo and atmosphere() > 0.09 then
-            if not speedLimitBreaking  then
-                if velMag > (AtmoSpeedLimit / 3.6) then
-                    BrakeIsOn = true
-                    speedLimitBreaking  = true
+            --if not speedLimitBreaking  then
+            if velMag > (AtmoSpeedLimit / 3.6) then
+            --        BrakeIsOn = true
+            --        speedLimitBreaking  = true
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                    Nav.control.cancelCurrentControlMasterMode()
                 end
-            else
-                if velMag < (AtmoSpeedLimit / 3.6) then
-                    BrakeIsOn = false
-                    speedLimitBreaking = false
-                end
-            end    
+            end
+            --else
+            --    if velMag < (AtmoSpeedLimit / 3.6) then
+            --        BrakeIsOn = false
+            --        speedLimitBreaking = false
+            --    end
+            --end    
         end
         if BrakeIsOn then
             brakeInput = 1
@@ -4756,6 +5704,22 @@ function script.onTick(timerId)
             -- This is gonna be hard to get the negatives right.
             -- If we're still in orbit, don't do anything, that velocity will suck
             local targetCoords = AutopilotTargetCoords
+            local skipAlign = false
+            AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
+            local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
+            local displayText, displayUnit = getDistanceDisplayString(displayDistance)
+            system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
+                displayText.. '", "unit":"' .. displayUnit .. '"}')
+            local aligned = true -- It shouldn't be used if the following condition isn't met, but just in case
+
+            local projectedAltitude = (autopilotTargetPlanet.center -
+                                          (vec3(core.getConstructWorldPos()) +
+                                              (vec3(velocity):normalize() * AutopilotDistance))):len() -
+                                          autopilotTargetPlanet.radius
+            displayText, displayUnit = getDistanceDisplayString(projectedAltitude)
+            system.updateData(widgetTrajectoryAltitudeText, '{"label": "Projected Altitude", "value": "' ..
+                displayText.. '", "unit":"' .. displayUnit .. '"}')
+
             if orbit.apoapsis == nil and velMag > 300 and AutopilotAccelerating then
                 -- Get the angle between forward and velocity
                 -- Get the magnitude for each of yaw and pitch
@@ -4773,32 +5737,79 @@ function script.onTick(timerId)
                 -- Get the components in each of the stored shipright and shipup directions
                 -- Get the ratio of velocity to normalized velocity and scale up that component (Hey this is just velmag btw)
                 -- Add that component * shipright or shipup
-                local velVectorOffset = (vec3(AutopilotTargetCoords) - vec3(core.getConstructWorldPos())):normalize() -
-                                            vec3(velocity):normalize()
-                local pitchComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipUp)
-                local yawComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipRight)
-                local leftAmount = -yawComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
-                local downAmount = -pitchComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
-                targetCoords = AutopilotTargetCoords + (-leftAmount * vec3(AutopilotShipRight)) +
-                                   (-downAmount * vec3(AutopilotShipUp))
+                --local velVectorOffset = (vec3(AutopilotTargetCoords) - vec3(core.getConstructWorldPos())):normalize() -
+                --                            vec3(velocity):normalize()
+                --local pitchComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipUp)
+                --local yawComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipRight)
+                --local leftAmount = -yawComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
+                --local downAmount = -pitchComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
+                --targetCoords = AutopilotTargetCoords + (-leftAmount * vec3(AutopilotShipRight)) +
+                --                   (-downAmount * vec3(AutopilotShipUp))
+
+                -- All of that's stupid.  Use signedRotationAngle to get the yaw and pitch angles with shipUp and shipRight as the normals, respectively
+                -- Then use a PID
+                local targetVec = (vec3(targetCoords) - vec3(core.getConstructWorldPos()))
+                local targetYaw = utils.clamp(math.deg(signedRotationAngle(constrUp, velocity:normalize(), targetVec:normalize()))*(velMag/500),-90,90)
+                local targetPitch = utils.clamp(math.deg(signedRotationAngle(constrR, velocity:normalize(), targetVec:normalize()))*(velMag/500),-90,90)
+
+                -- If the values are particularly small, give us a lot of extra oomph
+                --if math.abs(targetYaw) < 1 then
+                --    targetYaw = utils.clamp(targetYaw*10,-90,90)
+                --end
+                --if math.abs(targetPitch) < 1 then
+                --    targetPitch = utils.clamp(targetPitch*10,-90,90)
+                --end
+
+                -- If they're both very small, scale them both up a lot to converge that last bit
+                if math.abs(targetYaw) < 5 and math.abs(targetPitch) < 5 then
+                    targetYaw = targetYaw * 2
+                    targetPitch = targetPitch * 2
+                end
+                -- If they're both very very small even after scaling them the first time, do it again
+                if math.abs(targetYaw) < 2 and math.abs(targetPitch) < 2 then
+                    targetYaw = targetYaw * 2
+                    targetPitch = targetPitch * 2
+                end
+
+                -- We'll do our own currentYaw and Pitch
+                local currentYaw = -math.deg(signedRotationAngle(constrUp, constrF, velocity:normalize()))
+                local currentPitch = -math.deg(signedRotationAngle(constrR, constrF, velocity:normalize()))
+
+                --system.print("Target yaw " .. targetYaw .. " - Target pitch " .. targetPitch)
+                --system.print ("Current " .. currentYaw .. " - " .. currentPitch)
+                if (apPitchPID == nil) then
+                    apPitchPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                end
+                apPitchPID:inject(targetPitch - currentPitch)
+                local autoPitchInput = utils.clamp(apPitchPID:get(),-1,1)
+
+                pitchInput2 = pitchInput2 + autoPitchInput
+
+                if (apYawPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
+                    apYawPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                end
+                --yawPID:inject(yawDiff) -- Aim for 85% stall angle, not full
+                apYawPID:inject(targetYaw - currentYaw)
+                local autoYawInput = utils.clamp(apYawPID:get(),-1,1) -- Keep it reasonable so player can override
+                yawInput2 = yawInput2 + autoYawInput
+                
+
+                skipAlign = true
+                
             end
-            -- If we're here, sadly, we really need to calc the distance every update (or tick)
-            AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
-            local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
-            system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
-                getDistanceDisplayString(displayDistance) .. '", "unit":""}')
-            local aligned = true -- It shouldn't be used if the following condition isn't met, but just in case
 
-            local projectedAltitude = (autopilotTargetPlanet.center -
-                                          (vec3(core.getConstructWorldPos()) +
-                                              (vec3(velocity):normalize() * AutopilotDistance))):len() -
-                                          autopilotTargetPlanet.radius
-            system.updateData(widgetTrajectoryAltitudeText, '{"label": "Projected Altitude", "value": "' ..
-                getDistanceDisplayString(projectedAltitude) .. '", "unit":""}')
+            if projectedAltitude < AutopilotTargetOrbit*1.5 then
+                -- Recalc end speeds for the projectedAltitude since it's reasonable... 
+                if CustomTarget ~= nil and CustomTarget.planetname == "Space" then 
+                    AutopilotEndSpeed = 0
+                else
+                    _, AutopilotEndSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed(projectedAltitude)
+                end
+            end
 
-            if not AutopilotCruising and not AutopilotBraking then
+            if not AutopilotCruising and not AutopilotBraking and not skipAlign then
                 aligned = AlignToWorldVector((targetCoords - vec3(core.getConstructWorldPos())):normalize())
-            elseif TurnBurn then
+            elseif TurnBurn and not skipAlign then
                 aligned = AlignToWorldVector(-vec3(velocity):normalize())
             end
             if AutopilotAccelerating then
@@ -4807,17 +5818,17 @@ function script.onTick(timerId)
                 else
                     AutopilotStatus = "Accelerating"
                 end
-                if vec3(core.getConstructWorldOrientationForward()):dot(velocity) < 0 and velMag > 300 then
-                    BrakeIsOn = true
-                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-                    apThrottleSet = false
-                elseif not apThrottleSet then
+                --if vec3(core.getConstructWorldOrientationForward()):dot(velocity) < 0 and velMag > 300 then
+                --    BrakeIsOn = true
+                --    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                --    apThrottleSet = false
+                --elseif not apThrottleSet then
+                if not apThrottleSet then
                     BrakeIsOn = false
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, AutopilotInterplanetaryThrottle)
                     apThrottleSet = true
                 end
-                -- Only disengage acceleration if we're within 1km of our target
-                if (vec3(core.getVelocity()):len() >= MaxGameVelocity and (math.abs(projectedAltitude-AutopilotTargetOrbit) < 1000)) or (unit.getThrottle() == 0 and apThrottleSet) then
+                if (vec3(core.getVelocity()):len() >= MaxGameVelocity or (unit.getThrottle() == 0 and apThrottleSet)) then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
@@ -4850,9 +5861,11 @@ function script.onTick(timerId)
                     AutopilotStatus = "Aligning" -- Disable autopilot and reset
                 elseif (CustomTarget ==nil or (CustomTarget ~= nil and CustomTarget.planetname ~= "Space")) and orbit.periapsis ~= nil and orbit.eccentricity < 1 then
                     AutopilotStatus = "Circularizing"
-                    if orbit.eccentricity > lastEccentricity or
-                        (orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude <
-                            AutopilotTargetOrbit) then
+                    -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
+                    local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
+                    --system.print("Ecc " .. orbit.eccentricity .. ", last: " .. lastEccentricity .. ", apo " .. orbit.apoapsis.altitude .. ", peri " .. orbit.periapsis.altitude .. ", target " .. AutopilotTargetOrbit)
+                    --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
+                    if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
                         BrakeIsOn = false
                         AutopilotBraking = false
                         Autopilot = false
@@ -4944,10 +5957,7 @@ function script.onTick(timerId)
                 -- end
                 targetPitch = 0
             end
-            local constrF = vec3(core.getConstructWorldOrientationForward())
-            local constrR = vec3(core.getConstructWorldOrientationRight())
-            local worldV = vec3(core.getWorldVertical())
-            local pitch = getPitch(worldV, constrF, constrR)
+            
             local autoPitchThreshold = 1.0
             -- Copied from autoroll let's hope this is how a PID works... 
             if math.abs(targetPitch - pitch) > autoPitchThreshold then
@@ -4969,7 +5979,9 @@ function script.onTick(timerId)
             -- This may be better to smooth evenly regardless of HoldAltitude.  Let's say, 2km scaling?  Should be very smooth for atmo
             -- Even better if we smooth based on their velocity
             local minmax = 500 + velMag
-            local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch
+            -- Smooth the takeoffs with a velMag multiplier that scales up to 100m/s
+            local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch * utils.clamp(velMag/100,0.1,1)
+
             if not AltitudeHold then
                 targetPitch = 0
             end
@@ -5010,80 +6022,248 @@ function script.onTick(timerId)
             -- Align it prograde but keep whatever pitch inputs they gave us before, and ignore pitch input from alignment.
             -- So, you know, just yaw.
             local oldInput = pitchInput2
-            if velMag > minAutopilotSpeed and not spaceLaunch then
+            if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget and not BrakeLanding then -- When do we even need this, just alt hold? lol
                 AlignToWorldVector(vec3(velocity))
             end
             if VectorToTarget and CustomTarget ~= nil and AutopilotTargetIndex > 0 then
                 local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
-                -- We're overriding pitch and roll so, this will just set yaw, we can do this directly
-                AlignToWorldVector(targetVec)
 
-                local distanceToTarget = targetVec:len() - targetVec:project_on(up):len() -- Probably not strictly accurate with curvature but it should work
+                -- Okay so, screw AlignToWorldVector.  Pitch is already handled, we just need to detect a Yaw value
+                -- then PID the yaw to that value, with a max value of StallAngle
+                -- Of course, only works if speed is high enough
+
+                local constrUp = vec3(core.getConstructWorldOrientationUp())
+                --local vectorInYawDirection = targetVec:project_on_plane(worldV):normalize()
+                --local flatForward = velocity:normalize():project_on_plane(worldV):normalize() -- Possibly necessary after 3d to 2d conversion
+                -- :angle_to uses only .x and .y, literal 2d
+                -- So project it on a plane first, with ship up as the normal
+
+                -- Hilariously, angle_to uses atan2 which isn't in the game
+                --local targetYaw = math.deg(constrF:angle_to(vectorInYawDirection))
+                -- And is wrong?
+                --local targetYaw = math.deg(math.atan(flatForward.y-vectorInYawDirection.y, flatForward.x-vectorInYawDirection.x))
+                local targetYaw = math.deg(signedRotationAngle(worldV,velocity:normalize(),targetVec:normalize()))*2
+                --local targetYaw = math.deg(math.acos((vectorInYawDirection:dot(flatForward)))) * -utils.sign(targetVec:dot(velocity:cross(worldV)))*2
+                
+                -- Let's go twice what they tell us to, which should converge quickly, within our clamp
+
+
+                --if stalling then
+                --    system.print("Stalled - Target yaw is " .. targetYaw .. " - Current: " .. currentYaw)
+                --else
+                --    system.print("Target yaw is " .. targetYaw .. " - Current: " .. currentYaw)
+                --end
+                --system.print("Roll is " .. roll .. " - Target yaw is " .. targetYaw .. " - Current: " .. currentYaw .. " - Prev targetPitch is " .. targetPitch)
+                -- We can try it with roll... 
+                local rollRad = math.rad(math.abs(roll))
+                if velMag > minRollVelocity then
+                    targetRoll = utils.clamp(targetYaw/2, -90, 90)
+                    local origTargetYaw = targetYaw
+                    -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
+                    -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  
+                    targetYaw = utils.clamp((currentYaw-targetYaw),currentYaw-StallAngle*0.85,currentYaw+StallAngle*0.85)*math.cos(rollRad) + utils.clamp(targetPitch-adjustedPitch,-StallAngle*0.85,StallAngle*0.85)*math.sin(math.rad(roll)) --  Try signing the pitch component of this
+                    targetPitch = utils.clamp(targetPitch*math.cos(rollRad),-StallAngle*0.85,StallAngle*0.85) + utils.clamp(math.abs(origTargetYaw),-StallAngle*0.85,StallAngle*0.85)*math.sin(rollRad)
+                end -- We're just taking abs of the yaw for pitch, because we just want to pull up, and it rolled the right way already.
+                -- And the pitch now gets info about yaw too?
+                -- cos(roll) should give 0 at 90 and 1/-1 at 0 and 180
+                -- So targetYaw*cos(roll) goes into yaw
+                -- Then sin(roll) gives high values at the 90's
+                -- so yaw would end up being -targetYaw*cos(roll) + targetPitch*sin(roll)
+                -- and pitch would be targetPitch*cos(roll) - targetYaw*sin(roll) cuz yaw and pitch are reversed from eachother
+
+
+                local yawDiff = targetYaw
+
+                if not stalling and velMag > minRollVelocity then
+                    if (yawPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
+                        yawPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                    end
+                    --yawPID:inject(yawDiff) -- Aim for 85% stall angle, not full
+                    yawPID:inject(yawDiff)
+                    local autoYawInput = utils.clamp(yawPID:get(),-1,1) -- Keep it reasonable so player can override
+                    yawInput2 = yawInput2 + autoYawInput
+                elseif hovGndDet > -1 or velMag < minRollVelocity then
+                    AlignToWorldVector(targetVec) -- Point to the target if on the ground and 'stalled'
+                else
+                    AlignToWorldVector(velocity) -- Otherwise try to pull out of the stall
+                end
+
+                --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
                 -- Well, maybe not.  Really we have a triangle.  Of course.  
                 -- We know C, our distance to target.  We know the height we'll be above the target (should be the same as our current height)
                 -- We just don't know the last leg
                 -- a2 + b2 = c2.  c2 - b2 = a2
-                -- local distanceToTarget = math.sqrt(targetVec:len()^2-(HoldAltitude-targetAltitude)^2)
-                local maxBrake = LastMaxBrakeInAtmo
+                local targetAltitude = planet:getAltitude(CustomTarget.position)
+                local distanceToTarget = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
+
+                -- We want current brake value, not max
+                local curBrake = LastMaxBrakeInAtmo
+                if curBrake then
+                    curBrake = curBrake * utils.clamp(velMag/100,0.1,1) * atmosphere()
+                else
+                    curBrake = LastMaxBrake
+                end
+                
                 local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                 local hSpd = velocity:len() - math.abs(vSpd)
-                local airFriction = vec3(core.getWorldAirFrictionAcceleration()) -- Maybe includes lift?
-                if maxBrake ~= nil then
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, constructMass(), 0, 0,
-                                                   maxBrake + (airFriction:len() - airFriction:project_on(up):len()) *
-                                                       constructMass())
-                else
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(hSpd, 0, constructMass(), 0, 0,
-                                                   LastMaxBrake + vec3(core.getWorldAirFrictionAcceleration()):len() *
-                                                       constructMass())
+                local airFrictionVec = vec3(core.getWorldAirFrictionAcceleration())
+                local airFriction = math.sqrt(airFrictionVec:len() - airFrictionVec:project_on(up):len()) * constructMass()
+                -- Assume it will halve over our duration, if not sqrt.  We'll try sqrt because it's underestimating atm
+                -- First calculate stopping to 100 - that all happens with full brake power
+                if velMag > 100 then
+                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 100, constructMass(), 0, 0,
+                                                    curBrake + airFriction)
+                    -- Then add in stopping from 100 to 0 at what averages to half brake power.  Assume no friction for this
+                    local lastDist, brakeTime2 = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, curBrake/2)
+                    brakeDistance = brakeDistance + lastDist
+                else -- Just calculate it regularly assuming the value will be halved while we do it, assuming no friction
+                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
                 end
-                StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
-                if distanceToTarget <= brakeDistance then
-                    VectorStatus = "Finalizing Approach"
-                    if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
+               
+
+                --StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
+                StrongBrakes = true -- We don't care about this or glide landing anymore and idk where all it gets used
+                --system.print(distanceToTarget .. " to target, can brake to 0 in " .. brakeDistance .. " , deltaVelocity is " .. (velMag*deltaTick))
+                
+                -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
+                if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then 
+                    VectorStatus = "Finalizing Approach" -- Left for compatibility
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- Kill throttle in case they weren't in cruise
                     if AltitudeHold then
                         ToggleAltitudeHold() -- Don't need this anymore
-                        VectorToTarget = true -- But keep this part on... 
+                        VectorToTarget = true -- But keep this on
                     end
-                    if StrongBrakes then
-                        BrakeIsOn = true
-                    else
-                        VectorToTarget = false -- We're done here.  Toggle on the landing routine for coast-landing
+                    BrakeIsOn = true
+
+                    if hSpd < 1 or distanceToTarget < 1 then
                         BrakeLanding = true
+                        VectorToTarget = false
                     end
 
                 elseif not AutoTakeoff then
                     BrakeIsOn = false
                 end
-                if LastTargetDistance ~= nil and distanceToTarget > LastTargetDistance and not AltitudeHold and
-                    not AutoTakeoff then
-                    BrakeLanding = true
-                    VectorToTarget = false
-                end
-                LastTargetDistance = distanceToTarget
+                
             end
             pitchInput2 = oldInput
-            local constrF = vec3(core.getConstructWorldOrientationForward())
-            local constrR = vec3(core.getConstructWorldOrientationRight())
-            local worldV = vec3(core.getWorldVertical())
             local groundDistance = -1
-            local pitch = getPitch(worldV, constrF, constrR)
             local autoPitchThreshold = 0.1
+
             if BrakeLanding then
                 targetPitch = 0
+                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                local skipLandingRate = false
+                local distanceToStop = 30 
+                if maxKinematicUp ~= nil and maxKinematicUp > 0 then
+                    -- Calculate a landing rate instead since we know what their hovers can do
+                    
+                    --local gravity = planet:getGravity(core.getConstructWorldPos()):len() * constructMass() -- We'll use a random BS value of a guess
+                    --local airFriction = math.sqrt(vec3(core.getWorldAirFrictionAcceleration()):len() * constructMass())
+                    -- airFriction falls off on a square
+
+                    -- Let's try not using airFriction
+                    local airFriction = 0
+
+                    -- Funny enough, LastMaxBrakeInAtmo has stuff done to it to convert to a flat value
+                    -- But we need the instant one back, to know how good we are at braking at this exact moment
+                    --system.print("Max brake Gs: " .. LastMaxBrakeInAtmo/gravity)
+                    local atmos = utils.clamp(atmosphere(),0.4,2) -- Assume at least 40% atmo when they land, to keep things fast in low atmo
+                    local curBrake = LastMaxBrakeInAtmo * utils.clamp(velMag/100,0.1,1) * atmos
+                    local totalNewtons = maxKinematicUp * atmos + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
+                    local brakeNewtons = curBrake + airFriction - gravity
+                    local weakBreakNewtons = curBrake/2 + airFriction - gravity
+
+                    -- Compute the travel time from current speed, with brake acceleration, for 20m
+                    --local brakeTravelTime = Kinematic.computeTravelTime(velMag, -brakeNewtons , 20)
+
+                    -- Big problem here, computeTravelTime only works with positive acceleration values
+                    -- This means we can't calculate how long it would take to decelerate for 20 meters
+                    -- But we could calculate how long it'd take to accelerate for that distance... but that's not right
+                    -- Cuz it'll be increasing speed and decreasing time over that duration
+
+                    -- I need to know the velocity after applying a force for a distance
+                    -- W = Fd = 0.5*mass*velocity^2
+                    -- W = math.abs(lowBrakeNewtons)*20 = 0.5*constructMass()*v^2
+                    -- math.sqrt((math.abs(lowBrakeNewtons)*20)/(0.5*constructMass()))
+                    
+                    -- For leniency just always assume it's weak
+                    local speedAfterBraking = velMag - math.sqrt((math.abs(weakBreakNewtons/2)*20)/(0.5*constructMass()))*utils.sign(weakBreakNewtons)
+                    --system.print("Speed now: " .. velMag .. " - After braking for 20m, speed will be " .. speedAfterBraking)
+                    if speedAfterBraking < 0 then  
+                        speedAfterBraking = 0 -- Just in case it gives us negative values
+                    end
+                    -- So then see if hovers can finish the job in the remaining distance
+
+                    local brakeStopDistance
+                    if velMag > 100 then
+                        local brakeStopDistance1, _ = Kinematic.computeDistanceAndTime(velMag, 100, constructMass(), 0, 0, curBrake)
+                        local brakeStopDistance2, _ = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, math.sqrt(curBrake))
+                        brakeStopDistance = brakeStopDistance1+brakeStopDistance2
+                    else
+                        brakeStopDistance = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, math.sqrt(curBrake))
+                    end
+                    if brakeStopDistance < 20 then
+                        BrakeIsOn = false -- We can stop in less than 20m from just brakes, we don't need to do anything
+                        -- This gets overridden later if we don't know the altitude or don't want to calculate
+                    else
+                        local stopDistance = 0
+                        if speedAfterBraking > 100 then
+                            local stopDistance1, _ = Kinematic.computeDistanceAndTime(speedAfterBraking, 100, constructMass(), 0, 0, totalNewtons) 
+                            local stopDistance2, _ = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, maxKinematicUp * atmos + math.sqrt(curBrake) + airFriction - gravity) -- Low brake power for the last 100kph
+                            stopDistance = stopDistance1 + stopDistance2
+                        else
+                            stopDistance, _ = Kinematic.computeDistanceAndTime(speedAfterBraking, 0, constructMass(), 0, 0, maxKinematicUp * atmos + math.sqrt(curBrake) + airFriction - gravity) 
+                        end
+
+                        --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
+                        --if LandingGearGroundHeight == 0 then
+                        stopDistance = (stopDistance+15+(velMag*deltaTick))*1.1 -- Add leeway for large ships with forcefields or landing gear, and for lag
+                        -- And just bad math I guess
+                        local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
+                        
+                        if knownAltitude then
+                            local targetAltitude = planet:getAltitude(CustomTarget.position)
+                            local distanceToGround = coreAltitude - targetAltitude - 100 -- Try to aim for like 100m above the ground, give it lots of time
+                            -- We don't have to squeeze out the little bits of performance
+                            local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
+                            local horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
+
+                            if horizontalDistance > 100 then
+                                -- We are too far off, don't trust our altitude data
+                                knownAltitude = false
+                            elseif distanceToGround <= stopDistance or stopDistance == -1 then
+                                BrakeIsOn = true
+                                skipLandingRate = true
+                            else
+                                BrakeIsOn = false
+                                skipLandingRate = true
+                            end
+                        end
+                        
+                        if not knownAltitude and CalculateBrakeLandingSpeed then
+                            if stopDistance >= distanceToStop then -- 10% padding
+                                BrakeIsOn = true
+                            else
+                                BrakeIsOn = false
+                            end
+                            skipLandingRate = true
+                        end
+                    end
+                end
                 if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                     Nav.control.cancelCurrentControlMasterMode()
                 end
                 Nav.axisCommandManager:setTargetGroundAltitude(500)
                 Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(500)
-                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+
                 groundDistance = hovGndDet
-                if groundDistance > -1 then
-                    if math.abs(targetPitch - pitch) < autoPitchThreshold then
-                        autoRoll = autoRollPreference
-                        if velMag < 1 then
+                if groundDistance > -1 then 
+                    --if math.abs(targetPitch - pitch) < autoPitchThreshold then 
+                        autoRoll = autoRollPreference                
+                        if velMag < 1 or velocity:normalize():dot(worldV) < 0 then -- Or if they start going back up
                             BrakeLanding = false
                             AltitudeHold = false
                             GearExtended = true
@@ -5094,17 +6274,18 @@ function script.onTick(timerId)
                         else
                             BrakeIsOn = true
                         end
-                    end
-                elseif StrongBrakes and (velocity:normalize():dot(-up) < 0.99) then
+                    --end
+                elseif StrongBrakes and (velocity:normalize():dot(-up) < 0.999) then
+                    --system.print("Too much HSpeed, braking")
                     BrakeIsOn = true
-                elseif vSpd < -brakeLandingRate then
+                elseif vSpd < -brakeLandingRate and not skipLandingRate then
                     BrakeIsOn = true
-                else
+                elseif not skipLandingRate then
                     BrakeIsOn = false
                 end
             end
             if AutoTakeoff or spaceLaunch then
-                if targetPitch < 15 then
+                if targetPitch < 15 and (coreAltitude/HoldAltitude) > 0.75 then
                     AutoTakeoff = false -- No longer in ascent
                     if not spaceLaunch then 
                         if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
@@ -5137,11 +6318,30 @@ function script.onTick(timerId)
                 end
             end
             -- Copied from autoroll let's hope this is how a PID works... 
-            if math.abs(targetPitch - pitch) > autoPitchThreshold then
+            -- Don't pitch if there is significant roll, or if there is stall
+            local onGround = hoverDetectGround() > -1
+            local pitchToUse = pitch
+
+            if VectorToTarget and not onGround and velMag > minRollVelocity then
+                local rollRad = math.rad(math.abs(roll))
+                pitchToUse = pitch*math.cos(rollRad)+currentPitch*math.sin(rollRad)
+                --pitchToUse = adjustedPitch -- Use velocity vector pitch instead, we're potentially sideways
+                -- Except.  We should use sin and cosine to get the value between this and our real one
+                -- Because 30 regular pitch is fine, but 30 pitch above what was already 30 regular pitch isn't - it'll eventually flip us in theory
+                -- What if we get the pitch of our velocity vector tho
+                --utils.clamp(targetYaw,-StallAngle, StallAngle)*math.cos(rollRad) - targetPitch*math.sin(rollRad)
+
+                -- The 'pitch' of our velocity vector plus the pitch we are in relation to it, should be our real world pitch
+
+                -- then currentPitch*math.sin(rollRad)+pitch*math.cos(rollRad) = absolutePitch
+                --system.print("Target Pitch: " .. targetPitch .. " - Current: " .. pitchToUse)
+            end
+            local pitchDiff = utils.clamp(targetPitch-pitchToUse, -StallAngle*0.85, StallAngle*0.85)
+            if math.abs(pitchDiff) > autoPitchThreshold and ((not stalling and (math.abs(roll) < 5 or VectorToTarget)) or BrakeLanding or onGround) then
                 if (pitchPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                     pitchPID = pid.new(8 * 0.01, 0, 8 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                 end
-                pitchPID:inject(targetPitch - pitch)
+                pitchPID:inject(pitchDiff)
                 local autoPitchInput = pitchPID:get()
                 pitchInput2 = pitchInput2 + autoPitchInput
             end
@@ -5149,18 +6349,11 @@ function script.onTick(timerId)
         lastEccentricity = orbit.eccentricity
 
         if antigrav and not ExternalAGG and coreAltitude < 200000 then
-                if AntigravTargetAltitude == nil then AntigravTargetAltitude = 1000 end
+                if AntigravTargetAltitude == nil or AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                 if desiredBaseAltitude ~= AntigravTargetAltitude then
                     desiredBaseAltitude = AntigravTargetAltitude
                     antigrav.setBaseAltitude(desiredBaseAltitude)
                 end
-        end
-
-        local groundHeight = Nav:getTargetGroundAltitude()
-        if (groundHeight < HeadlightGroundHeight) then
-            headLightSwitch.activate()
-        else
-            headLightSwitch.deactivate()
         end
     end
 end
@@ -5209,12 +6402,16 @@ function script.onFlush()
 
     -- In atmosphere or aligning prograde with orbit?
     if (worldVertical:len() > 0.01 and atmosphere > 0.0) or ProgradeIsOn then
-        local autoRollRollThreshold = 1.0
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
-        if autoRoll == true and currentRollDegAbs > autoRollRollThreshold and finalRollInput == 0 then
-            local targetRollDeg = utils.clamp(0, currentRollDegAbs - 30, currentRollDegAbs + 30); -- we go back to 0 within a certain limit
+        if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 then
+            local targetRollDeg = targetRoll
+            --system.print("Trying to roll to " .. targetRoll)
+            local rollFactor = autoRollFactor
+            --if targetRoll ~= 0 then
+            --    rollFactor = rollFactor*4
+            --end
             if (rollPID == nil) then
-                rollPID = pid.new(autoRollFactor * 0.01, 0, autoRollFactor * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                rollPID = pid.new(rollFactor * 0.01, 0, rollFactor * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
             end
             rollPID:inject(targetRollDeg - currentRollDeg)
             local autoRollInput = rollPID:get()
@@ -5406,7 +6603,12 @@ end
 
 function script.onActionStart(action)
     if action == "gear" then
-        GearExtended = not GearExtended
+        --if hasGear then
+        --    GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
+        --else
+            GearExtended = not GearExtended
+        --end    
+        
         if GearExtended then
             VectorToTarget = false
             LockPitch = nil
@@ -5424,15 +6626,27 @@ function script.onActionStart(action)
                 AltitudeHold = false
                 BrakeLanding = true
                 autoRoll = true
-                GearExtended = false -- Don't actually do it
+                GearExtended = false -- Don't actually toggle the gear yet though
             else
                 BrakeIsOn = true
                 Nav.control.extendLandingGears()
                 Nav.axisCommandManager:setTargetGroundAltitude(LandingGearGroundHeight)
             end
+
+            if hasGear and not BrakeLanding then
+                Nav.control.extendLandingGears() -- Actually extend
+            end
         else
-            Nav.control.retractLandingGears()
+            if hasGear then
+                Nav.control.retractLandingGears()
+            end
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
+        end
+    elseif action == "light" then
+        if Nav.control.isAnyHeadlightSwitchedOn() == 1 then
+            Nav.control.switchOffHeadlights()
+        else
+            Nav.control.switchOnHeadlights()
         end
     elseif action == "forward" then
         pitchInput = pitchInput - 1
@@ -5733,16 +6947,18 @@ end
 
 function script.onInputText(text)
     local i
-    local commands = "/commands /setname /G /agg /addlocation"
-    local command, arguement
+    local commands = "/commands /setname /G /agg /addlocation /copydatabank"
+    local command, arguement = nil, nil
     local commandhelp = "Command List:\n/commands \n/setname <newname> - Updates current selected saved position name\n/G VariableName newValue - Updates global variable to new value\n"..
-            "/G dump - shows all updatable variables with /G\n/agg <targetheight> - Manually set agg target height\n/"..
-            "addlocation savename ::pos{0,2,46.4596,-155.1799,22.6572} - adds a saved location by waypoint, not as accurate as making one at location"
+            "/G dump - shows all updatable variables with /G\n/agg <targetheight> - Manually set agg target height\n"..
+            "/addlocation savename ::pos{0,2,46.4596,-155.1799,22.6572} - adds a saved location by waypoint, not as accurate as making one at location\n"..
+            "/copydatabank - copies dbHud databank to a blank databank"
     i = string.find(text, " ")
+    command = text
     if i ~= nil then
         command = string.sub(text, 0, i-1)
         arguement = string.sub(text, i+1)
-    elseif i == nil or not string.find(commands, command) then
+    elseif not string.find(commands, command) then
         for str in string.gmatch(commandhelp, "([^\n]+)") do
             sprint(str)
         end
@@ -5824,6 +7040,12 @@ function script.onInputText(text)
             end
         end
         msgText = "No such global variable: "..globalVariableName
+    elseif command == "/copydatabank" then 
+        if dbHud_2 then 
+            SaveDataBank(true) 
+        else
+            msgText = "Databank required to copy databank"
+        end
     end
 end
 

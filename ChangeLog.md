@@ -1,4 +1,71 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.11
+- Improved orbits and waypoints - waypoints may feather brakes again
+
+Version 5.102
+- Adjusted pitch and yaw calculations to use a different formula, though it should be equivalent.  Attempt to fix incorrect stall warnings
+
+Version 5.101
+- Fixed issue with space waypoints causing an exception
+
+Version 5.100 - INCREDIBLY improved space autopilot to orbit
+- Autopilot alignment improved, should now efficiently realign orbits, and more effectively get to the desired Projected Altitude
+- Autopilot widget now shows target orbit altitude
+- AtmoSpeedLimit no longer brakes upon reaching max speed, but goes into cruise.  This saves fuel and works smoothly.  As always, alt+r cancels cruise mode
+- Fixed a ship with active AGG to not do Takeoff on sitting into seat and activating alt-hold
+- Fixed startup sequence to recognize gear or no gear amoung other things.
+
+Version 5.002
+- When activating autopilot, the on-screen waypoint is changed to show the autopilot destination.  This is a show thing only, no effect on AP destination, so can be changed if wanted via normal waypoint usage.
+- Hitting alt-6 2x withing 1.5 seconds will set HoldAltitude to 50m below space engine min atmosphere height (generally 11% atmo density).
+
+Version 5.001
+- Readded autoRollThreshold parameter
+
+Version 5.000 - Major Atmo autopilot overhaul including bank turns, smoother autotakeoff, and improved braking features
+- Factor for low FPS situations to help mechanics perform better due to the high element ships losing FPS while flying.
+- Smooth takeoffs that only pitch up once you have momentum and aren't stalled
+- Better yawing to target to not stall when at low speeds and proceeding to waypoint
+- Will now roll to turn when at high speeds (>100m/s) and proceeding to waypoint, respecting stall limits
+- Improved waypoint accuracy with better yaw/roll convergence
+- Further improved BrakeLanding + Waypoint.  If you are going to a waypoint and it accurately gets within 100m of that waypoint, and that waypoint has a valid Altitude that's above 0, it will do an Extreme Brake Land.  Since it knows the altitude it's landing at, it will descend in free-fall until 100m before it reaches the landing area.
+- New User Variable: CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be Calculated or use the existing BrakeLandingRate user value
+- Orbit Height is now calculated rather than set.  This allows better support for different planets and moons
+- New User Variable: TargetOrbitRadius = 1.4 -- export: (Default: 1.4) How many planet radiuses you want Autopilot to orbit above any given planet.  Values below 1 imply orbiting inside of the planet - do not do this.  Default of 1.4 should result in Alioth orbit of 56699m.  Atmosphere and mountains on moons are handled automatically
+
+Version 4.935
+- Extremely dangerous BrakeLanding changes.  Brakelanding is now, again, faster - but attempts to put you at effectively 0m above the ground.  Please let me know if this breaks your ship so I can adjust it, but it works fine on all of mine.  May cause issues if things are under your ship when landing and aren't detected by your hovers/vboosters
+
+Version 4.934
+- More BrakeLanding and Waypoint improvements.  Waypoint and space autopilot alignment should now be more aggressive when it is very close to the target.  BrakeLanding should now be slightly safer and slower, particularly on ships that had a telemeter
+- BrakeLanding will end and lower you to the ground as soon as your vSpd is no longer negative, instead of waiting until you raise back up
+
+Version 4.933
+- Further improved BrakeLanding + Waypoint.  If you entered the ship while it was in atmo with hovers/boosters touching the ground, and if you are going to a waypoint and it accurately gets within 100m of that waypoint, and that waypoint has a valid Altitude that's above 0, it will do an Extreme Brake Land.  Since it knows the altitude it's landing at, it will descend in free-fall until just before it reaches the landing area
+
+Version 4.932
+- Changed Prograde and Retrograde from white/red dot to KSP markers
+- Changed when prograde is behind to change to Arrow pointing direction
+- Added ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disable for performance on ships with 450+ elements (or if using external damage report)
+- Incorporated Hyperion data Atlas for more specifics for each planet, will allow better control on different planets (features coming soon).
+- Fixed incorrect calculation of rocket fuel tank % based on rocket fuel tank handling skills (its 10% per vice atmo/space 20% per)
+- Added ExternalAGG to databank save.
+
+Version 4.93 - Databank copy and better brake landing
+- Added /copydatabank command
+To use, put a blank databank on vehicle with existing dbHud databank already linked to chair. 
+Link from chair to blank. Rerun hud autoconf. You should see dbHud_1 and dbHud_2 on the slot list now. 
+Sit in the chair, type /copydatabank in lua chat, wait for it to say its done, then stand and remove copied databank.
+- BrakeLanding will be faster and safer if you start on ground in atmosphere, otherwise will be like normal.
+- Fixed Brake values in atmo for BrakeLanding and VectorToTarget (flight to waypoint)
+- Adjusted flight to waypoint behavior to no longer feather the brakes when incoming - the calculations are now more accurate at high altitudes when starting from ground.
+- Adjusted BrakeLanding behavior to calculate an appropriate brakeLandingRate, if its hovers were in contact with the ground when you entered the seat (so it can measure them)
+
+Version 4.927
+- Changed Landing Gear to always extend/retract regardless of height when G pressed.  Note: Pressing G while flying will still initiate Brake Landing when appropriate.
+- Changed HUD startup brake status (when you sit in seat) only to be on if ground level is detected.  This should prevent brakes being on when sitting returning from a disconnect.
+- Changed AGG to prevent target altitude going < 1000m
+- Fixed issues with Landing Gear and Dynamic Core Unit due type name change, landing gear and remote repair arrows should work better now.
 
 Version 4.926
 - Fixed movement speed of mouse post 4.924 back to previous rate.
