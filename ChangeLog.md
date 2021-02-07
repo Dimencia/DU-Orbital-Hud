@@ -1,4 +1,10 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.2
+- Replaced Cruise with AtmoSpeedAssist (parameter to enable/disable), a throttled flight overhaul.
+Adjusts throttle to limit speed to AtmoSpeedLimit, brakes when necessary (such as reentry) without limiting throttle, and applies all wings to center the velocity vector like Cruise does.  Unlike cruise, it will not cause you to brake just because you are facing the wrong direction - only if your total speed is too high for atmo
+This also means that when AtmoSpeedAssist is on, all Atmo Flight Modes no longer put you in Cruise
+And consequently and accidentally, the player's throttle is now remembered and re-set when swapping back to Throttle mode from Cruise (in atmo)
+
 Version 5.11
 - Improved orbits and waypoints - waypoints may feather brakes again
 
