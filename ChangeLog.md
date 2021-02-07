@@ -1,4 +1,9 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.21
+- Removed throttle limiting when atmosphere levels are below 10% for easier atmo escapes, and brake limiting when atmo levels are below 1%
+    Note that throttle and brakes will still limit if your vspeed becomes less than -20m/s, to help with entries, and always when atmo is above 10%
+- Fixed bug causing no throttle control when in space
+
 Version 5.2
 - Replaced Cruise with AtmoSpeedAssist (parameter to enable/disable), a throttled flight overhaul.
 Adjusts throttle to limit speed to AtmoSpeedLimit, brakes when necessary (such as reentry) without limiting throttle, and applies all wings to center the velocity vector like Cruise does.  Unlike cruise, it will not cause you to brake just because you are facing the wrong direction - only if your total speed is too high for atmo
