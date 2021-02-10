@@ -1,4 +1,8 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.222
+- Increased minimum roll speed to 100m/s from 50/ms
+- Increased roll power to help converge on ships with no tailfins
+
 Version 5.221
 - Allowed new waypoints entered from the ship to be considered safe for Extreme Landing
 

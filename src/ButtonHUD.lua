@@ -5226,7 +5226,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.221
+    VERSION_NUMBER = 5.222
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5614,7 +5614,7 @@ function script.onTick(timerId)
         local currentPitch = math.deg(signedRotationAngle(constrR, velocity, constrF)) -- Let's use a consistent func that uses global velocity
 
         stalling = inAtmo and currentYaw < -StallAngle or currentYaw > StallAngle or currentPitch < -StallAngle or currentPitch > StallAngle
-        local minRollVelocity = 50 -- Min velocity over which advanced rolling can occur
+        local minRollVelocity = 100 -- Min velocity over which advanced rolling can occur
 
         deltaX = system.getMouseDeltaX()
         deltaY = system.getMouseDeltaY()
@@ -6150,7 +6150,7 @@ function script.onTick(timerId)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > minRollVelocity then
-                    targetRoll = utils.clamp(targetYaw/2, -90, 90)
+                    targetRoll = utils.clamp(targetYaw, -90, 90)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
                     -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  
