@@ -786,7 +786,8 @@ function UpdatePosition(newName)
                 name = SavedLocations[index].name,
                 atmosphere = atmosphere(),
                 planetname = planet.name,
-                gravity = unit.getClosestPlanetInfluence()
+                gravity = unit.getClosestPlanetInfluence(),
+                safe = true
             }   
         end
         SavedLocations[index] = newLocation
@@ -5383,6 +5384,11 @@ function script.onTick(timerId)
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                         -- Put real throttle into PlayerThrottle as we enter
                         PlayerThrottle = unit.getAxisCommandValue(0)
+                    elseif AtmoSpeedAssist then
+                        -- If they're reentering atmo from cruise, and have atmo speed Assist
+                        -- Put them in throttle mode at 100%
+                        PlayerThrottle = 1
+                        Nav.control.cancelCurrentControlMasterMode()
                     end
                 end
                 if atmosphere() == 0 and WasInAtmo then
@@ -6225,11 +6231,12 @@ function script.onTick(timerId)
                     end
                     BrakeIsOn = true
 
-                    if hSpd < 1 or distanceToTarget < 1 then
+                    if hSpd < 0.1 or distanceToTarget < 0.1 or (LastDistanceToTarget ~= nil and LastDistanceToTarget < distanceToTarget) then
                         BrakeLanding = true
                         VectorToTarget = false
                     end
 
+                    LastDistanceToTarget = distanceToTarget
                 elseif not AutoTakeoff then
                     BrakeIsOn = false
                 end
@@ -6309,7 +6316,7 @@ function script.onTick(timerId)
                         --if LandingGearGroundHeight == 0 then
                         stopDistance = (stopDistance+15+(velMag*deltaTick))*1.1 -- Add leeway for large ships with forcefields or landing gear, and for lag
                         -- And just bad math I guess
-                        local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
+                        local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0 and CustomTarget.safe)
                         
                         if knownAltitude then
                             local targetAltitude = planet:getAltitude(CustomTarget.position)
@@ -6742,10 +6749,10 @@ function script.onFlush()
             autoNavigationAcceleration = autoNavigationAcceleration + verticalAcceleration
         end
 
+        local targetSpeed = unit.getAxisCommandValue(0)
         -- Auto Navigation (Cruise Control)
-        if (autoNavigationAcceleration:len() > constants.epsilon) then
-            if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.8) -- if the velocity is not properly aligned with the forward
-            -- if the velocity is not properly aligned with the forward
+        if (autoNavigationAcceleration:len() > constants.epsilon) then -- This means it's in cruise
+            if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.8) or velocity:len() > targetSpeed/3.6 -- if the velocity is not properly aligned with the forward
             then
                 autoNavigationEngineTags = autoNavigationEngineTags .. ', brake'
             end

@@ -2,6 +2,8 @@
 Version 5.22
 - Fixed issue causing Cruise to be unable to apply brakes
 - Adjusted Cruise mode to brake less aggressively when the velocity angle is far from ship front
+- Adjusted Cruise to brake more aggressively when total speed is too high - Beware testing glide reentry
+- If AtmoSpeedAssist is enabled, swaps to throttled mode when entering atmosphere from cruise mode
 
 Version 5.21
 - Removed throttle limiting when atmosphere levels are below 10% for easier atmo escapes, and brake limiting when atmo levels are below 1%
