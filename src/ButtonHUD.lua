@@ -1935,7 +1935,7 @@ function UpdateHud(newContent)
     local throt = mfloor(unit.getThrottle())
     local spd = speed * 3.6
     local flightValue = unit.getAxisCommandValue(0)
-    if AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+    if inAtmo and AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
         flightValue = PlayerThrottle
         throt = PlayerThrottle*100
     end
@@ -2208,7 +2208,7 @@ function DrawThrottle(newContent, flightStyle, throt, flightValue)
         </g>
     </g>]], throtPosX+10, y1, label, throtPosX+10, y2, value, unit)
 
-    if AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle and ThrottleLimited then
+    if inAtmo and AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle and ThrottleLimited then
         -- Display a marker for where the AP throttle is putting it, calculatedThrottle
 
         throt = math.floor(calculatedThrottle*100+0.5)
@@ -5224,7 +5224,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.21
+    VERSION_NUMBER = 5.22
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6470,9 +6470,6 @@ function script.onFlush()
     local finalRollInput = utils.clamp(rollInput + rollInput2 + system.getControlDeviceYawInput(),-1,1)
     local finalYawInput = utils.clamp((yawInput + yawInput2) - system.getControlDeviceLeftRightInput(),-1,1)
     local finalBrakeInput = brakeInput
-    if finalBrakeInput == 0 then -- If player isn't braking, use cruise assist braking
-        finalBrakeInput = brakeInput2
-    end
 
     -- Axis
     local worldVertical = vec3(core.getWorldVertical()) -- along gravity
@@ -6645,24 +6642,6 @@ function script.onFlush()
         local longitudinalCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.longitudinal)
         local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
                                                 longitudinalEngineTags, axisCommandId.longitudinal)
-        -- This doesn't really scale right with everything else... 
-        --autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. longitudinalEngineTags
-        --autoNavigationAcceleration = autoNavigationAcceleration + longitudinalAcceleration
-        
-        --if upAmount ~= 0 or (BrakeLanding and BrakeIsOn) then
-        --    Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity, 'airfoil',
-        --        'ground', '', tolerancePercentToSkipOtherPriorities)
-        --else
-        --    Nav:setEngineForceCommand(verticalStrafeEngineTags, vec3(), keepCollinearity) -- Reset vertical engines but not airfoils or ground
-        --    Nav:setEngineForceCommand('airfoil vertical', verticalStrafeAcceleration, keepCollinearity, 'airfoil',
-        --    '', '', tolerancePercentToSkipOtherPriorities)
-        --    Nav:setEngineForceCommand('ground vertical', verticalStrafeAcceleration, keepCollinearity, 'ground',
-        --    '', '', tolerancePercentToSkipOtherPriorities)
-        --end
-        
-        --if upAmount < 0 then 
-        --    Nav:setEngineForceCommand('hover', vec3(), keepCollinearity) 
-        --end
 
         local lateralAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral, 0)
         autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. lateralStrafeEngineTags
@@ -6678,7 +6657,22 @@ function script.onFlush()
         -- And let throttle do its thing separately
         Nav:setEngineForceCommand(longitudinalEngineTags, longitudinalAcceleration, keepCollinearity)
 
+        if finalBrakeInput == 0 then -- If player isn't braking, use cruise assist braking
+            finalBrakeInput = brakeInput2
+        end
+
+        -- Brakes
+        local brakeAcceleration = -finalBrakeInput *
+        (brakeSpeedFactor * constructVelocity + brakeFlatFactor * constructVelocityDir)
+        Nav:setEngineForceCommand('brake', brakeAcceleration)
+
     else
+        --PlayerThrottle = 0
+
+        -- Brakes - Do these first so Cruise can override it
+        local brakeAcceleration = -finalBrakeInput *
+        (brakeSpeedFactor * constructVelocity + brakeFlatFactor * constructVelocityDir)
+        Nav:setEngineForceCommand('brake', brakeAcceleration)
 
         -- AutoNavigation regroups all the axis command by 'TargetSpeed'
         local autoNavigationEngineTags = ''
@@ -6750,7 +6744,7 @@ function script.onFlush()
 
         -- Auto Navigation (Cruise Control)
         if (autoNavigationAcceleration:len() > constants.epsilon) then
-            if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.95) -- if the velocity is not properly aligned with the forward
+            if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.8) -- if the velocity is not properly aligned with the forward
             -- if the velocity is not properly aligned with the forward
             then
                 autoNavigationEngineTags = autoNavigationEngineTags .. ', brake'
@@ -6767,11 +6761,6 @@ function script.onFlush()
     
     Nav:setEngineTorqueCommand('torque', angularAcceleration, keepCollinearity, 'airfoil', '', '',
         tolerancePercentToSkipOtherPriorities)
-
-    -- Brakes
-    local brakeAcceleration = -finalBrakeInput *
-                                (brakeSpeedFactor * constructVelocity + brakeFlatFactor * constructVelocityDir)
-    Nav:setEngineForceCommand('brake', brakeAcceleration)
 
     -- Rockets
     Nav:setBoosterCommand('rocket_engine')

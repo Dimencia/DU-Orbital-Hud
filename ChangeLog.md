@@ -1,4 +1,8 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.22
+- Fixed issue causing Cruise to be unable to apply brakes
+- Adjusted Cruise mode to brake less aggressively when the velocity angle is far from ship front
+
 Version 5.21
 - Removed throttle limiting when atmosphere levels are below 10% for easier atmo escapes, and brake limiting when atmo levels are below 1%
     Note that throttle and brakes will still limit if your vspeed becomes less than -20m/s, to help with entries, and always when atmo is above 10%
