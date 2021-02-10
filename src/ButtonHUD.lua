@@ -748,7 +748,8 @@ function AddNewLocation() -- Don't call this unless they have a databank or it's
             name = name,
             atmosphere = atmo,
             planetname = planet.name,
-            gravity = planet.gravity
+            gravity = planet.gravity,
+            safe = true -- This indicates we can extreme land here, because this was a real positional waypoint
         }
         SavedLocations[#SavedLocations + 1] = newLocation
         -- Nearest planet, gravity also important - if it's 0, we don't autopilot to the target planet, the target isn't near a planet.                      
@@ -5225,7 +5226,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.22
+    VERSION_NUMBER = 5.221
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,

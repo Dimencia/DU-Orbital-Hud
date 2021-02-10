@@ -1,9 +1,15 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.221
+- Allowed new waypoints entered from the ship to be considered safe for Extreme Landing
+
 Version 5.22
 - Fixed issue causing Cruise to be unable to apply brakes
 - Adjusted Cruise mode to brake less aggressively when the velocity angle is far from ship front
 - Adjusted Cruise to brake more aggressively when total speed is too high - Beware testing glide reentry
 - If AtmoSpeedAssist is enabled, swaps to throttled mode when entering atmosphere from cruise mode
+- Adjusted Waypoints to land immediately if you pass the location or distance starts getting higher
+- Waypoints will no longer perform Extreme Brake Landings at positions entered on the map - you must land at location and Update Position for these
+    Your old waypoints must be updated in this way for them to work with Extreme Landings
 
 Version 5.21
 - Removed throttle limiting when atmosphere levels are below 10% for easier atmo escapes, and brake limiting when atmo levels are below 1%
