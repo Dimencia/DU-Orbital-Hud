@@ -136,7 +136,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo", "ExternalAGG", "ShouldCheckDamage",
                         "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze", "hudTickRate",
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
-                        "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit",
+                        "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit", "AtmoSpeedAssist",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed"}
@@ -372,9 +372,7 @@ function ProcessElements()
     local checkTanks = (fuelX ~= 0 and fuelY ~= 0)
     for k in pairs(elementsID) do
         local type = eleType(elementsID[k])
-        sprint(type)
         if (type == "Landing Gear") then
-            sprint("HERE1")
             hasGear = true
         end
         if (type == "Dynamic Core Unit") then
@@ -502,7 +500,6 @@ function SetupChecks()
         system.freeze(0)
     end
     if hasGear then
-        --sprint("HERE2")
         GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
         if GearExtended then
             Nav.control.extendLandingGears()
@@ -5228,7 +5225,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.222
+    VERSION_NUMBER = 5.223
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6303,12 +6300,16 @@ function script.onTick(timerId)
                 elseif not AutoTakeoff then
                     BrakeIsOn = false
                 end
+                if VectorStatus == "Finalizing Approach" and (hSpd < 0.1 or distanceToTarget < 0.1 or (LastDistanceToTarget ~= nil and LastDistanceToTarget < distanceToTarget)) then
+                    BrakeLanding = true
+                    VectorToTarget = false
+                end
                 LastDistanceToTarget = distanceToTarget
                 if VectorStatus == "Finalizing Approach" and (hSpd < 0.1 or distanceToTarget < 0.1 or (LastDistanceToTarget ~= nil and LastDistanceToTarget < distanceToTarget)) then
                     BrakeLanding = true
                     VectorToTarget = false
                 end
-                
+
             end
             pitchInput2 = oldInput
             local groundDistance = -1
