@@ -1,4 +1,12 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.23
+- Orbital adjustments can now occur even when not in an escape trajectory
+- Planet-To-Planet autopilot overhaul
+    Aims at the correct yaw during takeoff
+    Aims the trajectory directly at the target
+    Begins autopilot as soon as there is line of sight to the target
+    Brakes just before it reaches atmosphere
+
 Version 5.223
 - Adjusted Waypoints to really land immediately if you pass the location or distance starts getting higher
 
