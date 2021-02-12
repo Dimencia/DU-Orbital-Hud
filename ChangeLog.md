@@ -1,4 +1,35 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.223 - Major flight changes including new "Cruise control" mode when using autopilot, read changelog since 5.11
+- Adjusted Waypoints to really land immediately if you pass the location or distance starts getting higher
+- IMPORANT:  For any waypoint to be most accurate and use faster brake landing, go to the waypoint and use the Update Position button.
+
+Version 5.222
+- Increased minimum roll speed to 100m/s from 50/ms
+- Increased roll power to help converge on ships with no tailfins
+
+Version 5.221
+- Allowed new waypoints entered from the ship to be considered safe for Extreme Landing
+
+Version 5.22
+- Fixed issue causing Cruise to be unable to apply brakes
+- Adjusted Cruise mode to brake less aggressively when the velocity angle is far from ship front
+- Adjusted Cruise to brake more aggressively when total speed is too high - Beware testing glide reentry
+- If AtmoSpeedAssist is enabled, swaps to throttled mode when entering atmosphere from cruise mode
+- Adjusted Waypoints to land immediately if you pass the location or distance starts getting higher
+- Waypoints will no longer perform Extreme Brake Landings at positions entered on the map - you must land at location and Update Position for these
+    Your old waypoints must be updated in this way for them to work with Extreme Landings
+
+Version 5.21
+- Removed throttle limiting when atmosphere levels are below 10% for easier atmo escapes, and brake limiting when atmo levels are below 1%
+    Note that throttle and brakes will still limit if your vspeed becomes less than -20m/s, to help with entries, and always when atmo is above 10%
+- Fixed bug causing no throttle control when in space
+
+Version 5.2
+- Replaced Cruise with AtmoSpeedAssist (parameter to enable/disable), a throttled flight overhaul.
+Adjusts throttle to limit speed to AtmoSpeedLimit, brakes when necessary (such as reentry) without limiting throttle, and applies all wings to center the velocity vector like Cruise does.  Unlike cruise, it will not cause you to brake just because you are facing the wrong direction - only if your total speed is too high for atmo
+This also means that when AtmoSpeedAssist is on, all Atmo Flight Modes no longer put you in Cruise
+And consequently and accidentally, the player's throttle is now remembered and re-set when swapping back to Throttle mode from Cruise (in atmo)
+
 Version 5.11
 - Improved orbits and waypoints - waypoints may feather brakes again
 
