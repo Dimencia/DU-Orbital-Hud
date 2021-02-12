@@ -953,9 +953,9 @@ function SetupInterplanetaryPanel() -- Interplanetary helper
 
     widgetTargetOrbit = system.createWidget(panelInterplanetary, "value")
     widgetTargetOrbitText = system.createData('{"label": "Target Altitude", "value": "N/A", "unit":""}')
-    if not inAtmo then
+    --if not inAtmo then
         system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit)
-    end
+    --end
 end
 
 function Contains(mousex, mousey, x, y, width, height)
@@ -2977,13 +2977,13 @@ function UpdateAutopilotTarget()
                     system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
                 if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) ~= 1 then
                     system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
-                if system.updateData(widgetTargetOrbitText, widgetTargetOrbit) ~= 1 then
-                    system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit) end
             end
             if system.updateData(widgetMaxMassText, widgetMaxMass) ~= 1 then
                 system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
             if system.updateData(widgetTravelTimeText, widgetTravelTime) ~= 1 then
                 system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
+            if system.updateData(widgetTargetOrbitText, widgetTargetOrbit) ~= 1 then
+                system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit) end
         end
         CustomTarget = nil
     else
@@ -6220,7 +6220,7 @@ function script.onTick(timerId)
                 
                 -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
                 if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then 
-                    VectorStatus = "Finalizing Approach" -- Left for compatibility
+                    VectorStatus = "Finalizing Approach" 
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
@@ -6236,11 +6236,10 @@ function script.onTick(timerId)
                         BrakeLanding = true
                         VectorToTarget = false
                     end
-
-                    LastDistanceToTarget = distanceToTarget
                 elseif not AutoTakeoff then
                     BrakeIsOn = false
                 end
+                LastDistanceToTarget = distanceToTarget
                 
             end
             pitchInput2 = oldInput

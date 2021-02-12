@@ -1,4 +1,7 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.223
+- Adjusted Waypoints to really land immediately if you pass the location or distance starts getting higher
+
 Version 5.222
 - Increased minimum roll speed to 100m/s from 50/ms
 - Increased roll power to help converge on ships with no tailfins
