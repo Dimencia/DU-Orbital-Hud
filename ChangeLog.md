@@ -1,6 +1,7 @@
 ## ChangeLog - Most recent changes at the top
-Version 5.223
+Version 5.223 - Major flight changes including new "Cruise control" mode when using autopilot, read changelog since 5.11
 - Adjusted Waypoints to really land immediately if you pass the location or distance starts getting higher
+- IMPORANT:  For any waypoint to be most accurate and use faster brake landing, go to the waypoint and use the Update Position button.
 
 Version 5.222
 - Increased minimum roll speed to 100m/s from 50/ms
