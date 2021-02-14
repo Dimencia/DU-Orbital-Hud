@@ -39,11 +39,12 @@ showHud = true -- export: (Default: true) Uncheck to hide the HUD and only use a
 ShowOdometer = true -- export: (Default: true) Uncheck to hide the odometer panel up top.
 hideHudOnToggleWidgets = true -- export: (Default: true) Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
 ShiftShowsRemoteButtons = true -- export: (Default: true) Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
-StallAngle = 35 --export: (Default: 35) Determines how much Autopilot is allowed to make you yaw/pitch in atmosphere.  Also gives a stall warning when not autopilot.  (default 35, higher = more tolerance for yaw/pitch/roll)
+YawStallAngle = 35 --export: (Default: 35) Angle at which the ship stalls when yawing (Stabilizers: 70, Wings: 55, Ailerons: 30)
+PitchStallAngle = 35 --export: (Default: 35) Angle at which the ship stalls when pitching (Stabilizers: 70, Wings: 55, Ailerons: 30)
 speedChangeLarge = 5 -- export: (Default: 5) The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change). 
 speedChangeSmall = 1 -- export: (Default: 1) the speed change that occurs while you hold speed up/down, default is 1 (5% throttle change).
 brakeLandingRate = 30 -- export: (Default: 30) Max loss of altitude speed in m/s when doing a brake landing, default 30.  This is to prevent "bouncing" as hover/boosters catch you.  Do not use negative number.
-MaxPitch = 30 -- export: (Default: 30) Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  Default is 20 deg.  You can set higher or lower depending on your ships capabilities.
+MaxPitch = 30 -- export: (Default: 30) Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  You can set higher or lower depending on your ships capabilities.
 ReentrySpeed = 1050 -- export: (Default: 1050) Target re-entry speed once in atmosphere in km/h. 
 AtmoSpeedLimit = 1050 -- export: (Default: 1050) Speed limit in Atmosphere in km/h.  If you exceed this limit the ship will attempt to break till below this limit.
 SpaceSpeedLimit = 30000 -- export: (Default: 30000) Space speed limit in KM/H.  If you hit this speed but are not in active autopilot, engines will turn off.
@@ -121,10 +122,6 @@ LastMaxBrakeInAtmo = 0
 AntigravTargetAltitude = core.getAltitude()
 LastStartTime = 0
 SpaceTarget = false
-PlayerThrottle = 0
-brakeInput2 = 0
-ThrottleLimited = false
-calculatedThrottle = 0
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate", "freeLookToggle", "turnAssist",
@@ -138,7 +135,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit", "AtmoSpeedAssist",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
-                        "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
+                        "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
@@ -171,7 +168,11 @@ function round(num, numDecimalPlaces)
 end
 
 -- Variables that we declare local outside script because they will be treated as global but get local effectiveness
-
+local PlayerThrottle = 0
+local brakeInput2 = 0
+local ThrottleLimited = false
+local calculatedThrottle = 0
+local WasInCruise = false
 local halfResolutionX = round(ResolutionX / 2,0)
 local halfResolutionY = round(ResolutionY / 2,0)
 local apThrottleSet = false -- Do not save this, because when they re-enter, throttle won't be set anymore
@@ -275,7 +276,7 @@ local autoRoll = autoRollPreference
 local rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
 local velocity = vec3(core.getWorldVelocity())
 local velMag = vec3(velocity):len()
-local minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
+local minimumRateOfChange = math.cos(YawStallAngle*constants.deg2rad)
 local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
 local deltaX = system.getMouseDeltaX()
 local deltaY = system.getMouseDeltaY()
@@ -341,7 +342,7 @@ function LoadVariables()
         msgText = "Invalid User Control Scheme selected.  Change userControlScheme in Lua Parameters to keyboard, mouse, or virtual joystick\nOr use shift and button in screen"
         msgTimer = 5
     end
-    minimumRateOfChange = math.cos(StallAngle*constants.deg2rad)
+    minimumRateOfChange = math.cos(YawStallAngle*constants.deg2rad)
 
     if antigrav and not ExternalAGG then
         if AntigravTargetAltitude == nil then 
@@ -5225,7 +5226,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.223
+    VERSION_NUMBER = 5.224
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5614,7 +5615,7 @@ function script.onTick(timerId)
         local currentYaw = -math.deg(signedRotationAngle(constrUp, velocity, constrF))
         local currentPitch = math.deg(signedRotationAngle(constrR, velocity, constrF)) -- Let's use a consistent func that uses global velocity
 
-        stalling = inAtmo and currentYaw < -StallAngle or currentYaw > StallAngle or currentPitch < -StallAngle or currentPitch > StallAngle
+        stalling = inAtmo and currentYaw < -YawStallAngle or currentYaw > YawStallAngle or currentPitch < -PitchStallAngle or currentPitch > PitchStallAngle
         local minRollVelocity = 100 -- Min velocity over which advanced rolling can occur
 
         deltaX = system.getMouseDeltaX()
@@ -6220,8 +6221,8 @@ function script.onTick(timerId)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
                     -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  
-                    targetYaw = utils.clamp((currentYaw-targetYaw),currentYaw-StallAngle*0.85,currentYaw+StallAngle*0.85)*math.cos(rollRad) + utils.clamp(targetPitch-adjustedPitch,-StallAngle*0.85,StallAngle*0.85)*math.sin(math.rad(roll)) --  Try signing the pitch component of this
-                    targetPitch = utils.clamp(targetPitch*math.cos(rollRad),-StallAngle*0.85,StallAngle*0.85) + utils.clamp(math.abs(origTargetYaw),-StallAngle*0.85,StallAngle*0.85)*math.sin(rollRad)
+                    targetYaw = utils.clamp((currentYaw-targetYaw),currentYaw-YawStallAngle*0.85,currentYaw+YawStallAngle*0.85)*math.cos(rollRad) + utils.clamp(targetPitch-adjustedPitch,-YawStallAngle*0.85,YawStallAngle*0.85)*math.sin(math.rad(roll)) --  Try signing the pitch component of this
+                    targetPitch = utils.clamp(targetPitch*math.cos(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85) + utils.clamp(math.abs(origTargetYaw),-PitchStallAngle*0.85,PitchStallAngle*0.85)*math.sin(rollRad)
                 end -- We're just taking abs of the yaw for pitch, because we just want to pull up, and it rolled the right way already.
                 -- And the pitch now gets info about yaw too?
                 -- cos(roll) should give 0 at 90 and 1/-1 at 0 and 180
@@ -6244,7 +6245,8 @@ function script.onTick(timerId)
                 elseif hovGndDet > -1 or velMag < minRollVelocity then
                     AlignToWorldVector(targetVec) -- Point to the target if on the ground and 'stalled'
                 else
-                    AlignToWorldVector(velocity) -- Otherwise try to pull out of the stall
+                    AlignToWorldVector(velocity) -- Otherwise try to pull out of the stall, and let it pitch into it
+                    targetPitch = utils.clamp(-currentPitch,-90 + PitchStallAngle*0.85, 90 - PitchStallAngle*0.85) -- Just try to get within un-stalling range to not bounce too much
                 end
 
                 --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
@@ -6514,7 +6516,7 @@ function script.onTick(timerId)
                 -- then currentPitch*math.sin(rollRad)+pitch*math.cos(rollRad) = absolutePitch
                 --system.print("Target Pitch: " .. targetPitch .. " - Current: " .. pitchToUse)
             end
-            local pitchDiff = utils.clamp(targetPitch-pitchToUse, -StallAngle*0.85, StallAngle*0.85)
+            local pitchDiff = utils.clamp(targetPitch-pitchToUse, -YawStallAngle*0.85, YawStallAngle*0.85)
             if math.abs(pitchDiff) > autoPitchThreshold and ((not stalling and (math.abs(roll) < 5 or VectorToTarget)) or BrakeLanding or onGround) then
                 if (pitchPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                     pitchPID = pid.new(8 * 0.01, 0, 8 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
@@ -6541,6 +6543,17 @@ function script.onFlush()
         if antigrav.getState() == 0 and antigrav.getBaseAltitude() ~= AntigravTargetAltitude then 
             antigrav.setBaseAltitude(AntigravTargetAltitude) 
         end
+    end
+
+    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle and WasInCruise then
+        -- Not in cruise, but was last tick
+        PlayerThrottle = 0
+        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, PlayerThrottle) -- Reset throttle
+        WasInCruise = false
+    elseif Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and not WasInCruise then
+        -- Is in cruise, but wasn't last tick
+        PlayerThrottle = 0 -- Reset this here too, because, why not
+        WasInCruise = true
     end
 
 
@@ -6680,7 +6693,7 @@ function script.onFlush()
         local pidGet = throttlePID:get()
         --system.print(pidGet .. " vs " .. PlayerThrottle)
         calculatedThrottle = utils.clamp(pidGet,-1,1)
-        if calculatedThrottle < PlayerThrottle and (atmosphere > 0.1 or (atmosphere > 0 and vSpd < -5)) then -- Don't limit throttle in low atmo, but still brake in case it's a reentry.
+        if calculatedThrottle < PlayerThrottle and (atmosphere > 0.05 or (atmosphere > 0 and vSpd < -80)) then -- Don't limit throttle in low atmo, unless it's a reentry.
             ThrottleLimited = true
             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, utils.clamp(calculatedThrottle,0.01,1))
         else
@@ -6696,7 +6709,7 @@ function script.onFlush()
         end
         brakePID:inject(constructVelocity:len() - (AtmoSpeedLimit/3.6)) 
         local calculatedBrake = utils.clamp(brakePID:get(),0,1)
-        if (atmosphere > 0 and vSpd < -5) or atmosphere > 0.1 then -- Don't brake-limit them at <1% atmo if going up (or mostly up), it's mostly safe up there and displays 0% so people would be mad
+        if (atmosphere > 0 and vSpd < -80) or atmosphere > 0.05 then -- Don't brake-limit them at <5% atmo if going up (or mostly up), it's mostly safe up there and displays 0% so people would be mad
             brakeInput2 = calculatedBrake
         end
         --if calculatedThrottle < 0 then

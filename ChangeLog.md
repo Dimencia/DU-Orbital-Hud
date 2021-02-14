@@ -7,6 +7,13 @@ Version 5.23
     Begins autopilot as soon as there is line of sight to the target
     Brakes just before it reaches atmosphere
 
+Version 5.224
+- Ensures Throttle is set to 0 after entering/exiting cruise
+- Speed and Brake limiting for AtmoSpeedAssist now applies up to 5% atmo instead of 10%, unless reentering at more than 80m/s vspeed (up from 5m/s previous)
+- When stalling in AltitudeHold, the pitch should now correctly try to point back at velocity vector to get out of the stall
+- Changed StallAngle into YawStallAngle and PitchStallAngle.  WARNING: You will need to re-set these variables, though they defualt to a low 35
+
+
 Version 5.223 - Major flight changes including new "Cruise control" mode when using autopilot, read changelog since 5.11
 
 - Adjusted Waypoints to really land immediately if you pass the location or distance starts getting higher
