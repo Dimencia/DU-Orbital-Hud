@@ -1,4 +1,8 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.232
+- Fixed a potential issue with aligning prograde when not near a planet
+- Removed prints
+
 Version 5.231
 - Autoroll in space has been dampened, and occurs when aligning prograde near a planet
 - Stalling is ignored when atmo is below 1%

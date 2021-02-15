@@ -5230,7 +5230,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.224
+    VERSION_NUMBER = 5.232
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5833,9 +5833,7 @@ function script.onTick(timerId)
                 if nearSide == nil then -- We already set this before so we can just subtract from it to get atmosphere out
                     AutopilotDistance = AutopilotDistance - (autopilotTargetPlanet.noAtmosphericDensityAltitude*1.1 - autopilotTargetPlanet:getAltitude(targetCoords))
                 else
-                    system.print(nearSide)
                     if farSide ~= nil then
-                        system.print(farSide .. " = far")
                         AutopilotDistance = math.min(farSide,nearSide) -- Take the shortest distance
                     else
                         AutopilotDistance = nearSide
@@ -5920,8 +5918,6 @@ function script.onTick(timerId)
                 local currentYaw = -math.deg(signedRotationAngle(constrUp, constrF, velocity:normalize()))
                 local currentPitch = -math.deg(signedRotationAngle(constrR, constrF, velocity:normalize()))
 
-                --system.print("Target yaw " .. targetYaw .. " - Target pitch " .. targetPitch)
-                --system.print ("Current " .. currentYaw .. " - " .. currentPitch)
                 if (apPitchPID == nil) then
                     apPitchPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                 end
@@ -6024,7 +6020,6 @@ function script.onTick(timerId)
                     AutopilotStatus = "Circularizing"
                     -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
                     local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
-                    --system.print("Ecc " .. orbit.eccentricity .. ", last: " .. lastEccentricity .. ", apo " .. orbit.apoapsis.altitude .. ", peri " .. orbit.periapsis.altitude .. ", target " .. AutopilotTargetOrbit)
                     --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
                     if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
                         BrakeIsOn = false
@@ -6228,13 +6223,6 @@ function script.onTick(timerId)
                 
                 -- Let's go twice what they tell us to, which should converge quickly, within our clamp
 
-
-                --if stalling then
-                --    system.print("Stalled - Target yaw is " .. targetYaw .. " - Current: " .. currentYaw)
-                --else
-                --    system.print("Target yaw is " .. targetYaw .. " - Current: " .. currentYaw)
-                --end
-                --system.print("Roll is " .. roll .. " - Target yaw is " .. targetYaw .. " - Current: " .. currentYaw .. " - Prev targetPitch is " .. targetPitch)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > minRollVelocity then
@@ -6311,7 +6299,6 @@ function script.onTick(timerId)
 
                 --StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
                 StrongBrakes = true -- We don't care about this or glide landing anymore and idk where all it gets used
-                --system.print(distanceToTarget .. " to target, can brake to 0 in " .. brakeDistance .. " , deltaVelocity is " .. (velMag*deltaTick))
                 
                 -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
                 if not spaceLaunch and distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then 
@@ -6364,7 +6351,6 @@ function script.onTick(timerId)
 
                     -- Funny enough, LastMaxBrakeInAtmo has stuff done to it to convert to a flat value
                     -- But we need the instant one back, to know how good we are at braking at this exact moment
-                    --system.print("Max brake Gs: " .. LastMaxBrakeInAtmo/gravity)
                     local atmos = utils.clamp(atmosphere(),0.4,2) -- Assume at least 40% atmo when they land, to keep things fast in low atmo
                     local curBrake = LastMaxBrakeInAtmo * utils.clamp(velMag/100,0.1,1) * atmos
                     local totalNewtons = maxKinematicUp * atmos + curBrake + airFriction - gravity -- Ignore air friction for leeway, KinematicUp and Brake are already in newtons
@@ -6386,7 +6372,6 @@ function script.onTick(timerId)
                     
                     -- For leniency just always assume it's weak
                     local speedAfterBraking = velMag - math.sqrt((math.abs(weakBreakNewtons/2)*20)/(0.5*constructMass()))*utils.sign(weakBreakNewtons)
-                    --system.print("Speed now: " .. velMag .. " - After braking for 20m, speed will be " .. speedAfterBraking)
                     if speedAfterBraking < 0 then  
                         speedAfterBraking = 0 -- Just in case it gives us negative values
                     end
@@ -6412,8 +6397,6 @@ function script.onTick(timerId)
                         else
                             stopDistance, _ = Kinematic.computeDistanceAndTime(speedAfterBraking, 0, constructMass(), 0, 0, maxKinematicUp * atmos + math.sqrt(curBrake) + airFriction - gravity) 
                         end
-
-                        --system.print("Can stop to 0 in " .. stopDistance .. "m with " .. totalNewtons .. "N of force (" .. totalNewtons/gravity .. "G)")
                         --if LandingGearGroundHeight == 0 then
                         stopDistance = (stopDistance+15+(velMag*deltaTick))*1.1 -- Add leeway for large ships with forcefields or landing gear, and for lag
                         -- And just bad math I guess
@@ -6471,7 +6454,6 @@ function script.onTick(timerId)
                         end
                     --end
                 elseif StrongBrakes and (velocity:normalize():dot(-up) < 0.999) then
-                    --system.print("Too much HSpeed, braking")
                     BrakeIsOn = true
                 elseif vSpd < -brakeLandingRate and not skipLandingRate then
                     BrakeIsOn = true
@@ -6481,17 +6463,7 @@ function script.onTick(timerId)
             end
             if AutoTakeoff or spaceLaunch then
                 local intersectBody, nearSide, farSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (AutopilotTargetCoords-worldPos):normalize(), function(body) return (body.radius+body.noAtmosphericDensityAltitude) end)
-                -- No idea what nearSide and farSide are...
-                if intersectBody ~= nil then
-                    system.print(intersectBody.name)
-                    if nearSide ~= nil then
-                        system.print("Near: " .. nearSide)
-                    end
-                    if farSide ~= nil then
-                        system.print("Far: " .. farSide)
-                    end
-                end
-                
+
                 if math.abs(targetPitch) < 15 and (coreAltitude/HoldAltitude) > 0.75 then
                     AutoTakeoff = false -- No longer in ascent
                     if not spaceLaunch then 
@@ -6544,7 +6516,6 @@ function script.onTick(timerId)
                 -- The 'pitch' of our velocity vector plus the pitch we are in relation to it, should be our real world pitch
 
                 -- then currentPitch*math.sin(rollRad)+pitch*math.cos(rollRad) = absolutePitch
-                --system.print("Target Pitch: " .. targetPitch .. " - Current: " .. pitchToUse)
             end
             local pitchDiff = utils.clamp(targetPitch-pitchToUse, -YawStallAngle*0.85, YawStallAngle*0.85)
             if math.abs(pitchDiff) > autoPitchThreshold and (((math.abs(roll) < 5 or VectorToTarget)) or BrakeLanding or onGround) then
@@ -6621,12 +6592,10 @@ function script.onFlush()
         finalPitchInput * pitchSpeedFactor * constructRight + finalRollInput * rollSpeedFactor * constructForward +
             finalYawInput * yawSpeedFactor * constructUp
 
-    -- In atmosphere or aligning prograde with orbit?
-    if (worldVertical:len() > 0.01 and atmosphere > 0.0) or ProgradeIsOn or Reentry or spaceLand or AltitudeHold then
+    if worldVertical:len() > 0.01 and (atmosphere > 0.0 or ProgradeIsOn or Reentry or spaceLand or AltitudeHold) then
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
         if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 then
             local targetRollDeg = targetRoll
-            --system.print("Trying to roll to " .. targetRoll)
             local rollFactor = autoRollFactor
             if atmosphere == 0 then
                 rollFactor = rollFactor*4 -- Better or worse, you think?
@@ -6721,7 +6690,6 @@ function script.onFlush()
         end
         throttlePID:inject((AtmoSpeedLimit/3.6 - constructVelocity:dot(constructForward)))
         local pidGet = throttlePID:get()
-        --system.print(pidGet .. " vs " .. PlayerThrottle)
         calculatedThrottle = utils.clamp(pidGet,-1,1)
         if calculatedThrottle < PlayerThrottle and atmosphere > 0.05 then -- Don't limit throttle in low atmo period
             ThrottleLimited = true
@@ -6749,7 +6717,6 @@ function script.onFlush()
             if ThrottleLimited and calculatedThrottle == 0.01 then
                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- We clamped it to >0 before but, if braking and it was at that clamp, 0 is good.
             end
-            --system.print("Braking with " .. brakeInput2*100 .. " %")
         else -- For display purposes, keep calculatedThrottle positive in this case
             calculatedThrottle = utils.clamp(calculatedThrottle,0.01,1)
         end
@@ -6767,7 +6734,6 @@ function script.onFlush()
         local verticalStrafeAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.vertical,upAmount*1000)
         autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. verticalStrafeEngineTags
         autoNavigationAcceleration = autoNavigationAcceleration + verticalStrafeAcceleration
-        --system.print(vec3(verticalStrafeAcceleration):len())
 
         local longitudinalEngineTags = 'thrust analog longitudinal '
         if ExtraLongitudeTags ~= "none" then longitudinalEngineTags = longitudinalEngineTags..ExtraLongitudeTags end
@@ -6778,11 +6744,9 @@ function script.onFlush()
         local lateralAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral, 0)
         autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. lateralStrafeEngineTags
         autoNavigationAcceleration = autoNavigationAcceleration + lateralAcceleration
-        --system.print("Lateral accel: " .. vec3(lateralAcceleration):len())
 
         -- Auto Navigation (Cruise Control)
         if (autoNavigationAcceleration:len() > constants.epsilon) then
-            --system.print(autoNavigationEngineTags .. " , " .. vec3(autoNavigationAcceleration):len())
             Nav:setEngineForceCommand(autoNavigationEngineTags, autoNavigationAcceleration, dontKeepCollinearity, '', '',
                 '', tolerancePercentToSkipOtherPriorities)
         end
