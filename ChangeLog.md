@@ -1,4 +1,14 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.231
+- Autoroll in space has been dampened, and occurs when aligning prograde near a planet
+- Stalling is ignored when atmo is below 1%
+- Glide reentry button fixed to align prograde first
+- Stall axis is now independent so will avoid realigning pitch when yaw stalling, for example
+- Reentry to a waypoint should reenter in the correct direction for that waypoint
+- Reentry height is now always 11% atmosphere level
+- Reentry will now stabilize more completely before swapping to autopilot, if targeting a waypoint
+- Prograde/waypoint alignment on reentry cancels as soon as it is aligned rather than when speed is low enough
+
 Version 5.23
 - Orbital adjustments can now occur even when not in an escape trajectory
 - Planet-To-Planet autopilot overhaul
@@ -12,7 +22,6 @@ Version 5.224
 - Speed and Brake limiting for AtmoSpeedAssist now applies up to 5% atmo instead of 10%, unless reentering at more than 80m/s vspeed (up from 5m/s previous)
 - When stalling in AltitudeHold, the pitch should now correctly try to point back at velocity vector to get out of the stall
 - Changed StallAngle into YawStallAngle and PitchStallAngle.  WARNING: You will need to re-set these variables, though they defualt to a low 35
-
 
 Version 5.223 - Major flight changes including new "Cruise control" mode when using autopilot, read changelog since 5.11
 
