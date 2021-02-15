@@ -1,4 +1,8 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.233
+- Fixed issue with displaying cruise throttle while in prograde alignment
+- 
+
 Version 5.232
 - Fixed a potential issue with aligning prograde when not near a planet
 - Removed prints

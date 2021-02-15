@@ -2197,7 +2197,7 @@ function DrawThrottle(newContent, flightStyle, throt, flightValue)
         end
         newContent[#newContent + 1] = stringf([[<g class="%s">
             <path class="linethick" d="M %d %d L %d %d L %d %d L %d %d"/>
-            <g transform="translate(0 %d)">
+            <g transform="translate(0 %.0f)">
                 <polygon points="%d,%d %d,%d %d,%d"/>
             </g>]], throtclass, throtPosX-7, throtPosY-50, throtPosX, throtPosY-50, throtPosX, throtPosY+50, throtPosX-7, throtPosY+50, (1 - math.abs(throt)), 
             throtPosX-10, throtPosY+50, throtPosX-15, throtPosY+53, throtPosX-15, throtPosY+47)
@@ -5230,7 +5230,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.232
+    VERSION_NUMBER = 5.233
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5766,7 +5766,8 @@ function script.onTick(timerId)
                         if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                             Nav.control.cancelCurrentControlMasterMode()
                         end -- Force cruise to 0 so it brakes for us and prepares for next step
-                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed/3.6)
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, math.floor(AtmoSpeedLimit/3.6+0.5)) -- Trouble drawing if it's not an int
+                        PlayerThrottle = 0
                     end
                 else
                     AlignToWorldVector(vec3(velocity),0.01) 
