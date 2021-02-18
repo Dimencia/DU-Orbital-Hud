@@ -1,7 +1,12 @@
 ## ChangeLog - Most recent changes at the top
 Version 5.233
 - Fixed issue with displaying cruise throttle while in prograde alignment
-- 
+- Waypoints now only brake based on horizontal speed until they are on target
+- Autotakeoff now only engages when hovers detect ground
+- Min roll speed increased to 150m/s
+- Surface to surface waypoints now have a more consistent approach - they should arrive at AutopilotTargetOrbit
+- Reentry now uses gravity for higher approach speeds and can be engaged further from the planet
+- Autoroll no longer applies when pitch is +/-75 degrees, where rolling becomes meaningless
 
 Version 5.232
 - Fixed a potential issue with aligning prograde when not near a planet

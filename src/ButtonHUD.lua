@@ -1057,7 +1057,7 @@ function ToggleAltitudeHold()
         Reentry = false
         autoRoll = true
         LockPitch = nil
-        if (not GearExtended and not BrakeIsOn) or not inAtmo or (antigrav and antigrav.getState() == 1) then -- Never autotakeoff in space
+        if (hoverDetectGround() == -1) or not inAtmo or (antigrav and antigrav.getState() == 1) then -- Never autotakeoff in space
             AutoTakeoff = false
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
@@ -1744,7 +1744,7 @@ function BeginReentry()
         Reentry = false
         autoRoll = autoRollPreference
         AltitudeHold = false
-    elseif atmosphere() ~= 0 or unit.getClosestPlanetInfluence() <= 0 or Reentry or not planet.hasAtmosphere then
+    elseif atmosphere() ~= 0 or not planet.hasAtmosphere then
         msgText = "Re-Entry requirements not met: you must start out of atmosphere\n and within a planets gravity well over a planet with atmosphere"
         msgTimer = 5
     elseif not reentryMode then-- Parachute ReEntry
@@ -5621,7 +5621,7 @@ function script.onTick(timerId)
         local currentPitch = math.deg(signedRotationAngle(constrR, velocity, constrF)) -- Let's use a consistent func that uses global velocity
 
         stalling = inAtmo and currentYaw < -YawStallAngle or currentYaw > YawStallAngle or currentPitch < -PitchStallAngle or currentPitch > PitchStallAngle
-        local minRollVelocity = 100 -- Min velocity over which advanced rolling can occur
+        local minRollVelocity = 150 -- Min velocity over which advanced rolling can occur
 
         deltaX = system.getMouseDeltaX()
         deltaY = system.getMouseDeltaY()
@@ -5746,6 +5746,7 @@ function script.onTick(timerId)
         if ProgradeIsOn then
             if velMag > minAutopilotSpeed then -- Help with div by 0 errors and careening into terrain at low speed
                 if spaceLand then 
+                    BrakeIsOn = false -- wtf how does this keep turning on, and why does it matter if we're in cruise?
                     local aligned = false
                     if CustomTarget ~= nil then
                         aligned = AlignToWorldVector(CustomTarget.position-worldPos,0.01) 
@@ -5753,7 +5754,7 @@ function script.onTick(timerId)
                         aligned = AlignToWorldVector(vec3(velocity),0.01) 
                     end
                     autoRoll = true
-                    if aligned then
+                    if aligned and math.abs(roll) < 2 then
                             BrakeIsOn = false
                             ProgradeIsOn = false
                             reentryMode = true
@@ -5766,7 +5767,7 @@ function script.onTick(timerId)
                         if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                             Nav.control.cancelCurrentControlMasterMode()
                         end -- Force cruise to 0 so it brakes for us and prepares for next step
-                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, math.floor(AtmoSpeedLimit/3.6+0.5)) -- Trouble drawing if it's not an int
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, math.floor(AtmoSpeedLimit)) -- Trouble drawing if it's not an int
                         PlayerThrottle = 0
                     end
                 else
@@ -5807,8 +5808,24 @@ function script.onTick(timerId)
             -- This is gonna be hard to get the negatives right.
             -- If we're still in orbit, don't do anything, that velocity will suck
             local targetCoords = AutopilotTargetCoords
+
+            if CustomTarget ~= nil then
+                AutopilotRealigned = true -- Don't realign, point straight at the target.  Or rather, at AutopilotTargetOrbit above it
+
+                if (CustomTarget.position-worldPos):len() > (autopilotTargetPlanet.center-worldPos):len() then
+
+                else
+                    targetCoords = CustomTarget.position + (worldPos - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
+                end
+                --AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8 -- Since we're aiming straight at it, we have to assume gravity?
+                AutopilotPlanetGravity = 0
+            else
+                AutopilotPlanetGravity = 0
+            end
+
             local skipAlign = false
             AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
+
             local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
             local displayText, displayUnit = getDistanceDisplayString(displayDistance)
             system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
@@ -5822,30 +5839,37 @@ function script.onTick(timerId)
             displayText, displayUnit = getDistanceDisplayString(projectedAltitude)
             system.updateData(widgetTrajectoryAltitudeText, '{"label": "Projected Altitude", "value": "' ..
                 displayText.. '", "unit":"' .. displayUnit .. '"}')
-
-            if CustomTarget ~= nil then
+            
+            --if CustomTarget ~= nil then
                 
-                AutopilotRealigned = true -- Don't realign, point straight at the target.
-                targetCoords = CustomTarget.position
-                AutopilotEndSpeed = AtmoSpeedLimit/3.6;
+            --    AutopilotRealigned = true -- Don't realign, point straight at the target.  Or rather, at AutopilotTargetOrbit above it
+            --    targetCoords = CustomTarget.position + (autopilotTargetPlanet.center - worldPos):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
+
+
+
+                --AutopilotEndSpeed = AtmoSpeedLimit/3.6; -- Let it keep an orbital end-speed
+
                 -- 5% leeway on the atmo height?  To give us time to actually start reentry
                 -- Also get the value for our velocity cast, not toward the target necessarily
-                local intersectBody, nearSide, farSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (velocity):normalize(), function(body) if body.noAtmosphericDensityAltitude > 0 then return (body.radius+body.noAtmosphericDensityAltitude) else return (body.radius+body.surfaceMaxAltitude*1.5) end end)
-                if nearSide == nil then -- We already set this before so we can just subtract from it to get atmosphere out
-                    AutopilotDistance = AutopilotDistance - (autopilotTargetPlanet.noAtmosphericDensityAltitude*1.1 - autopilotTargetPlanet:getAltitude(targetCoords))
-                else
-                    if farSide ~= nil then
-                        AutopilotDistance = math.min(farSide,nearSide) -- Take the shortest distance
-                    else
-                        AutopilotDistance = nearSide
-                    end
-                end
-            end
+            --    local intersectBody, farSide, nearSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (velocity):normalize(), function(body) if body.noAtmosphericDensityAltitude > 0 then return (body.radius+body.noAtmosphericDensityAltitude) else return (body.radius+body.surfaceMaxAltitude*1.5) end end)
+            --    if nearSide == nil then -- We already set this before so we can just subtract from it to get atmosphere out
+            --        AutopilotDistance = AutopilotDistance - (autopilotTargetPlanet.noAtmosphericDensityAltitude - autopilotTargetPlanet:getAltitude(targetCoords))
+            --    else
+            --        if nearSide ~= nil then
+            --            AutopilotDistance = math.min(farSide,nearSide) -- Take the shortest distance
+            --        else
+            --           AutopilotDistance = farSide
+            --        end
+            --    end
+                -- This should currently hold the distance to the atmosphere along our velocity vector
+                -- Now get it to AutopilotTargetOrbit
+            --    AutopilotDistance = AutopilotDistance - (AutopilotTargetOrbit - autopilotTargetPlanet.noAtmosphericDensityAltitude)
+            --end
 
             local brakeDistance, brakeTime
             
 
-            if CustomTarget ~= nil then
+            --if CustomTarget ~= nil then
                 -- They're going to be severely affected by gravity as they come in
                 -- Calculate a brake distance if they were affected by gravity the whole way
                 -- Then take distance = math.sqrt(that-ungravityDistance) for poor man's integration
@@ -5854,8 +5878,62 @@ function script.onTick(timerId)
                 -- Which is already handled in the func, we just have to set gravity.
                 -- We'll do /2 cuz it's safer than sqrt and braking too early is not a problem with these
                     -- Nah just, straight up, assume full gravity the whole way.  It's safer that way.
-                AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8
-            end
+            --    AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8
+            --else
+            --    AutopilotPlanetGravity = 0
+            --end
+
+            -- Thought - brake down to some arbitrary speed, like 5000, at AutopilotTargetOrbit assuming no gravity
+            -- Then add separate braking from that speed to AtmoSpeedLimit, at noAtmosphericDensityAltitude, with 'full' gravity
+
+            -- ... Which basically means, aim for AutopilotTargetOrbit and even the usual speed, and make reentry do brake calculations for its stuff
+
+            --(0.5*m*vInitial^2 - 0.5*m*vFinal^2 + G*constructMass*planet.gm * ((1/finalAltitude)-(1/currentAltitude)))/AutopilotDistance = F
+            -- This should give us the Force required to stop from vInitial to vFinal in AutopilotDistance meters, where gravity goes from current altitude to final
+            -- Now, just figure out how to make this use relativity.
+            --local C       = 30000000/3600
+            --local bigG = 0.0000000000667408 -- IDK if lua can even handle this
+            -- lorentzMass = dryMass/(sqrt(1-(v/c)^2))
+            -- Maybe, we just plug the lorentz thing into the mass for the eKin stuff at the front, and it'll be okay
+
+            -- 
+            --Derivative of mass formula would be
+            --mass*asin(velocity/C)+finalVelocity
+            --Which is the area below the graph
+            --Which represents the sum of total masses going from finalVelocity to velocity or vice versa
+            --If we divide that by velocity-finalVelocity... 
+
+            --so for example, with the weird values I have in here, at x = 10, we have F(x) = 52.35988
+            --Then that/10 gives us a value of 5.23.  Which, is closer to the value at x=30.  But might be an accurate representation?
+            --Yeah no, that makes sense.  It's not at 25, half of 50, because it's exponential.
+
+            --This will do.  We multiply that average times mass in our GmM part of the formula
+            --local function lorentzMass(mass, velocity) 
+            --    local C       = 30000000/3600
+            --    return mass/(math.sqrt(1-(velocity/C)^2))
+            --end
+
+            --local averageLorentz = (constructMass()*math.asin(velMag/C)+AutopilotEndSpeed)/velMag
+            -- Trying with constructMass instead of averageLorentz, just to see.  - Still tried to brake way too early, and req force went down while braking
+            -- Also trying with just average, and not lorentzing the energys
+            -- And then one last one with no lorentz at all?
+
+                -- Just the average seems to give us a stopping distance slightly later than the one we use now
+                -- But worryingly, it goes up after brake is engaged for a while.  Then it levels out and starts going down
+                -- This might be the result of using an average like I do, though I expected the opposite - go down while braking, then up as it gets closer
+
+                -- No, it's not.  It's horribly wrong and murdered me. 
+
+            -- No lorentz also just doesn't make sense.  It 100% needs to go in the first section at least
+            -- Let's see what it does if we use the averagelorentz for all
+
+            --local brakeForceRequired = (0.5*averageLorentz*velMag^2 - 0.5*averageLorentz*AutopilotEndSpeed^2 
+            --                            + averageLorentz * autopilotTargetPlanet.GM * bigG * ((1/autopilotTargetPlanet.noAtmosphericDensityAltitude)-(1/coreAltitude)))/AutopilotDistance
+            --system.print("Requires " .. brakeForceRequired .. "N, has " .. LastMaxBrake .. " , thinks it should stop in " .. AutopilotDistance)
+
+            --if brakeForceRequired >= LastMaxBrake then
+            --    system.print("Would start braking!")
+            --end
 
             if not TurnBurn then
                 brakeDistance, brakeTime = GetAutopilotBrakeDistanceAndTime(velMag)
@@ -5980,6 +6058,7 @@ function script.onTick(timerId)
                     apThrottleSet = false
                 end
                 -- Check if accel needs to stop for braking
+                --if brakeForceRequired >= LastMaxBrake then
                 if AutopilotDistance <= brakeDistance then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Braking"
@@ -6040,6 +6119,7 @@ function script.onTick(timerId)
                     end
                 end
             elseif AutopilotCruising then
+                --if brakeForceRequired >= LastMaxBrake then
                 if AutopilotDistance <= brakeDistance then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Braking"
@@ -6080,11 +6160,11 @@ function script.onTick(timerId)
             -- If we accidentally hit atmo while autopiloting to a custom target, cancel it and go straight to pulling up
         elseif Autopilot and (CustomTarget ~= nil and CustomTarget.planetname ~= "Space" and (velMag <= AutopilotEndSpeed or atmosphere() > 0)) then
             msgText = "Autopilot complete, proceeding with reentry"
-            --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
+            BrakeIsOn = false -- Leaving these on makes it screw up alignment...?
             AutopilotBraking = false
             Autopilot = false
             AutopilotStatus = "Aligning" -- Disable autopilot and reset
-            --brakeInput = 0
+            brakeInput = 0
             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
             PlayerThrottle = 0
             apThrottleSet = false
@@ -6129,7 +6209,7 @@ function script.onTick(timerId)
                 targetPitch = 0
             end
             
-            local autoPitchThreshold = 1.0
+            local autoPitchThreshold = 0
             -- Copied from autoroll let's hope this is how a PID works... 
             if math.abs(targetPitch - pitch) > autoPitchThreshold then
                 if (pitchPID == nil) then
@@ -6165,12 +6245,34 @@ function script.onTick(timerId)
             end
             autoRoll = true
 
-            local oldInput = pitchInput2
+            local oldInput = pitchInput2 -- TODO fix prograde cruising us to /3.6
             
             if Reentry then
-                local fasterSpeed = ReentrySpeed
-                if Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= fasterSpeed then -- This thing is dumb.
-                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, fasterSpeed)
+                -- Figure out brake distance
+                -- If distance to 5km above atmo is >= brake distance, set it back to AtmoSpeedLimit
+                -- Otherwise give it some high arbitrary target speed like 5000kph
+                -- Even though I'd like it if we just had freefall from gravity after we cruised to AtmoSpeedLimit...
+                -- So if we can 1. Align at -80 and get our speed within some range of target
+                -- And then 2. Swap to throttle and let gravity do the rest til we get within brake range
+
+                local ReentrySpeed = math.floor(AtmoSpeedLimit)
+
+                local brakeDistancer, brakeTimer = Kinematic.computeDistanceAndTime(velMag, ReentrySpeed/3.6, constructMass(), 0, 0, LastMaxBrake - planet.gravity*9.8*constructMass())
+                local distanceToTarget = coreAltitude - (planet.noAtmosphericDensityAltitude + 5000)
+
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and coreAltitude > planet.noAtmosphericDensityAltitude + 5000 and velMag <= ReentrySpeed/3.6 and velMag > (ReentrySpeed/3.6)-10 and math.abs(velocity:normalize():dot(constrF)) > 0.9 then
+                    -- Swap to throttle for the approach
+                    Nav.control.cancelCurrentControlMasterMode()
+                    PlayerThrottle = 0
+                elseif Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle and ((brakeDistancer > -1 and distanceToTarget <= brakeDistancer) or coreAltitude <= planet.noAtmosphericDensityAltitude + 5000) then
+                    --Nav.control.cancelCurrentControlMasterMode()
+                    BrakeIsOn = true
+                else
+                    BrakeIsOn = false
+                end
+
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) ~= ReentrySpeed then -- This thing is dumb.
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                 end 
@@ -6184,12 +6286,21 @@ function script.onTick(timerId)
                         autoRoll = autoRollPreference
                     end
                 elseif planet.noAtmosphericDensityAltitude > 0 and coreAltitude > planet.noAtmosphericDensityAltitude + 5000 then -- 5km is good
-                    targetPitch = -80
-                    autoRoll = false
-                elseif Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == ReentrySpeed then
-                    reentryMode = false
-                    Reentry = false
-                    autoRoll = true
+                    targetPitch = -70 -- Maybe -70 will do better, something is keeping it from pitching up at the right time... 
+                    autoRoll = true -- It shouldn't actually do it, except while aligning
+                elseif coreAltitude <= planet.noAtmosphericDensityAltitude + 5000 then
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then -- Cancel throttle
+                        Nav.control.cancelCurrentControlMasterMode()
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, ReentrySpeed)
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
+                        Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
+                    end -- Then we have to wait a tick for it to take our new speed.
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == AtmoSpeedLimit then
+                        targetPitch = -MaxPitch
+                        reentryMode = false
+                        Reentry = false
+                        autoRoll = true -- wtf?  On some ships this makes it flail around because of the -80 and never recover
+                    end
                     --autoRoll = autoRollPreference -- This can't be reset until after Alt Hold is done
                 end
             end
@@ -6287,7 +6398,7 @@ function script.onTick(timerId)
                 local airFriction = math.sqrt(airFrictionVec:len() - airFrictionVec:project_on(up):len()) * constructMass()
                 -- Assume it will halve over our duration, if not sqrt.  We'll try sqrt because it's underestimating atm
                 -- First calculate stopping to 100 - that all happens with full brake power
-                if velMag > 100 then
+                if velMag > 100 then 
                     brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 100, constructMass(), 0, 0,
                                                     curBrake + airFriction)
                     -- Then add in stopping from 100 to 0 at what averages to half brake power.  Assume no friction for this
@@ -6577,6 +6688,11 @@ function script.onFlush()
 
     -- Axis
     local worldVertical = vec3(core.getWorldVertical()) -- along gravity
+    if worldVertical == nil or worldVertical:len() == 0 then
+        worldVertical = (planet.center - vec3(core.getConstructWorldPos())):normalize() -- I think also along gravity hopefully?
+    end
+
+
     local constructUp = vec3(core.getConstructWorldOrientationUp())
     local constructForward = vec3(core.getConstructWorldOrientationForward())
     local constructRight = vec3(core.getConstructWorldOrientationRight())
@@ -6595,11 +6711,16 @@ function script.onFlush()
 
     if worldVertical:len() > 0.01 and (atmosphere > 0.0 or ProgradeIsOn or Reentry or spaceLand or AltitudeHold) then
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
-        if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 then
+        local roll = getRoll(worldVertical, constructForward, constructRight) 
+        local radianRoll = (roll / 180) * math.pi
+        local corrX = math.cos(radianRoll)
+        local corrY = math.sin(radianRoll)
+        local adjustedPitch = getPitch(worldVertical, constructForward, (constructRight * corrX) + (constructUp * corrY)) -- Don't roll if pitch is basically straight up/down
+        if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 and math.abs(adjustedPitch) < 75 then
             local targetRollDeg = targetRoll
             local rollFactor = autoRollFactor
             if atmosphere == 0 then
-                rollFactor = rollFactor*4 -- Better or worse, you think?
+                rollFactor = rollFactor/4 -- Better or worse, you think?
             end
             if (rollPID == nil) then
                 rollPID = pid.new(rollFactor * 0.01, 0, rollFactor * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
