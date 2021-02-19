@@ -5808,21 +5808,27 @@ function script.onTick(timerId)
             -- This is gonna be hard to get the negatives right.
             -- If we're still in orbit, don't do anything, that velocity will suck
             local targetCoords = AutopilotTargetCoords
+            -- This isn't right.  Maybe, just take the smallest distance vector between the normal one, and the wrongSide calculated one
+            --local wrongSide = (CustomTarget.position-worldPos):len() > (autopilotTargetPlanet.center-worldPos):len()
 
             if CustomTarget ~= nil then
                 AutopilotRealigned = true -- Don't realign, point straight at the target.  Or rather, at AutopilotTargetOrbit above it
 
-                if (CustomTarget.position-worldPos):len() > (autopilotTargetPlanet.center-worldPos):len() then
-                    -- It's on the wrong side of the planet. 
-                    -- So, get the 3d direction between our target and planet center.  Note that, this is basically a vector defining gravity at our target, too...
-                    local initialDirection = (CustomTarget.position - autopilotTargetPlanet.center):normalize() -- Should be pointing up
-                    local forwardComp = initialDirection:project_on((autopilotTargetPlanet.center-worldPos):normalize())
-                    initialDirection = (initialDirection - forwardComp):normalize() -- Ignore all forward and then re-normalize
-                    -- And... actually that's all that I need.  If forward is really gone, this should give us a point on the edge of the planet
-                    targetCoords = autopilotTargetPlanet.center + initialDirection*(autopilotTargetPlanet.radius + AutopilotTargetOrbit)
+                -- It's on the wrong side of the planet. 
+                -- So, get the 3d direction between our target and planet center.  Note that, this is basically a vector defining gravity at our target, too...
+                local initialDirection = (CustomTarget.position - autopilotTargetPlanet.center):normalize() -- Should be pointing up
+                local forwardComp = initialDirection:project_on((autopilotTargetPlanet.center-worldPos):normalize())
+                initialDirection = (initialDirection - forwardComp):normalize() -- Ignore all forward and then re-normalize
+                -- And... actually that's all that I need.  If forward is really gone, this should give us a point on the edge of the planet
+                local wrongSideCoords = autopilotTargetPlanet.center + initialDirection*(autopilotTargetPlanet.radius + AutopilotTargetOrbit)
+                local rightSideCoords = CustomTarget.position + (worldPos - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
+                
+                if (worldPos-wrongSideCoords):len() < (worldPos-rightSideCoords):len() then
+                    targetCoords = wrongSideCoords
                 else
-                    targetCoords = CustomTarget.position + (worldPos - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
+                    targetCoords = rightSideCoords
                 end
+
                 --AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8 -- Since we're aiming straight at it, we have to assume gravity?
                 AutopilotPlanetGravity = 0
             else
@@ -6090,18 +6096,28 @@ function script.onTick(timerId)
                     Autopilot = false
                     AutopilotStatus = "Aligning" -- Disable autopilot and reset
                 elseif (CustomTarget ~= nil and CustomTarget.planetname ~= "Space" and (velMag <= AutopilotEndSpeed or atmosphere() > 0)) then
-                    msgText = "Autopilot complete, proceeding with reentry"
-                    --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
-                    AutopilotBraking = false
-                    Autopilot = false
-                    AutopilotStatus = "Aligning" -- Disable autopilot and reset
-                    --brakeInput = 0
-                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-                    PlayerThrottle = 0
-                    apThrottleSet = false
-                    ProgradeIsOn = true
-                    spaceLand = true
+                    if (CustomTarget.position - worldPos):len() < AutopilotTargetOrbit + 20000 or (orbit.apoapsis == nil and orbit.periapsis == nil or orbit.apoapsis <= 0 or orbit.periapsis <= 0) then -- If within 20km (ignoring altitude) or if not in orbit, start reentry
+
                     
+                        msgText = "Autopilot complete, proceeding with reentry"
+                        --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
+                        AutopilotBraking = false
+                        Autopilot = false
+                        AutopilotStatus = "Aligning" -- Disable autopilot and reset
+                        --brakeInput = 0
+                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        PlayerThrottle = 0
+                        apThrottleSet = false
+                        ProgradeIsOn = true
+                        spaceLand = true
+                    else
+                        -- If in orbit and not within 20km, we will probably get to it soon.
+                        AutopilotStatus = "Orbiting to Target"
+                        BrakeIsOn = false -- No braking
+                        brakeInput = 0
+                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- No throttle
+                        PlayerThrottle = 0
+                    end
                 elseif CustomTarget == nil and orbit.periapsis ~= nil and orbit.eccentricity < 1 then
                     AutopilotStatus = "Circularizing"
                     -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
