@@ -84,7 +84,7 @@ hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for yo
 ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disabled for performance on very large ships
 CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
 autoRollRollThreshold = 1.0 --export: (Default: 1.0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
-HeadlightGroundHeight = 150 --export: (Default: 150) Controls altitude to turn on/off Headlights. Turns off above value
+AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric speeds should be limited to a maximum of AtmoSpeedLimit
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -121,6 +121,10 @@ LastMaxBrakeInAtmo = 0
 AntigravTargetAltitude = core.getAltitude()
 LastStartTime = 0
 SpaceTarget = false
+PlayerThrottle = 0
+brakeInput2 = 0
+ThrottleLimited = false
+calculatedThrottle = 0
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate", "freeLookToggle", "turnAssist",
@@ -132,7 +136,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "hideHudOnToggleWidgets", "DampingMultiplier", "fuelTankHandlingAtmo", "ExternalAGG", "ShouldCheckDamage",
                         "fuelTankHandlingSpace", "fuelTankHandlingRocket", "RemoteFreeze", "hudTickRate",
                         "speedChangeLarge", "speedChangeSmall", "brightHud", "brakeLandingRate", "MaxPitch",
-                        "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit",
+                        "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit", "AtmoSpeedAssist",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "StallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed"}
@@ -372,9 +376,7 @@ function ProcessElements()
     local checkTanks = (fuelX ~= 0 and fuelY ~= 0)
     for k in pairs(elementsID) do
         local type = eleType(elementsID[k])
-        sprint(type)
         if (type == "Landing Gear") then
-            sprint("HERE1")
             hasGear = true
         end
         if (type == "Dynamic Core Unit") then
@@ -514,7 +516,6 @@ function SetupChecks()
         system.freeze(0)
     end
     if hasGear then
-        sprint("HERE2")
         GearExtended = (Nav.control.isAnyLandingGearExtended() == 1)
         if GearExtended then
             Nav.control.extendLandingGears()
@@ -760,7 +761,8 @@ function AddNewLocation() -- Don't call this unless they have a databank or it's
             name = name,
             atmosphere = atmo,
             planetname = planet.name,
-            gravity = planet.gravity
+            gravity = planet.gravity,
+            safe = true -- This indicates we can extreme land here, because this was a real positional waypoint
         }
         SavedLocations[#SavedLocations + 1] = newLocation
         -- Nearest planet, gravity also important - if it's 0, we don't autopilot to the target planet, the target isn't near a planet.                      
@@ -798,7 +800,8 @@ function UpdatePosition(newName)
                 name = SavedLocations[index].name,
                 atmosphere = atmosphere(),
                 planetname = planet.name,
-                gravity = unit.getClosestPlanetInfluence()
+                gravity = unit.getClosestPlanetInfluence(),
+                safe = true
             }   
         end
         SavedLocations[index] = newLocation
@@ -963,9 +966,9 @@ function SetupInterplanetaryPanel() -- Interplanetary helper
 
     widgetTargetOrbit = system.createWidget(panelInterplanetary, "value")
     widgetTargetOrbitText = system.createData('{"label": "Target Altitude", "value": "N/A", "unit":""}')
-    if not inAtmo then
+    --if not inAtmo then
         system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit)
-    end
+    --end
 end
 
 function Contains(mousex, mousey, x, y, width, height)
@@ -1007,6 +1010,7 @@ function ToggleAutoLanding()
         LockPitch = nil
         BrakeLanding = true
         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+        PlayerThrottle = 0
     end
 end
 
@@ -1071,7 +1075,7 @@ function ToggleAltitudeHold()
         if (not GearExtended and not BrakeIsOn) or not inAtmo or (antigrav and antigrav.getState() == 1) then -- Never autotakeoff in space
             AutoTakeoff = false
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
-            if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+            if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
                 Nav.control.cancelCurrentControlMasterMode()
             end
         else
@@ -1946,6 +1950,11 @@ function UpdateHud(newContent)
     local throt = mfloor(unit.getThrottle())
     local spd = speed * 3.6
     local flightValue = unit.getAxisCommandValue(0)
+    if inAtmo and AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+        flightValue = PlayerThrottle
+        throt = PlayerThrottle*100
+    end
+
     local flightStyle = GetFlightStyle()
     local bottomText = "ROLL"
     local nearPlanet = unit.getClosestPlanetInfluence() > 0
@@ -2181,7 +2190,7 @@ function DrawOdometer(newContent, totalDistanceTrip, TotalDistanceTravelled, fli
 end
 
 function DrawThrottle(newContent, flightStyle, throt, flightValue)
-
+    throt = math.floor(throt+0.5) -- Hard-round it to an int
     local y1 = throtPosY+10
     local y2 = throtPosY+20
     if isRemote() == 1 and not RemoteHud then
@@ -2209,10 +2218,31 @@ function DrawThrottle(newContent, flightStyle, throt, flightValue)
     end
     newContent[#newContent + 1] = stringf([[
         <g class="pbright txtstart">
-                <text x="%d" y="%d">%s</text>
-                <text x="%d" y="%d">%d %s</text>
+                <text x="%s" y="%s">%s</text>
+                <text x="%s" y="%s">%d %s</text>
         </g>
     </g>]], throtPosX+10, y1, label, throtPosX+10, y2, value, unit)
+
+    if inAtmo and AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle and ThrottleLimited then
+        -- Display a marker for where the AP throttle is putting it, calculatedThrottle
+
+        throt = math.floor(calculatedThrottle*100+0.5)
+        local throtclass = "red"
+        if throt < 0 then
+            throtclass = "red" -- TODO
+        end
+        newContent[#newContent + 1] = stringf([[<g class="%s">
+            <g transform="translate(0 %d)">
+                <polygon points="%d,%d %d,%d %d,%d"/>
+            </g>]], throtclass, (1 - math.abs(throt)), 
+            throtPosX-10, throtPosY+50, throtPosX-15, throtPosY+53, throtPosX-15, throtPosY+47)
+        newContent[#newContent + 1] = stringf([[
+                <g class="pbright txtstart">
+                        <text x="%s" y="%s">%s</text>
+                        <text x="%s" y="%s">%d %s</text>
+                </g>
+            </g>]], throtPosX+10, y1+40, "LIMIT", throtPosX+10, y2+40, throt, "%")
+    end
 end
 
  
@@ -2667,6 +2697,8 @@ function DrawWarnings(newContent)
     end
     if BrakeIsOn then
         newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">Brake Engaged</text>]], warningX, brakeY)
+    elseif brakeInput2 > 0 then
+        newContent[#newContent + 1] = stringf([[<text x="%d" y="%d" style="opacity:%s">Auto-Brake Engaged</text>]], warningX, brakeY, brakeInput2)
     end
     if inAtmo and stalling and hoverDetectGround() == -1 then
         newContent[#newContent + 1] = stringf([[<text x="%d" y="%d">** STALL WARNING **</text>]], warningX, apY+50)
@@ -2958,13 +2990,13 @@ function UpdateAutopilotTarget()
                     system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
                 if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) ~= 1 then
                     system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
-                if system.updateData(widgetTargetOrbitText, widgetTargetOrbit) ~= 1 then
-                    system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit) end
             end
             if system.updateData(widgetMaxMassText, widgetMaxMass) ~= 1 then
                 system.addDataToWidget(widgetMaxMassText, widgetMaxMass) end
             if system.updateData(widgetTravelTimeText, widgetTravelTime) ~= 1 then
                 system.addDataToWidget(widgetTravelTimeText, widgetTravelTime) end
+            if system.updateData(widgetTargetOrbitText, widgetTargetOrbit) ~= 1 then
+                system.addDataToWidget(widgetTargetOrbitText, widgetTargetOrbit) end
         end
         CustomTarget = nil
     else
@@ -3301,6 +3333,52 @@ function updateDistance()
     flightTime = flightTime + elapsedTime
     TotalFlightTime = TotalFlightTime + elapsedTime
     lastTravelTime = curTime
+end
+
+function composeAxisAccelerationFromTargetSpeed(commandAxis, targetSpeed)
+
+    local axisCRefDirection = vec3()
+    local axisWorldDirection = vec3()
+
+    if (commandAxis == axisCommandId.longitudinal) then
+        axisCRefDirection = vec3(core.getConstructOrientationForward())
+        axisWorldDirection = vec3(core.getConstructWorldOrientationForward())
+    elseif (commandAxis == axisCommandId.vertical) then
+        axisCRefDirection = vec3(core.getConstructOrientationUp())
+        axisWorldDirection = vec3(core.getConstructWorldOrientationUp())
+    elseif (commandAxis == axisCommandId.lateral) then
+        axisCRefDirection = vec3(core.getConstructOrientationRight())
+        axisWorldDirection = vec3(core.getConstructWorldOrientationRight())
+    else
+        return vec3()
+    end
+
+    local gravityAcceleration = vec3(core.getWorldGravity())
+    local gravityAccelerationCommand = gravityAcceleration:dot(axisWorldDirection)
+
+    local airResistanceAcceleration = vec3(core.getWorldAirFrictionAcceleration())
+    local airResistanceAccelerationCommand = airResistanceAcceleration:dot(axisWorldDirection)
+
+    local currentVelocity = vec3(core.getVelocity())
+    local currentAxisSpeedMS = currentVelocity:dot(axisCRefDirection)
+
+    local targetAxisSpeedMS = targetSpeed * constants.kph2m
+
+    if targetSpeedPID == nil then
+        targetSpeedPID = pid.new(1, 0, 10.0) -- The PID used to compute acceleration to reach target speed
+    end
+
+    targetSpeedPID:inject(targetAxisSpeedMS - currentAxisSpeedMS) -- update PID
+
+    local accelerationCommand = targetSpeedPID:get()
+
+    local finalAcceleration = (accelerationCommand - airResistanceAccelerationCommand - gravityAccelerationCommand) * axisWorldDirection  -- Try to compensate air friction
+
+    -- The hell are these?
+    --self.system.addMeasure("dynamic", "acceleration", "command", accelerationCommand)
+    --self.system.addMeasure("dynamic", "acceleration", "intensity", finalAcceleration:len())
+
+    return finalAcceleration
 end
 
 -- Planet Info - https://gitlab.com/JayleBreak/dualuniverse/-/tree/master/DUflightfiles/autoconf/custom with minor modifications
@@ -5161,7 +5239,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.11
+    VERSION_NUMBER = 5.223
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5318,6 +5396,15 @@ function script.onTick(timerId)
                     system.removeDataFromWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
                     system.removeDataFromWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
                     WasInAtmo = true
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                        -- Put real throttle into PlayerThrottle as we enter
+                        PlayerThrottle = unit.getAxisCommandValue(0)
+                    elseif AtmoSpeedAssist then
+                        -- If they're reentering atmo from cruise, and have atmo speed Assist
+                        -- Put them in throttle mode at 100%
+                        PlayerThrottle = 1
+                        Nav.control.cancelCurrentControlMasterMode()
+                    end
                 end
                 if atmosphere() == 0 and WasInAtmo then
                     if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
@@ -5330,6 +5417,10 @@ function script.onTick(timerId)
                         system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
                     if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 1 then
                         system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                        -- Put PlayerThrottle into the real throttle as we exit so no discrepancies
+                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, PlayerThrottle)
+                    end
                     WasInAtmo = false
                 end
             end
@@ -5538,7 +5629,7 @@ function script.onTick(timerId)
         local currentPitch = math.deg(signedRotationAngle(constrR, velocity, constrF)) -- Let's use a consistent func that uses global velocity
 
         stalling = inAtmo and currentYaw < -StallAngle or currentYaw > StallAngle or currentPitch < -StallAngle or currentPitch > StallAngle
-        local minRollVelocity = 50 -- Min velocity over which advanced rolling can occur
+        local minRollVelocity = 100 -- Min velocity over which advanced rolling can occur
 
         deltaX = system.getMouseDeltaX()
         deltaY = system.getMouseDeltaY()
@@ -5556,10 +5647,9 @@ function script.onTick(timerId)
         hovGndDet = hoverDetectGround() 
         local gravity = planet:getGravity(core.getConstructWorldPos()):len() * constructMass()
         targetRoll = 0
-        
-        
-
         maxKinematicUp = core.getMaxKinematicsParametersAlongAxis("ground", core.getConstructOrientationUp())[1]
+
+
 
         if isRemote() == 1 and screen_1 and screen_1.getMouseY() ~= -1 then
             simulatedX = screen_1.getMouseX() * ResolutionX
@@ -5630,6 +5720,7 @@ function script.onTick(timerId)
                 Nav.control.cancelCurrentControlMasterMode()
             end
             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+            PlayerThrottle = 0
         end
         if not isWarping and LastIsWarping then
             if not BrakeIsOn then
@@ -5641,20 +5732,15 @@ function script.onTick(timerId)
         end
         LastIsWarping = isWarping
         if inAtmo and atmosphere() > 0.09 then
-            --if not speedLimitBreaking  then
-            if velMag > (AtmoSpeedLimit / 3.6) then
-            --        BrakeIsOn = true
-            --        speedLimitBreaking  = true
-                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
-                    Nav.control.cancelCurrentControlMasterMode()
+            if velMag > (AtmoSpeedLimit / 3.6) and not AtmoSpeedAssist and not speedLimitBreaking then
+                    BrakeIsOn = true
+                    speedLimitBreaking  = true
+            elseif not AtmoSpeedAssist and speedLimitBreaking then
+                if velMag < (AtmoSpeedLimit / 3.6) then
+                    BrakeIsOn = false
+                    speedLimitBreaking = false
                 end
-            end
-            --else
-            --    if velMag < (AtmoSpeedLimit / 3.6) then
-            --        BrakeIsOn = false
-            --        speedLimitBreaking = false
-            --    end
-            --end    
+            end    
         end
         if BrakeIsOn then
             brakeInput = 1
@@ -5852,6 +5938,7 @@ function script.onTick(timerId)
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    PlayerThrottle = 0
                     apThrottleSet = false
                 end
                 -- Check if accel needs to stop for braking
@@ -5860,6 +5947,7 @@ function script.onTick(timerId)
                     AutopilotStatus = "Braking"
                     AutopilotBraking = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    PlayerThrottle = 0
                     apThrottleSet = false
                 end
             elseif AutopilotBraking then
@@ -5893,6 +5981,7 @@ function script.onTick(timerId)
                         msgText = "Autopilot completed, orbit established"
                         brakeInput = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        PlayerThrottle = 0
                         apThrottleSet = false
                         if CustomTarget ~= nil and CustomTarget.planetname ~= "Space" then
                             ProgradeIsOn = true
@@ -6076,7 +6165,7 @@ function script.onTick(timerId)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > minRollVelocity then
-                    targetRoll = utils.clamp(targetYaw/2, -90, 90)
+                    targetRoll = utils.clamp(targetYaw, -90, 90)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
                     -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  
@@ -6146,26 +6235,25 @@ function script.onTick(timerId)
                 
                 -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
                 if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then 
-                    VectorStatus = "Finalizing Approach" -- Left for compatibility
+                    VectorStatus = "Finalizing Approach" 
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- Kill throttle in case they weren't in cruise
+                    PlayerThrottle = 0
                     if AltitudeHold then
                         ToggleAltitudeHold() -- Don't need this anymore
                         VectorToTarget = true -- But keep this on
                     end
                     BrakeIsOn = true
-
-                    if hSpd < 1 or distanceToTarget < 1 then
-                        BrakeLanding = true
-                        VectorToTarget = false
-                    end
-
                 elseif not AutoTakeoff then
                     BrakeIsOn = false
                 end
-                
+                if VectorStatus == "Finalizing Approach" and (hSpd < 0.1 or distanceToTarget < 0.1 or (LastDistanceToTarget ~= nil and LastDistanceToTarget < distanceToTarget)) then
+                    BrakeLanding = true
+                    VectorToTarget = false
+                end
+                LastDistanceToTarget = distanceToTarget
             end
             pitchInput2 = oldInput
             local groundDistance = -1
@@ -6241,7 +6329,7 @@ function script.onTick(timerId)
                         --if LandingGearGroundHeight == 0 then
                         stopDistance = (stopDistance+15+(velMag*deltaTick))*1.1 -- Add leeway for large ships with forcefields or landing gear, and for lag
                         -- And just bad math I guess
-                        local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0)
+                        local knownAltitude = (CustomTarget ~= nil and planet:getAltitude(CustomTarget.position) > 0 and CustomTarget.safe)
                         
                         if knownAltitude then
                             local targetAltitude = planet:getAltitude(CustomTarget.position)
@@ -6307,7 +6395,7 @@ function script.onTick(timerId)
                 if targetPitch < 15 and (coreAltitude/HoldAltitude) > 0.75 then
                     AutoTakeoff = false -- No longer in ascent
                     if not spaceLaunch then 
-                        if Nav.axisCommandManager:getAxisCommandType(0) == 0 then
+                        if Nav.axisCommandManager:getAxisCommandType(0) == 0 and not AtmoSpeedAssist then
                             Nav.control.cancelCurrentControlMasterMode()
                         end
                     elseif spaceLaunch and velMag < minAutopilotSpeed then
@@ -6318,11 +6406,13 @@ function script.onTick(timerId)
                             Nav.control.cancelCurrentControlMasterMode()
                         end
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        PlayerThrottle = 0
                     elseif spaceLaunch then
                         if Nav.axisCommandManager:getAxisCommandType(0) ~= 0 then
                             Nav.control.cancelCurrentControlMasterMode()
                         end
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        PlayerThrottle = 0
                         BrakeIsOn = true
                     end
                 elseif spaceLaunch and atmosphere() == 0 and coreAltitude > 75000 then
@@ -6477,6 +6567,219 @@ function script.onFlush()
     local dontKeepCollinearity = 0 -- for easier reading
     local tolerancePercentToSkipOtherPriorities = 1 -- if we are within this tolerance (in%), we don't go to the next priorities
 
+    if system.getMouseWheel() > 0 then
+        PlayerThrottle = utils.clamp(PlayerThrottle + speedChangeLarge/100, -1, 1)
+    elseif system.getMouseWheel() < 0 then
+        PlayerThrottle = utils.clamp(PlayerThrottle - speedChangeLarge/100, -1, 1)
+    end
+
+    brakeInput2 = 0
+    local vSpd = -worldVertical:dot(constructVelocity)
+
+    if inAtmo and AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+        -- This is meant to replace cruise
+        -- Uses AtmoSpeedLimit as the desired speed in which to 'cruise'
+        -- In atmo, if throttle is 100%, it applies a PID to throttle to try to achieve AtmoSpeedLimit
+        -- Since throttle is already 100% this means nothing except, it should slow them as it approaches it, throttling down
+            -- Note - Beware reentry.  It will throttle them down due to high fall speeds, but they need that throttle
+            -- We could instead only throttle down when the velMag in the direction of ShipFront exceeds AtmoSpeedLimt.  
+        -- We also need to do braking if the speed is high enough above the desired limit.  
+        -- Braking should happen immediately if the speed is not mostly forward
+
+        -- .. Maybe as a whole we just, also PID brakeForce to keep speed under that limit, so if we barely go over it'll only tap them and throttle down
+
+        -- We're going to want a param, PlayerThrottle, which we always keep (not between loads).  We set it in SpeedUp and SpeedDown
+        -- So we only control throttle if their last throttle input was 100%
+
+        -- Well, no.  Even better, do it all the time.  We would show their throttle on the HUD, then a red line separating it from our adjusted throttle
+        -- Along with a message like, "Atmospheric Speed Limit Reached - Press Something to Disable Temporarily"
+        -- But of course, don't throttle up for them.  Only down. 
+
+
+        
+
+        if (throttlePID == nil) then
+            throttlePID = pid.new(0.5, 0, 1) -- First param, higher means less range in which to PID to a proper value
+            -- IE 1 there means it tries to get within 1m/s of target, 0.5 there means it tries to get within 5m/s of target
+            -- The smaller the value, the further the end-speed is from the target, but also the sooner it starts reducing throttle
+            -- It is also the same as taking the result * (firstParam), it's a direct scalar
+
+            -- Second value makes it change constantly over time.  This doesn't work in this case, it just builds up forever while they're not at max
+
+            -- And third value affects how hard it tries to fix it.  Higher values mean it will very quickly go to negative values as you approach target
+            -- Lower values means it steps down slower
+
+            -- 0.5, 0, 20 works pretty great
+            -- And I think it was, 0.5, 0, 0.001 is smooth, but gets some braking early
+            -- 0.5, 0, 1 is v good.  One early braking bit then stabilizes easily .  10 as the last is way too much, it's bouncy.  Even 2.  1 will do
+        end
+        throttlePID:inject((AtmoSpeedLimit/3.6 - constructVelocity:dot(constructForward)))
+        local pidGet = throttlePID:get()
+        --system.print(pidGet .. " vs " .. PlayerThrottle)
+        calculatedThrottle = utils.clamp(pidGet,-1,1)
+        if calculatedThrottle < PlayerThrottle and (atmosphere > 0.1 or (atmosphere > 0 and vSpd < -5)) then -- Don't limit throttle in low atmo, but still brake in case it's a reentry.
+            ThrottleLimited = true
+            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, utils.clamp(calculatedThrottle,0.01,1))
+        else
+            ThrottleLimited = false
+            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, PlayerThrottle)
+            
+        end
+
+        
+        -- Then additionally
+        if (brakePID == nil) then
+            brakePID = pid.new(1 * 0.01, 0, 1 * 0.1)
+        end
+        brakePID:inject(constructVelocity:len() - (AtmoSpeedLimit/3.6)) 
+        local calculatedBrake = utils.clamp(brakePID:get(),0,1)
+        if (atmosphere > 0 and vSpd < -5) or atmosphere > 0.1 then -- Don't brake-limit them at <1% atmo if going up (or mostly up), it's mostly safe up there and displays 0% so people would be mad
+            brakeInput2 = calculatedBrake
+        end
+        --if calculatedThrottle < 0 then
+        --    brakeInput2 = brakeInput2 + math.abs(calculatedThrottle)
+        --end
+        if brakeInput2 > 0 then
+            if ThrottleLimited and calculatedThrottle == 0.01 then
+                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- We clamped it to >0 before but, if braking and it was at that clamp, 0 is good.
+            end
+            --system.print("Braking with " .. brakeInput2*100 .. " %")
+        else -- For display purposes, keep calculatedThrottle positive in this case
+            calculatedThrottle = utils.clamp(calculatedThrottle,0.01,1)
+        end
+
+        -- And finally, do what cruise does for angling wings toward the nose
+
+        local autoNavigationEngineTags = ''
+        local autoNavigationAcceleration = vec3()
+        local verticalStrafeEngineTags = 'thrust analog vertical '
+        local lateralStrafeEngineTags = 'thrust analog lateral '
+
+        if ExtraLateralTags ~= "none" then lateralStrafeEngineTags = lateralStrafeEngineTags..ExtraLateralTags end
+        if ExtraVerticalTags ~= "none" then verticalStrafeEngineTags = verticalStrafeEngineTags..ExtraVerticalTags end
+
+        local verticalStrafeAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.vertical,upAmount*1000)
+        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. verticalStrafeEngineTags
+        autoNavigationAcceleration = autoNavigationAcceleration + verticalStrafeAcceleration
+        --system.print(vec3(verticalStrafeAcceleration):len())
+
+        local longitudinalEngineTags = 'thrust analog longitudinal '
+        if ExtraLongitudeTags ~= "none" then longitudinalEngineTags = longitudinalEngineTags..ExtraLongitudeTags end
+        local longitudinalCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.longitudinal)
+        local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
+                                                longitudinalEngineTags, axisCommandId.longitudinal)
+
+        local lateralAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral, 0)
+        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. lateralStrafeEngineTags
+        autoNavigationAcceleration = autoNavigationAcceleration + lateralAcceleration
+        --system.print("Lateral accel: " .. vec3(lateralAcceleration):len())
+
+        -- Auto Navigation (Cruise Control)
+        if (autoNavigationAcceleration:len() > constants.epsilon) then
+            --system.print(autoNavigationEngineTags .. " , " .. vec3(autoNavigationAcceleration):len())
+            Nav:setEngineForceCommand(autoNavigationEngineTags, autoNavigationAcceleration, dontKeepCollinearity, '', '',
+                '', tolerancePercentToSkipOtherPriorities)
+        end
+        -- And let throttle do its thing separately
+        Nav:setEngineForceCommand(longitudinalEngineTags, longitudinalAcceleration, keepCollinearity)
+
+        if finalBrakeInput == 0 then -- If player isn't braking, use cruise assist braking
+            finalBrakeInput = brakeInput2
+        end
+
+        -- Brakes
+        local brakeAcceleration = -finalBrakeInput *
+        (brakeSpeedFactor * constructVelocity + brakeFlatFactor * constructVelocityDir)
+        Nav:setEngineForceCommand('brake', brakeAcceleration)
+
+    else
+        --PlayerThrottle = 0
+
+        -- Brakes - Do these first so Cruise can override it
+        local brakeAcceleration = -finalBrakeInput *
+        (brakeSpeedFactor * constructVelocity + brakeFlatFactor * constructVelocityDir)
+        Nav:setEngineForceCommand('brake', brakeAcceleration)
+
+        -- AutoNavigation regroups all the axis command by 'TargetSpeed'
+        local autoNavigationEngineTags = ''
+        local autoNavigationAcceleration = vec3()
+        local autoNavigationUseBrake = false
+
+        -- Longitudinal Translation
+        local longitudinalEngineTags = 'thrust analog longitudinal '
+        if ExtraLongitudeTags ~= "none" then longitudinalEngineTags = longitudinalEngineTags..ExtraLongitudeTags end
+        local longitudinalCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.longitudinal)
+        if (longitudinalCommandType == axisCommandType.byThrottle) then
+            local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
+                                                longitudinalEngineTags, axisCommandId.longitudinal)
+            Nav:setEngineForceCommand(longitudinalEngineTags, longitudinalAcceleration, keepCollinearity)
+        elseif (longitudinalCommandType == axisCommandType.byTargetSpeed) then
+            local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromTargetSpeed(
+                                                axisCommandId.longitudinal)
+            autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. longitudinalEngineTags
+            autoNavigationAcceleration = autoNavigationAcceleration + longitudinalAcceleration
+            if (Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == 0 or -- we want to stop
+                Nav.axisCommandManager:getCurrentToTargetDeltaSpeed(axisCommandId.longitudinal) <
+                -Nav.axisCommandManager:getTargetSpeedCurrentStep(axisCommandId.longitudinal) * 0.5) -- if the longitudinal velocity would need some braking
+            then
+                autoNavigationUseBrake = true
+            end
+
+        end
+
+        -- Lateral Translation
+        local lateralStrafeEngineTags = 'thrust analog lateral '
+        if ExtraLateralTags ~= "none" then lateralStrafeEngineTags = lateralStrafeEngineTags..ExtraLateralTags end
+        local lateralCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.lateral)
+        if (lateralCommandType == axisCommandType.byThrottle) then
+            local lateralStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
+                                                lateralStrafeEngineTags, axisCommandId.lateral)
+            Nav:setEngineForceCommand(lateralStrafeEngineTags, lateralStrafeAcceleration, keepCollinearity)
+        elseif (lateralCommandType == axisCommandType.byTargetSpeed) then
+            local lateralAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral)
+            autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. lateralStrafeEngineTags
+            autoNavigationAcceleration = autoNavigationAcceleration + lateralAcceleration
+        end
+
+        -- Vertical Translation
+        local verticalStrafeEngineTags = 'thrust analog vertical '
+        if ExtraVerticalTags ~= "none" then verticalStrafeEngineTags = verticalStrafeEngineTags..ExtraVerticalTags end
+        local verticalCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.vertical)
+        if (verticalCommandType == axisCommandType.byThrottle)  then
+            local verticalStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
+                                                verticalStrafeEngineTags, axisCommandId.vertical)
+            if upAmount ~= 0 or (BrakeLanding and BrakeIsOn) then
+                Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity, 'airfoil',
+                    'ground', '', tolerancePercentToSkipOtherPriorities)
+            else
+                Nav:setEngineForceCommand(verticalStrafeEngineTags, vec3(), keepCollinearity) -- Reset vertical engines but not airfoils or ground
+                Nav:setEngineForceCommand('airfoil vertical', verticalStrafeAcceleration, keepCollinearity, 'airfoil',
+                '', '', tolerancePercentToSkipOtherPriorities)
+                Nav:setEngineForceCommand('ground vertical', verticalStrafeAcceleration, keepCollinearity, 'ground',
+                '', '', tolerancePercentToSkipOtherPriorities)
+            end
+        elseif (verticalCommandType == axisCommandType.byTargetSpeed) then
+            if upAmount < 0 then 
+                Nav:setEngineForceCommand('hover', vec3(), keepCollinearity) 
+            end
+            local verticalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromTargetSpeed(
+                                            axisCommandId.vertical)
+            autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. verticalStrafeEngineTags
+            autoNavigationAcceleration = autoNavigationAcceleration + verticalAcceleration
+        end
+
+        local targetSpeed = unit.getAxisCommandValue(0)
+        -- Auto Navigation (Cruise Control)
+        if (autoNavigationAcceleration:len() > constants.epsilon) then -- This means it's in cruise
+            if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.8) or velocity:len() > targetSpeed/3.6 -- if the velocity is not properly aligned with the forward
+            then
+                autoNavigationEngineTags = autoNavigationEngineTags .. ', brake'
+            end
+            Nav:setEngineForceCommand(autoNavigationEngineTags, autoNavigationAcceleration, dontKeepCollinearity, '', '',
+                '', tolerancePercentToSkipOtherPriorities)
+        end
+    end
+
     -- Rotation
     local angularAcceleration = torqueFactor * (targetAngularVelocity - constructAngularVelocity)
     local airAcceleration = vec3(core.getWorldAirFrictionAngularAcceleration())
@@ -6484,91 +6787,6 @@ function script.onFlush()
     
     Nav:setEngineTorqueCommand('torque', angularAcceleration, keepCollinearity, 'airfoil', '', '',
         tolerancePercentToSkipOtherPriorities)
-
-    -- Brakes
-    local brakeAcceleration = -finalBrakeInput *
-                                  (brakeSpeedFactor * constructVelocity + brakeFlatFactor * constructVelocityDir)
-    Nav:setEngineForceCommand('brake', brakeAcceleration)
-
-    -- AutoNavigation regroups all the axis command by 'TargetSpeed'
-    local autoNavigationEngineTags = ''
-    local autoNavigationAcceleration = vec3()
-    local autoNavigationUseBrake = false
-
-    -- Longitudinal Translation
-    local longitudinalEngineTags = 'thrust analog longitudinal '
-    if ExtraLongitudeTags ~= "none" then longitudinalEngineTags = longitudinalEngineTags..ExtraLongitudeTags end
-    local longitudinalCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.longitudinal)
-    if (longitudinalCommandType == axisCommandType.byThrottle) then
-        local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
-                                             longitudinalEngineTags, axisCommandId.longitudinal)
-        Nav:setEngineForceCommand(longitudinalEngineTags, longitudinalAcceleration, keepCollinearity)
-    elseif (longitudinalCommandType == axisCommandType.byTargetSpeed) then
-        local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromTargetSpeed(
-                                             axisCommandId.longitudinal)
-        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. longitudinalEngineTags
-        autoNavigationAcceleration = autoNavigationAcceleration + longitudinalAcceleration
-        if (Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == 0 or -- we want to stop
-            Nav.axisCommandManager:getCurrentToTargetDeltaSpeed(axisCommandId.longitudinal) <
-            -Nav.axisCommandManager:getTargetSpeedCurrentStep(axisCommandId.longitudinal) * 0.5) -- if the longitudinal velocity would need some braking
-         -- if the longitudinal velocity would need some braking
-        then
-            autoNavigationUseBrake = true
-        end
-
-    end
-
-    -- Lateral Translation
-    local lateralStrafeEngineTags = 'thrust analog lateral '
-    if ExtraLateralTags ~= "none" then lateralStrafeEngineTags = lateralStrafeEngineTags..ExtraLateralTags end
-    local lateralCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.lateral)
-    if (lateralCommandType == axisCommandType.byThrottle) then
-        local lateralStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
-                                              lateralStrafeEngineTags, axisCommandId.lateral)
-        Nav:setEngineForceCommand(lateralStrafeEngineTags, lateralStrafeAcceleration, keepCollinearity)
-    elseif (lateralCommandType == axisCommandType.byTargetSpeed) then
-        local lateralAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral)
-        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. lateralStrafeEngineTags
-        autoNavigationAcceleration = autoNavigationAcceleration + lateralAcceleration
-    end
-
-    -- Vertical Translation
-    local verticalStrafeEngineTags = 'thrust analog vertical '
-    if ExtraVerticalTags ~= "none" then verticalStrafeEngineTags = verticalStrafeEngineTags..ExtraVerticalTags end
-    local verticalCommandType = Nav.axisCommandManager:getAxisCommandType(axisCommandId.vertical)
-    if (verticalCommandType == axisCommandType.byThrottle) then
-        local verticalStrafeAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
-                                               verticalStrafeEngineTags, axisCommandId.vertical)
-        if upAmount ~= 0 or (BrakeLanding and BrakeIsOn) then
-            Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity, 'airfoil',
-                'ground', '', tolerancePercentToSkipOtherPriorities)
-        else
-            Nav:setEngineForceCommand(verticalStrafeEngineTags, vec3(), keepCollinearity) -- Reset vertical engines but not airfoils or ground
-            Nav:setEngineForceCommand('airfoil vertical', verticalStrafeAcceleration, keepCollinearity, 'airfoil',
-            '', '', tolerancePercentToSkipOtherPriorities)
-            Nav:setEngineForceCommand('ground vertical', verticalStrafeAcceleration, keepCollinearity, 'ground',
-            '', '', tolerancePercentToSkipOtherPriorities)
-        end
-    elseif (verticalCommandType == axisCommandType.byTargetSpeed) then
-        if upAmount == 0 then 
-            Nav:setEngineForceCommand('hover', vec3(), keepCollinearity) 
-        end
-        local verticalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromTargetSpeed(
-                                         axisCommandId.vertical)
-        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. verticalStrafeEngineTags
-        autoNavigationAcceleration = autoNavigationAcceleration + verticalAcceleration
-    end
-
-    -- Auto Navigation (Cruise Control)
-    if (autoNavigationAcceleration:len() > constants.epsilon) then
-        if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.95) -- if the velocity is not properly aligned with the forward
-         -- if the velocity is not properly aligned with the forward
-        then
-            autoNavigationEngineTags = autoNavigationEngineTags .. ', brake'
-        end
-        Nav:setEngineForceCommand(autoNavigationEngineTags, autoNavigationAcceleration, dontKeepCollinearity, '', '',
-            '', tolerancePercentToSkipOtherPriorities)
-    end
 
     -- Rockets
     Nav:setBoosterCommand('rocket_engine')
@@ -6641,6 +6859,7 @@ function script.onActionStart(action)
                 Nav.control.cancelCurrentControlMasterMode()
             end
             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+            PlayerThrottle = 0
             if (vBooster or hover) and hovGndDet == -1 and (atmosphere() > 0 or coreAltitude < ReentryAltitude) then
                 StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
                 if not StrongBrakes and velMag > minAutopilotSpeed then
@@ -6816,15 +7035,24 @@ function script.onActionStart(action)
     elseif action == "stopengines" then
         Nav.axisCommandManager:resetCommand(axisCommandId.longitudinal)
         clearAll()
+        PlayerThrottle = 0
     elseif action == "speedup" then
         if not holdingCtrl then
+            if AtmoSpeedAssist then
+                PlayerThrottle = utils.clamp(PlayerThrottle + speedChangeLarge/100, -1, 1)
+            end
             Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.longitudinal, speedChangeLarge)
+            
         else
             IncrementAutopilotTargetIndex()
         end
     elseif action == "speeddown" then
         if not holdingCtrl then
-            Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.longitudinal, -speedChangeLarge)
+            if AtmoSpeedAssist then
+                PlayerThrottle = utils.clamp(PlayerThrottle - speedChangeLarge/100, -1, 1)
+            end
+                Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.longitudinal, -speedChangeLarge)
+            
         else
             DecrementAutopilotTargetIndex()
         end
@@ -6961,10 +7189,16 @@ function script.onActionLoop(action)
         end
     elseif action == "speedup" then
         if not holdingCtrl then
+            if AtmoSpeedAssist then
+                PlayerThrottle = utils.clamp(PlayerThrottle + speedChangeSmall/100, -1, 1)
+            end
             Nav.axisCommandManager:updateCommandFromActionLoop(axisCommandId.longitudinal, speedChangeSmall)
         end
     elseif action == "speeddown" then
         if not holdingCtrl then
+            if AtmoSpeedAssist then
+                PlayerThrottle = utils.clamp(PlayerThrottle - speedChangeSmall/100, -1, 1)
+            end
             Nav.axisCommandManager:updateCommandFromActionLoop(axisCommandId.longitudinal, -speedChangeSmall)
         end
     end
