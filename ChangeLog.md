@@ -7,6 +7,7 @@ Version 5.233
 - Surface to surface waypoints now have a more consistent approach - they should arrive at AutopilotTargetOrbit
 - Reentry now uses gravity for higher approach speeds and can be engaged further from the planet
 - Autoroll no longer applies when pitch is +/-75 degrees, where rolling becomes meaningless
+- Interplanetary waypoints now correctly aim at the edge of the planet if the waypoint is on the wrong side
 
 Version 5.232
 - Fixed a potential issue with aligning prograde when not near a planet

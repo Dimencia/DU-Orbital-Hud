@@ -5813,7 +5813,13 @@ function script.onTick(timerId)
                 AutopilotRealigned = true -- Don't realign, point straight at the target.  Or rather, at AutopilotTargetOrbit above it
 
                 if (CustomTarget.position-worldPos):len() > (autopilotTargetPlanet.center-worldPos):len() then
-
+                    -- It's on the wrong side of the planet. 
+                    -- So, get the 3d direction between our target and planet center.  Note that, this is basically a vector defining gravity at our target, too...
+                    local initialDirection = (CustomTarget.position - autopilotTargetPlanet.center):normalize() -- Should be pointing up
+                    local forwardComp = initialDirection:project_on((autopilotTargetPlanet.center-worldPos):normalize())
+                    initialDirection = (initialDirection - forwardComp):normalize() -- Ignore all forward and then re-normalize
+                    -- And... actually that's all that I need.  If forward is really gone, this should give us a point on the edge of the planet
+                    targetCoords = autopilotTargetPlanet.center + initialDirection*(autopilotTargetPlanet.radius + AutopilotTargetOrbit)
                 else
                     targetCoords = CustomTarget.position + (worldPos - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
                 end
