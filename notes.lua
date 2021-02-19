@@ -3,7 +3,6 @@ HeadlightGroundHeight = 150 --export: (Default: 150) Controls altitude to turn o
 local navBlinkSwitch = nil
 local navLightSwitch = nil
 local headLightSwitch = nil
-local fuelDisplaySwitch = nil
 
 function SetupChecks()
     if switch then 
@@ -16,8 +15,6 @@ function SetupChecks()
                 navLightSwitch = v
             elseif (name == "headLightSwitch") then
                 headLightSwitch = v
-            elseif (name == "fuelDisplaySwitch") then
-                fuelDisplaySwitch = v
             else
                 v.toggle()
             end
@@ -30,13 +27,11 @@ function script.onStart()
     beginSetup = coroutine.create(function()
         navLightSwitch.activate()
         headLightSwitch.activate()
-        fuelDisplaySwitch.activate()
     end)
 end
 
 function script.onStop()
     navLightSwitch.deactivate()
-    fuelDisplaySwitch.deactivate()
 end
 
 function script.onTick(timerId)
@@ -45,6 +40,7 @@ function script.onTick(timerId)
     elseif timerId == "oneSecond" then
         navBlinkSwitch.activate()
     elseif timerId == "apTick" then
+        local groundHeight = core.getAltitude()
         if (groundHeight < HeadlightGroundHeight) then
             headLightSwitch.activate()
         else

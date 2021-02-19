@@ -85,6 +85,7 @@ ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks 
 CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
 autoRollRollThreshold = 1.0 --export: (Default: 1.0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
 AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric speeds should be limited to a maximum of AtmoSpeedLimit
+HeadlightGroundHeight = 150 --export: (Default: 150) Controls altitude to turn on/off Headlights. Turns off above value
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -286,7 +287,6 @@ local ahDoubleClick = 0
 local navBlinkSwitch = nil
 local navLightSwitch = nil
 local headLightSwitch = nil
-local fuelDisplaySwitch = nil
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -492,8 +492,6 @@ function SetupChecks()
                 navLightSwitch = v
             elseif (name == "headLightSwitch") then
                 headLightSwitch = v
-            elseif (name == "fuelDisplaySwitch") then
-                fuelDisplaySwitch = v
             else
                 v.toggle()
             end
@@ -5322,7 +5320,6 @@ function script.onStop()
         warpdrive.hide()
     end
     core.hide()
-    Nav.control.switchOffHeadlights()
     -- Open door and extend ramp if available
     local atmo = atmosphere()
     if door and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
@@ -6465,6 +6462,7 @@ function script.onTick(timerId)
                 end
         end
 
+        local groundHeight = core.getAltitude()
         if (groundHeight < HeadlightGroundHeight) then
             headLightSwitch.activate()
         else
@@ -6885,12 +6883,6 @@ function script.onActionStart(action)
                 Nav.control.retractLandingGears()
             end
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
-        end
-    elseif action == "light" then
-        if Nav.control.isAnyHeadlightSwitchedOn() == 1 then
-            Nav.control.switchOffHeadlights()
-        else
-            Nav.control.switchOnHeadlights()
         end
     elseif action == "forward" then
         pitchInput = pitchInput - 1
