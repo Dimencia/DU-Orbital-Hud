@@ -5837,6 +5837,16 @@ function script.onTick(timerId)
 
             local skipAlign = false
             AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
+            local intersectBody, farSide, nearSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (velocity):normalize(), function(body) if body.noAtmosphericDensityAltitude > 0 then return (body.radius+body.noAtmosphericDensityAltitude) else return (body.radius+body.surfaceMaxAltitude*1.5) end end)
+            local atmoDistance = farSide
+            if nearSide ~= nil and farSide ~= nil then
+                atmoDistance = math.min(nearSide,farSide)
+            end
+            if atmoDistance < AutopilotDistance then
+                AutopilotDistance = atmoDistance -- If we're going to hit atmo before our target, use that distance instead.
+                system.print("Warning, will hit atmo, adjusting distance to atmo distance")
+            end
+
 
             local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
             local displayText, displayUnit = getDistanceDisplayString(displayDistance)
@@ -6089,54 +6099,70 @@ function script.onTick(timerId)
 
                 -- We'll try <0.9 instead of <1 so that we don't end up in a barely-orbit where touching the controls will make it an escape orbit
                 -- Though we could probably keep going until it starts getting more eccentric, so we'd maybe have a circular orbit
-
+                local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
                 if (CustomTarget ~=nil and CustomTarget.planetname == "Space" and velMag < 50) then
                     msgText = "Autopilot complete, arrived at space location"
                     AutopilotBraking = false
                     Autopilot = false
                     AutopilotStatus = "Aligning" -- Disable autopilot and reset
-                elseif (CustomTarget ~= nil and CustomTarget.planetname ~= "Space" and (velMag <= AutopilotEndSpeed or atmosphere() > 0)) then
-                    if (CustomTarget.position - worldPos):len() < AutopilotTargetOrbit + 20000 or (orbit.apoapsis == nil and orbit.periapsis == nil or orbit.apoapsis <= 0 or orbit.periapsis <= 0) then -- If within 20km (ignoring altitude) or if not in orbit, start reentry
+                elseif (CustomTarget ~= nil and CustomTarget.planetname ~= "Space") and (velMag <= AtmoSpeedLimit/3.6 or atmosphere() > 0) and (CustomTarget.position - worldPos):len() < AutopilotTargetOrbit + 20000 or (orbit.apoapsis == nil and orbit.periapsis == nil or orbit.apoapsis <= 0 or orbit.periapsis <= 0) then
+                    -- If within 20km (ignoring altitude) or if not in orbit, start reentry
 
                     
-                        msgText = "Autopilot complete, proceeding with reentry"
-                        --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
-                        AutopilotBraking = false
-                        Autopilot = false
-                        AutopilotStatus = "Aligning" -- Disable autopilot and reset
-                        --brakeInput = 0
-                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-                        PlayerThrottle = 0
-                        apThrottleSet = false
-                        ProgradeIsOn = true
-                        spaceLand = true
-                    else
-                        -- If in orbit and not within 20km, we will probably get to it soon.
-                        AutopilotStatus = "Orbiting to Target"
-                        BrakeIsOn = false -- No braking
-                        brakeInput = 0
-                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- No throttle
-                        PlayerThrottle = 0
-                    end
-                elseif CustomTarget == nil and orbit.periapsis ~= nil and orbit.eccentricity < 1 then
+                    msgText = "Autopilot complete, proceeding with reentry"
+                    --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
+                    AutopilotBraking = false
+                    Autopilot = false
+                    AutopilotStatus = "Aligning" -- Disable autopilot and reset
+                    --brakeInput = 0
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                    PlayerThrottle = 0
+                    apThrottleSet = false
+                    ProgradeIsOn = true
+                    spaceLand = true
+                elseif orbit.periapsis ~= nil and orbit.eccentricity < 1 then
                     AutopilotStatus = "Circularizing"
                     -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
                     local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
                     --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
                     if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
-                        BrakeIsOn = false
-                        AutopilotBraking = false
-                        Autopilot = false
-                        AutopilotStatus = "Aligning" -- Disable autopilot and reset
-                        -- TODO: This is being added to newContent *after* we already drew the screen, so it'll never get displayed
-                        msgText = "Autopilot completed, orbit established"
-                        brakeInput = 0
-                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-                        PlayerThrottle = 0
-                        apThrottleSet = false
-                        if CustomTarget ~= nil and CustomTarget.planetname ~= "Space" then
-                            ProgradeIsOn = true
-                            spaceLand = true
+                        if CustomTarget ~= nil then
+                            if  (CustomTarget.position - worldPos):len() >= AutopilotTargetOrbit + 20000 then
+                                -- If in orbit and not within 20km, we will probably get to it soon.
+                                AutopilotStatus = "Orbiting to Target"
+                                BrakeIsOn = false -- No braking
+                                brakeInput = 0
+                                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- No throttle
+                                PlayerThrottle = 0
+                            else
+                                msgText = "Autopilot complete, proceeding with reentry"
+                                --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
+                                AutopilotBraking = false
+                                Autopilot = false
+                                AutopilotStatus = "Aligning" -- Disable autopilot and reset
+                                --brakeInput = 0
+                                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                                PlayerThrottle = 0
+                                apThrottleSet = false
+                                ProgradeIsOn = true
+                                spaceLand = true
+                                BrakeIsOn = false
+                            end
+                        else
+                            BrakeIsOn = false
+                            AutopilotBraking = false
+                            Autopilot = false
+                            AutopilotStatus = "Aligning" -- Disable autopilot and reset
+                            -- TODO: This is being added to newContent *after* we already drew the screen, so it'll never get displayed
+                            msgText = "Autopilot completed, orbit established"
+                            brakeInput = 0
+                            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                            PlayerThrottle = 0
+                            apThrottleSet = false
+                            if CustomTarget ~= nil and CustomTarget.planetname ~= "Space" then
+                                ProgradeIsOn = true
+                                spaceLand = true
+                            end
                         end
                     end
                 end
