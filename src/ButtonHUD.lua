@@ -1188,6 +1188,7 @@ function ToggleAutopilot()
             AutoTakeoff = false
             apThrottleSet = false
             LockPitch = nil
+            WaypointSet = false
         else
             spaceLaunch = true
             ToggleAltitudeHold()
@@ -1202,6 +1203,7 @@ function ToggleAutopilot()
         AltitudeHold = false
         VectorToTarget = false
         HoldAltitude = coreAltitude
+        TargetSet = false
     end
 end
 
@@ -5347,7 +5349,7 @@ function script.onTick(timerId)
                 system.updateData(interplanetaryHeaderText,
                     '{"label": "Target", "value": "' .. AutopilotTargetName .. '", "unit":""}')
                 travelTime = GetAutopilotTravelTime() -- This also sets AutopilotDistance so we don't have to calc it again
-                if customLocation then 
+                if customLocation and not Autopilot then -- If in autopilot, keep this displaying properly
                     distance = (vec3(core.getConstructWorldPos()) - CustomTarget.position):len()
                 else
                     distance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
@@ -5817,20 +5819,33 @@ function script.onTick(timerId)
                 -- It's on the wrong side of the planet. 
                 -- So, get the 3d direction between our target and planet center.  Note that, this is basically a vector defining gravity at our target, too...
                 local initialDirection = (CustomTarget.position - autopilotTargetPlanet.center):normalize() -- Should be pointing up
-                local forwardComp = initialDirection:project_on((autopilotTargetPlanet.center-worldPos):normalize())
-                initialDirection = (initialDirection - forwardComp):normalize() -- Ignore all forward and then re-normalize
-                -- And... actually that's all that I need.  If forward is really gone, this should give us a point on the edge of the planet
-                local wrongSideCoords = autopilotTargetPlanet.center + initialDirection*(autopilotTargetPlanet.radius + AutopilotTargetOrbit)
-                local rightSideCoords = CustomTarget.position + (worldPos - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
-                
-                if (worldPos-wrongSideCoords):len() < (worldPos-rightSideCoords):len() then
-                    targetCoords = wrongSideCoords
-                else
-                    targetCoords = rightSideCoords
-                end
+                local finalDirection = initialDirection:project_on_plane((autopilotTargetPlanet.center-worldPos):normalize()):normalize()
 
+                -- And... actually that's all that I need.  If forward is really gone, this should give us a point on the edge of the planet
+                local wrongSideCoords = autopilotTargetPlanet.center + finalDirection*(autopilotTargetPlanet.radius + AutopilotTargetOrbit)
+                -- This used to be calculated based on our direction instead of gravity, which helped us approach not directly overtop it
+                -- But that caused bad things to happen for nearside/farside detection sometimes
+                local rightSideCoords = CustomTarget.position + (CustomTarget.position - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
+                if not TargetSet then
+                    --system.print("WrongSide is " .. (worldPos-wrongSideCoords):len() .. ", rightSide is " .. (worldPos-rightSideCoords):len())
+                    if (worldPos-wrongSideCoords):len() < (worldPos-rightSideCoords):len() then
+                        --system.print("Taking WrongSide")
+                        targetCoords = wrongSideCoords
+                        AutopilotTargetCoords = targetCoords
+                    else
+                        -- If it's right side by the good comparison, set it to offset based on our initial direction instead of gravity.  This helps align better
+                        targetCoords = CustomTarget.position + (worldPos - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
+                        AutopilotTargetCoords = targetCoords
+                    end
+                    local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, AutopilotTargetCoords)
+                    waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+                    system.setWaypoint(waypoint)
+                end
+                
+                
                 --AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8 -- Since we're aiming straight at it, we have to assume gravity?
                 AutopilotPlanetGravity = 0
+                TargetSet = true -- Only set the targetCoords once.  Don't let them change as we fly.
             else
                 AutopilotPlanetGravity = 0
             end
@@ -5842,16 +5857,16 @@ function script.onTick(timerId)
             if nearSide ~= nil and farSide ~= nil then
                 atmoDistance = math.min(nearSide,farSide)
             end
-            if atmoDistance < AutopilotDistance then
+            if atmoDistance ~= nil and atmoDistance < AutopilotDistance and intersectBody.name == autopilotTargetPlanet.name then
                 AutopilotDistance = atmoDistance -- If we're going to hit atmo before our target, use that distance instead.
                 system.print("Warning, will hit atmo, adjusting distance to atmo distance")
             end
 
-
             local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
             local displayText, displayUnit = getDistanceDisplayString(displayDistance)
-            system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
-                displayText.. '", "unit":"' .. displayUnit .. '"}')
+            -- We do this in tenthSecond already.
+            --system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
+            --    displayText.. '", "unit":"' .. displayUnit .. '"}')
             local aligned = true -- It shouldn't be used if the following condition isn't met, but just in case
 
             local projectedAltitude = (autopilotTargetPlanet.center -
@@ -5862,101 +5877,9 @@ function script.onTick(timerId)
             system.updateData(widgetTrajectoryAltitudeText, '{"label": "Projected Altitude", "value": "' ..
                 displayText.. '", "unit":"' .. displayUnit .. '"}')
             
-            --if CustomTarget ~= nil then
-                
-            --    AutopilotRealigned = true -- Don't realign, point straight at the target.  Or rather, at AutopilotTargetOrbit above it
-            --    targetCoords = CustomTarget.position + (autopilotTargetPlanet.center - worldPos):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
-
-
-
-                --AutopilotEndSpeed = AtmoSpeedLimit/3.6; -- Let it keep an orbital end-speed
-
-                -- 5% leeway on the atmo height?  To give us time to actually start reentry
-                -- Also get the value for our velocity cast, not toward the target necessarily
-            --    local intersectBody, farSide, nearSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (velocity):normalize(), function(body) if body.noAtmosphericDensityAltitude > 0 then return (body.radius+body.noAtmosphericDensityAltitude) else return (body.radius+body.surfaceMaxAltitude*1.5) end end)
-            --    if nearSide == nil then -- We already set this before so we can just subtract from it to get atmosphere out
-            --        AutopilotDistance = AutopilotDistance - (autopilotTargetPlanet.noAtmosphericDensityAltitude - autopilotTargetPlanet:getAltitude(targetCoords))
-            --    else
-            --        if nearSide ~= nil then
-            --            AutopilotDistance = math.min(farSide,nearSide) -- Take the shortest distance
-            --        else
-            --           AutopilotDistance = farSide
-            --        end
-            --    end
-                -- This should currently hold the distance to the atmosphere along our velocity vector
-                -- Now get it to AutopilotTargetOrbit
-            --    AutopilotDistance = AutopilotDistance - (AutopilotTargetOrbit - autopilotTargetPlanet.noAtmosphericDensityAltitude)
-            --end
 
             local brakeDistance, brakeTime
             
-
-            --if CustomTarget ~= nil then
-                -- They're going to be severely affected by gravity as they come in
-                -- Calculate a brake distance if they were affected by gravity the whole way
-                -- Then take distance = math.sqrt(that-ungravityDistance) for poor man's integration
-
-                -- Or I guess, just calculate it differently - with sqrt(gravity) in there
-                -- Which is already handled in the func, we just have to set gravity.
-                -- We'll do /2 cuz it's safer than sqrt and braking too early is not a problem with these
-                    -- Nah just, straight up, assume full gravity the whole way.  It's safer that way.
-            --    AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8
-            --else
-            --    AutopilotPlanetGravity = 0
-            --end
-
-            -- Thought - brake down to some arbitrary speed, like 5000, at AutopilotTargetOrbit assuming no gravity
-            -- Then add separate braking from that speed to AtmoSpeedLimit, at noAtmosphericDensityAltitude, with 'full' gravity
-
-            -- ... Which basically means, aim for AutopilotTargetOrbit and even the usual speed, and make reentry do brake calculations for its stuff
-
-            --(0.5*m*vInitial^2 - 0.5*m*vFinal^2 + G*constructMass*planet.gm * ((1/finalAltitude)-(1/currentAltitude)))/AutopilotDistance = F
-            -- This should give us the Force required to stop from vInitial to vFinal in AutopilotDistance meters, where gravity goes from current altitude to final
-            -- Now, just figure out how to make this use relativity.
-            --local C       = 30000000/3600
-            --local bigG = 0.0000000000667408 -- IDK if lua can even handle this
-            -- lorentzMass = dryMass/(sqrt(1-(v/c)^2))
-            -- Maybe, we just plug the lorentz thing into the mass for the eKin stuff at the front, and it'll be okay
-
-            -- 
-            --Derivative of mass formula would be
-            --mass*asin(velocity/C)+finalVelocity
-            --Which is the area below the graph
-            --Which represents the sum of total masses going from finalVelocity to velocity or vice versa
-            --If we divide that by velocity-finalVelocity... 
-
-            --so for example, with the weird values I have in here, at x = 10, we have F(x) = 52.35988
-            --Then that/10 gives us a value of 5.23.  Which, is closer to the value at x=30.  But might be an accurate representation?
-            --Yeah no, that makes sense.  It's not at 25, half of 50, because it's exponential.
-
-            --This will do.  We multiply that average times mass in our GmM part of the formula
-            --local function lorentzMass(mass, velocity) 
-            --    local C       = 30000000/3600
-            --    return mass/(math.sqrt(1-(velocity/C)^2))
-            --end
-
-            --local averageLorentz = (constructMass()*math.asin(velMag/C)+AutopilotEndSpeed)/velMag
-            -- Trying with constructMass instead of averageLorentz, just to see.  - Still tried to brake way too early, and req force went down while braking
-            -- Also trying with just average, and not lorentzing the energys
-            -- And then one last one with no lorentz at all?
-
-                -- Just the average seems to give us a stopping distance slightly later than the one we use now
-                -- But worryingly, it goes up after brake is engaged for a while.  Then it levels out and starts going down
-                -- This might be the result of using an average like I do, though I expected the opposite - go down while braking, then up as it gets closer
-
-                -- No, it's not.  It's horribly wrong and murdered me. 
-
-            -- No lorentz also just doesn't make sense.  It 100% needs to go in the first section at least
-            -- Let's see what it does if we use the averagelorentz for all
-
-            --local brakeForceRequired = (0.5*averageLorentz*velMag^2 - 0.5*averageLorentz*AutopilotEndSpeed^2 
-            --                            + averageLorentz * autopilotTargetPlanet.GM * bigG * ((1/autopilotTargetPlanet.noAtmosphericDensityAltitude)-(1/coreAltitude)))/AutopilotDistance
-            --system.print("Requires " .. brakeForceRequired .. "N, has " .. LastMaxBrake .. " , thinks it should stop in " .. AutopilotDistance)
-
-            --if brakeForceRequired >= LastMaxBrake then
-            --    system.print("Would start braking!")
-            --end
-
             if not TurnBurn then
                 brakeDistance, brakeTime = GetAutopilotBrakeDistanceAndTime(velMag)
             else
@@ -5965,30 +5888,7 @@ function script.onTick(timerId)
 
             --orbit.apoapsis == nil and 
             if velMag > 300 and AutopilotAccelerating then
-                -- Get the angle between forward and velocity
-                -- Get the magnitude for each of yaw and pitch
-                -- Consider a right triangle, with side a being distance to our target
-                -- get side b, where have the angle.  Do this once for each of yaw and pitch
-                -- The result of each of those would then be multiplied by something to make them vectors...
-
-                -- Okay another idea.
-                -- Normalize forward and velocity, then get the ratio of normvelocity:velocity
-                -- And scale forward back up by that amount.  Then take forward-velocity, the 
-
-                -- No no.
-                -- Okay so, first, when we realign, we store shipright and shipup, just for this
-                -- Get the difference between ship forward and normalized worldvel
-                -- Get the components in each of the stored shipright and shipup directions
-                -- Get the ratio of velocity to normalized velocity and scale up that component (Hey this is just velmag btw)
-                -- Add that component * shipright or shipup
-                --local velVectorOffset = (vec3(AutopilotTargetCoords) - vec3(core.getConstructWorldPos())):normalize() -
-                --                            vec3(velocity):normalize()
-                --local pitchComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipUp)
-                --local yawComponent = getMagnitudeInDirection(velVectorOffset, AutopilotShipRight)
-                --local leftAmount = -yawComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
-                --local downAmount = -pitchComponent * AutopilotDistance * velMag * TrajectoryAlignmentStrength
-                --targetCoords = AutopilotTargetCoords + (-leftAmount * vec3(AutopilotShipRight)) +
-                --                   (-downAmount * vec3(AutopilotShipUp))
+                
 
                 -- All of that's stupid.  Use signedRotationAngle to get the yaw and pitch angles with shipUp and shipRight as the normals, respectively
                 -- Then use a PID
@@ -5996,14 +5896,7 @@ function script.onTick(timerId)
                 local targetYaw = utils.clamp(math.deg(signedRotationAngle(constrUp, velocity:normalize(), targetVec:normalize()))*(velMag/500),-90,90)
                 local targetPitch = utils.clamp(math.deg(signedRotationAngle(constrR, velocity:normalize(), targetVec:normalize()))*(velMag/500),-90,90)
 
-                -- If the values are particularly small, give us a lot of extra oomph
-                --if math.abs(targetYaw) < 1 then
-                --    targetYaw = utils.clamp(targetYaw*10,-90,90)
-                --end
-                --if math.abs(targetPitch) < 1 then
-                --    targetPitch = utils.clamp(targetPitch*10,-90,90)
-                --end
-
+              
                 -- If they're both very small, scale them both up a lot to converge that last bit
                 if math.abs(targetYaw) < 5 and math.abs(targetPitch) < 5 then
                     targetYaw = targetYaw * 2
@@ -6100,19 +5993,25 @@ function script.onTick(timerId)
                 -- We'll try <0.9 instead of <1 so that we don't end up in a barely-orbit where touching the controls will make it an escape orbit
                 -- Though we could probably keep going until it starts getting more eccentric, so we'd maybe have a circular orbit
                 local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
+                local targetVec = CustomTarget.position - worldPos
+                local targetAltitude = planet:getAltitude(CustomTarget.position)
+                local horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
+                system.print(horizontalDistance .. "m, or " .. velocity:normalize():dot(targetVec:normalize()))
                 if (CustomTarget ~=nil and CustomTarget.planetname == "Space" and velMag < 50) then
                     msgText = "Autopilot complete, arrived at space location"
                     AutopilotBraking = false
                     Autopilot = false
+                    TargetSet = false
                     AutopilotStatus = "Aligning" -- Disable autopilot and reset
-                elseif (CustomTarget ~= nil and CustomTarget.planetname ~= "Space") and (velMag <= AtmoSpeedLimit/3.6 or atmosphere() > 0) and (CustomTarget.position - worldPos):len() < AutopilotTargetOrbit + 20000 or (orbit.apoapsis == nil and orbit.periapsis == nil or orbit.apoapsis <= 0 or orbit.periapsis <= 0) then
-                    -- If within 20km (ignoring altitude) or if not in orbit, start reentry
-
-                    
+                    -- We only aim for endSpeed even if going straight in, because it gives us a smoother transition to alignment
+                elseif (CustomTarget ~= nil and CustomTarget.planetname ~= "Space") and velMag <= endSpeed and (orbit.apoapsis == nil or orbit.periapsis == nil or orbit.apoapsis.altitude <= 0 or orbit.periapsis.altitude <= 0) then
+                    -- They aren't in orbit, that's a problem if we wanted to do anything other than reenter.  Reenter regardless.                  
                     msgText = "Autopilot complete, proceeding with reentry"
                     --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
+                    AutopilotTargetCoords = CustomTarget.position -- For setting the waypoint
                     AutopilotBraking = false
                     Autopilot = false
+                    TargetSet = false
                     AutopilotStatus = "Aligning" -- Disable autopilot and reset
                     --brakeInput = 0
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
@@ -6120,25 +6019,36 @@ function script.onTick(timerId)
                     apThrottleSet = false
                     ProgradeIsOn = true
                     spaceLand = true
-                elseif orbit.periapsis ~= nil and orbit.eccentricity < 1 then
+                    local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, AutopilotTargetCoords)
+                    waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+                    system.setWaypoint(waypoint)
+                elseif orbit.periapsis ~= nil and orbit.periapsis.altitude > 0 and orbit.eccentricity < 1 then
                     AutopilotStatus = "Circularizing"
                     -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
                     local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
                     --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
                     if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
                         if CustomTarget ~= nil then
-                            if  (CustomTarget.position - worldPos):len() >= AutopilotTargetOrbit + 20000 then
-                                -- If in orbit and not within 20km, we will probably get to it soon.
+                            
+                            if velocity:normalize():dot(targetVec:normalize()) > 0.4 then -- Triggers when we get close to passing it
                                 AutopilotStatus = "Orbiting to Target"
                                 BrakeIsOn = false -- No braking
                                 brakeInput = 0
                                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- No throttle
                                 PlayerThrottle = 0
+                                if not WaypointSet then
+                                    local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, CustomTarget.position)
+                                    waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+                                    system.setWaypoint(waypoint)
+                                    WaypointSet = true
+                                end
                             else
                                 msgText = "Autopilot complete, proceeding with reentry"
                                 --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
+                                AutopilotTargetCoords = CustomTarget.position -- For setting the waypoint
                                 AutopilotBraking = false
                                 Autopilot = false
+                                TargetSet = false
                                 AutopilotStatus = "Aligning" -- Disable autopilot and reset
                                 --brakeInput = 0
                                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
@@ -6147,11 +6057,16 @@ function script.onTick(timerId)
                                 ProgradeIsOn = true
                                 spaceLand = true
                                 BrakeIsOn = false
+                                local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, CustomTarget.position)
+                                waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+                                system.setWaypoint(waypoint)
+                                WaypointSet = false -- Don't need it anymore
                             end
                         else
                             BrakeIsOn = false
                             AutopilotBraking = false
                             Autopilot = false
+                            TargetSet = false
                             AutopilotStatus = "Aligning" -- Disable autopilot and reset
                             -- TODO: This is being added to newContent *after* we already drew the screen, so it'll never get displayed
                             msgText = "Autopilot completed, orbit established"
@@ -6206,11 +6121,13 @@ function script.onTick(timerId)
                 -- If it's not aligned yet, don't try to burn yet.
             end
             -- If we accidentally hit atmo while autopiloting to a custom target, cancel it and go straight to pulling up
-        elseif Autopilot and (CustomTarget ~= nil and CustomTarget.planetname ~= "Space" and (velMag <= AutopilotEndSpeed or atmosphere() > 0)) then
+        elseif Autopilot and (CustomTarget ~= nil and CustomTarget.planetname ~= "Space" and atmosphere() > 0) then
             msgText = "Autopilot complete, proceeding with reentry"
+            AutopilotTargetCoords = CustomTarget.position -- For setting the waypoint
             BrakeIsOn = false -- Leaving these on makes it screw up alignment...?
             AutopilotBraking = false
             Autopilot = false
+            TargetSet = false
             AutopilotStatus = "Aligning" -- Disable autopilot and reset
             brakeInput = 0
             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
@@ -6218,6 +6135,9 @@ function script.onTick(timerId)
             apThrottleSet = false
             ProgradeIsOn = true
             spaceLand = true
+            local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, CustomTarget.position)
+            waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+            system.setWaypoint(waypoint)
         end
         if followMode then
             -- User is assumed to be outside the construct
@@ -6415,11 +6335,11 @@ function script.onTick(timerId)
                     AlignToWorldVector(targetVec) -- Point to the target if on the ground and 'stalled'
                 else
                     -- Do this if we're yaw stalling
-                    if currentYaw < -YawStallAngle or currentYaw > YawStallAngle then
+                    if currentYaw < -YawStallAngle or currentYaw > YawStallAngle and atmosphere() > 0 then
                         AlignToWorldVector(velocity) -- Otherwise try to pull out of the stall, and let it pitch into it
                     end
                     -- Only do this if we're stalled for pitch
-                    if currentPitch < -PitchStallAngle or currentPitch > PitchStallAngle then
+                    if currentPitch < -PitchStallAngle or currentPitch > PitchStallAngle and atmosphere() > 0 then
                         targetPitch = utils.clamp(adjustedPitch-currentPitch,adjustedPitch - PitchStallAngle*0.85, adjustedPitch + PitchStallAngle*0.85) -- Just try to get within un-stalling range to not bounce too much
                     end
                 end
@@ -6764,11 +6684,13 @@ function script.onFlush()
         local corrX = math.cos(radianRoll)
         local corrY = math.sin(radianRoll)
         local adjustedPitch = getPitch(worldVertical, constructForward, (constructRight * corrX) + (constructUp * corrY)) -- Don't roll if pitch is basically straight up/down
-        if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 and math.abs(adjustedPitch) < 75 then
+        if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 and math.abs(adjustedPitch) < 85 then
             local targetRollDeg = targetRoll
             local rollFactor = autoRollFactor
             if atmosphere == 0 then
                 rollFactor = rollFactor/4 -- Better or worse, you think?
+                targetRoll = 0 -- Always roll to 0 out of atmo
+                targetRollDeg = 0
             end
             if (rollPID == nil) then
                 rollPID = pid.new(rollFactor * 0.01, 0, rollFactor * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
