@@ -6271,7 +6271,19 @@ function script.onTick(timerId)
             -- Even better if we smooth based on their velocity
             local minmax = 500 + velMag
             -- Smooth the takeoffs with a velMag multiplier that scales up to 100m/s
-            local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch * utils.clamp(velMag/100,0.1,1)
+            local velMultiplier = 1
+            if AutoTakeoff then velMultiplier = utils.clamp(velMag/100,0.1,1) end
+            local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch * velMultiplier
+
+            if atmosphere() == 0 and not Reentry and not spaceLand then
+                -- Widen it up and go much harder.
+                targetPitch = utils.clamp((utils.smoothstep(altDiff, -minmax*20, minmax*20) - 0.5) * 2 * MaxPitch * 2 * velMultiplier,-85,85)
+                if coreAltitude > HoldAltitude and targetPitch == -85 then
+                    BrakeIsOn = true
+                else
+                    BrakeIsOn = false
+                end
+            end
 
             if not AltitudeHold then
                 targetPitch = 0
@@ -6353,7 +6365,7 @@ function script.onTick(timerId)
             --if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget and not BrakeLanding then -- When do we even need this, just alt hold? lol
             --    AlignToWorldVector(vec3(velocity))
             --end
-            if (VectorToTarget or spaceLaunch) and AutopilotTargetIndex > 0 then
+            if (VectorToTarget or spaceLaunch) and AutopilotTargetIndex > 0 and atmosphere() > 0.01 then
                 local targetVec
                 if CustomTarget ~= nil then
                     targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
@@ -6375,10 +6387,12 @@ function script.onTick(timerId)
                 --local targetYaw = math.deg(constrF:angle_to(vectorInYawDirection))
                 -- And is wrong?
                 --local targetYaw = math.deg(math.atan(flatForward.y-vectorInYawDirection.y, flatForward.x-vectorInYawDirection.x))
-                local targetYaw = math.deg(signedRotationAngle(worldV,velocity:normalize(),targetVec:normalize()))*2
+                local targetYaw = math.deg(signedRotationAngle(worldV:normalize(),velocity:normalize(),targetVec:normalize()))*2
                 --local targetYaw = math.deg(math.acos((vectorInYawDirection:dot(flatForward)))) * -utils.sign(targetVec:dot(velocity:cross(worldV)))*2
                 --system.print(math.abs(worldV:dot(targetVec:normalize())))
-                if math.abs(worldV:dot(targetVec:normalize())) > 0.95 then -- If it's almost directly above or below us in relation to gravity
+                -- or math.abs(targetYaw) > 350
+                system.print(targetYaw)
+                if math.abs(worldV:dot(targetVec:normalize())) > 0.9 then -- If it's almost directly above or below us in relation to gravity
                 --if math.abs(targetYaw) > 350 then -- It's being stupid... 
                     targetYaw = 0 -- Don't yaw at all in those situations.  
                 end
@@ -6386,14 +6400,17 @@ function script.onTick(timerId)
                 --system.print("Target yaw " .. targetYaw)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
-                if velMag > minRollVelocity then
+                if velMag > minRollVelocity and atmosphere() > 0.01 then
                     targetRoll = utils.clamp(targetYaw, -90, 90)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
                     -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  
                     targetYaw = utils.clamp((currentYaw-targetYaw),currentYaw-YawStallAngle*0.85,currentYaw+YawStallAngle*0.85)*math.cos(rollRad) + utils.clamp(targetPitch-adjustedPitch,-YawStallAngle*0.85,YawStallAngle*0.85)*math.sin(math.rad(roll)) --  Try signing the pitch component of this
                     targetPitch = utils.clamp(targetPitch*math.cos(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85) + utils.clamp(math.abs(origTargetYaw),-PitchStallAngle*0.85,PitchStallAngle*0.85)*math.sin(rollRad)
-                end -- We're just taking abs of the yaw for pitch, because we just want to pull up, and it rolled the right way already.
+                else
+                    targetRoll = 0
+                    targetYaw = utils.clamp((currentYaw-targetYaw),-90,90)
+                end-- We're just taking abs of the yaw for pitch, because we just want to pull up, and it rolled the right way already.
                 -- And the pitch now gets info about yaw too?
                 -- cos(roll) should give 0 at 90 and 1/-1 at 0 and 180
                 -- So targetYaw*cos(roll) goes into yaw
@@ -6404,7 +6421,7 @@ function script.onTick(timerId)
 
                 local yawDiff = targetYaw
 
-                if not stalling and velMag > minRollVelocity then
+                if not stalling and velMag > minRollVelocity and atmosphere() > 0.01 then
                     if (yawPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                         yawPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                     end
@@ -6412,15 +6429,15 @@ function script.onTick(timerId)
                     yawPID:inject(yawDiff)
                     local autoYawInput = utils.clamp(yawPID:get(),-1,1) -- Keep it reasonable so player can override
                     yawInput2 = yawInput2 + autoYawInput
-                elseif hovGndDet > -1 or velMag < minRollVelocity then
+                elseif (inAtmo and hovGndDet > -1 or velMag < minRollVelocity) then
                     AlignToWorldVector(targetVec) -- Point to the target if on the ground and 'stalled'
-                else
+                elseif stalling and atmosphere() > 0.01 then
                     -- Do this if we're yaw stalling
-                    if currentYaw < -YawStallAngle or currentYaw > YawStallAngle and atmosphere() > 0 then
+                    if (currentYaw < -YawStallAngle or currentYaw > YawStallAngle) and atmosphere() > 0.01 then
                         AlignToWorldVector(velocity) -- Otherwise try to pull out of the stall, and let it pitch into it
                     end
                     -- Only do this if we're stalled for pitch
-                    if currentPitch < -PitchStallAngle or currentPitch > PitchStallAngle and atmosphere() > 0 then
+                    if (currentPitch < -PitchStallAngle or currentPitch > PitchStallAngle) and atmosphere() > 0.01 then
                         targetPitch = utils.clamp(adjustedPitch-currentPitch,adjustedPitch - PitchStallAngle*0.85, adjustedPitch + PitchStallAngle*0.85) -- Just try to get within un-stalling range to not bounce too much
                     end
                 end
@@ -6441,7 +6458,11 @@ function script.onTick(timerId)
                     else
                         curBrake = LastMaxBrake
                     end
-                    
+                    if atmosphere() < 0.01 then
+                        curBrake = LastMaxBrake -- Assume space brakes
+                    else
+
+                    end
                     local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
                     local hSpd = velocity:len() - math.abs(vSpd)
                     local airFrictionVec = vec3(core.getWorldAirFrictionAcceleration())
@@ -6669,7 +6690,7 @@ function script.onTick(timerId)
             local onGround = hoverDetectGround() > -1
             local pitchToUse = pitch
 
-            if VectorToTarget and not onGround and velMag > minRollVelocity then
+            if VectorToTarget and not onGround and velMag > minRollVelocity and atmosphere() > 0.01 then
                 local rollRad = math.rad(math.abs(roll))
                 pitchToUse = pitch*math.cos(rollRad)+currentPitch*math.sin(rollRad)
                 --pitchToUse = adjustedPitch -- Use velocity vector pitch instead, we're potentially sideways
@@ -6682,7 +6703,13 @@ function script.onTick(timerId)
 
                 -- then currentPitch*math.sin(rollRad)+pitch*math.cos(rollRad) = absolutePitch
             end
-            local pitchDiff = utils.clamp(targetPitch-pitchToUse, -YawStallAngle*0.85, YawStallAngle*0.85)
+            -- TODO: These clamps need to be related to roll and YawStallAngle, we may be dealing with yaw?
+            local pitchDiff = utils.clamp(targetPitch-pitchToUse, -PitchStallAngle*0.85, PitchStallAngle*0.85)
+            if atmosphere() < 0.01 and VectorToTarget then
+                pitchDiff = utils.clamp(targetPitch-pitchToUse, -85, MaxPitch) -- I guess
+            elseif atmosphere() < 0.01 then
+                pitchDiff = utils.clamp(targetPitch-pitchToUse, -MaxPitch, MaxPitch) -- I guess
+            end
             if (((math.abs(roll) < 5 or VectorToTarget)) or BrakeLanding or onGround or AltitudeHold) then
                 if (pitchPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                     pitchPID = pid.new(8 * 0.01, 0, 8 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
