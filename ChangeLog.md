@@ -13,6 +13,8 @@ Version 5.233
 - Warning added to indicate when your ship is on a collision course with a planet or atmosphere
 - Added on-the-fly adjustment for AtmoSpeedLimit and MaxGameVelocity (during autopilot) with Alt+ScrollWheel
 - Improved Autopilot Convergence over short distances
+- Reentry throttle limiting can now happen at atmo values above 1% if descending
+- Reentry smoothed significantly
 
 Version 5.232
 - Fixed a potential issue with aligning prograde when not near a planet
