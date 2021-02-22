@@ -5857,7 +5857,7 @@ function script.onTick(timerId)
             --local wrongSide = (CustomTarget.position-worldPos):len() > (autopilotTargetPlanet.center-worldPos):len()
             local skipAlign = false
 
-            if CustomTarget ~= nil then
+            if CustomTarget ~= nil and CustomTarget.name ~= "Space" then
                 AutopilotRealigned = true -- Don't realign, point straight at the target.  Or rather, at AutopilotTargetOrbit above it
 
                 -- It's on the wrong side of the planet. 
@@ -5888,8 +5888,13 @@ function script.onTick(timerId)
                 end
                 --AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8 -- Since we're aiming straight at it, we have to assume gravity?
                 AutopilotPlanetGravity = 0
-                
-            else
+            elseif CustomTarget ~= nil and CustomTarget.name == "Space" then
+                AutopilotPlanetGravity = 0
+                skipAlign = true
+                TargetSet = true
+                AutopilotRealigned = true
+                targetCoords = CustomTarget.position + (worldPos - CustomTarget.position)*AutopilotTargetOrbit
+            elseif CustomTarget == nil then
                 AutopilotPlanetGravity = 0
 
                 if not TargetSet then
