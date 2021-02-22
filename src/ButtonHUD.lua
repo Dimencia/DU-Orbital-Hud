@@ -86,6 +86,7 @@ ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks 
 CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
 autoRollRollThreshold = 0 --export: (Default: 0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
 AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric speeds should be limited to a maximum of AtmoSpeedLimit
+MaxRoll = 60 --export: (Defaut: 60) The max amount your ship can roll and stil maintain altitude.  Do not exceed 90
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -1172,6 +1173,7 @@ function ToggleAutopilot()
                     else
                         spaceLand = true
                         ProgradeIsOn = true
+                        if AltitudeHold then ToggleAltitudeHold() end -- Make sure to cancel this.
                     end
                 end
             else
@@ -5797,7 +5799,8 @@ function script.onTick(timerId)
                     aligned = AlignToWorldVector(vec3(velocity),0.01) 
                 end
                 autoRoll = true
-                if aligned and (math.abs(roll) < 2 or math.abs(adjustedPitch) > 85) then
+                if aligned and (math.abs(roll) < 2 or math.abs(adjustedPitch) > 85) and velMag >= AtmoSpeedLimit/3.6-1 then
+                        -- Try to force it to get full speed toward target, so it goes straight to throttle and all is well
                         BrakeIsOn = false
                         ProgradeIsOn = false
                         reentryMode = true
@@ -6282,7 +6285,7 @@ function script.onTick(timerId)
             if not Reentry and not spaceLand then
                 -- Widen it up and go much harder based on atmo level
                 -- Scaled in a way that no change up to 10% atmo, then from 10% to 0% scales to *20 and *2
-                targetPitch = (utils.smoothstep(altDiff, -minmax*utils.clamp(20 - 19*atmosphere()*15,1,20), minmax*utils.clamp(20 - 19*atmosphere()*15,1,20)) - 0.5) * 2 * MaxPitch * utils.clamp(2 - atmosphere()*15,1,2) * velMultiplier
+                targetPitch = (utils.smoothstep(altDiff, -minmax*utils.clamp(20 - 19*atmosphere()*10,1,20), minmax*utils.clamp(20 - 19*atmosphere()*10,1,20)) - 0.5) * 2 * MaxPitch * utils.clamp(2 - atmosphere()*12,1,2) * velMultiplier
                 --if coreAltitude > HoldAltitude and targetPitch == -85 then
                 --    BrakeIsOn = true
                 --else
@@ -6343,7 +6346,11 @@ function script.onTick(timerId)
                         autoRoll = autoRollPreference
                     end
                 elseif planet.noAtmosphericDensityAltitude > 0 and coreAltitude > planet.noAtmosphericDensityAltitude + 5000 then -- 5km is good
-                    targetPitch = -70 -- Maybe -70 will do better, something is keeping it from pitching up at the right time... 
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                        targetPitch = -70 -- Maybe -70 will do better, something is keeping it from pitching up at the right time... 
+                    else
+                        targetPitch = -MaxPitch
+                    end
                     autoRoll = true -- It shouldn't actually do it, except while aligning
                 elseif coreAltitude <= planet.noAtmosphericDensityAltitude + 5000 then
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then -- Cancel throttle
@@ -6406,7 +6413,7 @@ function script.onTick(timerId)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > minRollVelocity and atmosphere() > 0.01 then
-                    targetRoll = utils.clamp(targetYaw, -90, 90)
+                    targetRoll = utils.clamp(targetYaw, -MaxRoll, MaxRoll)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
                     -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  

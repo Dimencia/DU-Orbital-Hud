@@ -15,6 +15,7 @@ Version 5.233
 - Improved Autopilot Convergence over short distances
 - Reentry throttle limiting can now happen at atmo values above 1% if descending
 - Reentry smoothed significantly
+- Atmo exits now pitch up when atmosphere gets low to prevent burning
 
 Version 5.232
 - Fixed a potential issue with aligning prograde when not near a planet
