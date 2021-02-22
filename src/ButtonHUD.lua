@@ -287,6 +287,11 @@ local ahDoubleClick = 0
 
 -- BEGIN FUNCTION DEFINITIONS
 
+function round(num, numDecimalPlaces)
+    local mult = 10^(numDecimalPlaces or 0)
+    return math.floor(num * mult + 0.5) / mult
+  end
+
 function LoadVariables()
     if dbHud_1 then
         local hasKey = dbHud_1.hasKey
@@ -987,9 +992,9 @@ function ToggleAutoLanding()
         -- Don't disable alt hold for auto land
     else
         StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrake)
-        if not StrongBrakes and velMag > minAutopilotSpeed then
-            msgText = "WARNING: Insufficient Brakes - Attempting coast landing, beware obstacles"
-        end
+        --if not StrongBrakes and velMag > minAutopilotSpeed then
+        --    msgText = "WARNING: Insufficient Brakes - Attempting coast landing, beware obstacles"
+        --end
         AltitudeHold = false
         AutoTakeoff = false
         LockPitch = nil
@@ -1113,6 +1118,7 @@ function ToggleFollowMode()
 end
 
 function ToggleAutopilot()
+    TargetSet = false -- No matter what
     -- Toggle Autopilot, as long as the target isn't None
     if AutopilotTargetIndex > 0 and not Autopilot and not VectorToTarget and not spaceLaunch then
         -- If it's a custom location... 
@@ -1140,10 +1146,11 @@ function ToggleAutopilot()
                     Autopilot = true
                 end
             elseif planet.name  == CustomTarget.planetname then
-                StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
-                if not StrongBrakes and velMag > minAutopilotSpeed then
-                    msgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
-                end
+                -- StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
+                StrongBrakes = true
+                --if not StrongBrakes and velMag > minAutopilotSpeed then
+                --    msgText = "Insufficient Brake Force\nCoast landing will be inaccurate"
+                --end
                 -- Going to need to add all those conditions here.  Let's start with the easiest.
                 if atmosphere() > 0 then
                     if not AltitudeHold then
@@ -1746,7 +1753,7 @@ function BeginReentry()
         Reentry = false
         autoRoll = autoRollPreference
         AltitudeHold = false
-    elseif atmosphere() ~= 0 or not planet.hasAtmosphere then
+    elseif not planet.hasAtmosphere then
         msgText = "Re-Entry requirements not met: you must start out of atmosphere\n and within a planets gravity well over a planet with atmosphere"
         msgTimer = 5
     elseif not reentryMode then-- Parachute ReEntry
@@ -1774,6 +1781,7 @@ function BeginReentry()
         local text, altUnit = getDistanceDisplayString(HoldAltitude)
         msgText = "Beginning Re-entry.  Target speed: " .. ReentrySpeed .. " Target Altitude: " .. text .. altUnit
     end
+    AutoTakeoff = false -- This got left on somewhere.. 
 end
 
 function SetupButtons()
@@ -1938,7 +1946,7 @@ function UpdateHud(newContent)
     local throt = mfloor(unit.getThrottle())
     local spd = speed * 3.6
     local flightValue = unit.getAxisCommandValue(0)
-    if inAtmo and AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+    if AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
         flightValue = PlayerThrottle
         throt = PlayerThrottle*100
     end
@@ -2230,6 +2238,22 @@ function DrawThrottle(newContent, flightStyle, throt, flightValue)
                         <text x="%s" y="%s">%d %s</text>
                 </g>
             </g>]], throtPosX+10, y1+40, "LIMIT", throtPosX+10, y2+40, throt, "%")
+    end
+    if inAtmo and AtmoSpeedAssist then
+        -- Display AtmoSpeedLimit above the throttle
+
+        newContent[#newContent + 1] = stringf([[
+            <g class="dim txtstart">
+                <text x="%s" y="%s">%s %s</text>
+            </g>
+        ]], throtPosX+10, y1-40, "TARGET: ", AtmoSpeedLimit .. " km/h")
+    elseif not inAtmo and Autopilot then
+        -- Display MaxGameVelocity above the throttle
+        newContent[#newContent + 1] = stringf([[
+            <g class="dim txtstart">
+                <text x="%s" y="%s">%s %s</text>
+            </g>
+        ]], throtPosX+10, y1-40, "TARGET: ", math.floor(MaxGameVelocity*3.6+0.5) .. " km/h")
     end
 end
 
@@ -2732,6 +2756,11 @@ function DrawWarnings(newContent)
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Re-entry in Progress</text>]],
                                               warningX, apY+20)
     end
+    local intersectBody, farSide, nearSide = galaxyReference:getPlanetarySystem(0):castIntersections(vec3(core.getConstructWorldPos()), (velocity):normalize(), function(body) if body.noAtmosphericDensityAltitude > 0 then return (body.radius+body.noAtmosphericDensityAltitude) else return (body.radius+body.surfaceMaxAltitude*1.5) end end)
+    local atmoDistance = farSide
+    if nearSide ~= nil and farSide ~= nil then
+        atmoDistance = math.min(nearSide,farSide)
+    end
     if AltitudeHold then
         if AutoTakeoff then
             local displayText, displayUnit = getDistanceDisplayString(HoldAltitude)
@@ -2766,6 +2795,12 @@ function DrawWarnings(newContent)
     if TurnBurn then
         newContent[#newContent + 1] = stringf([[<text class="crit" x="%d" y="%d">Turn & Burn Braking</text>]],
                                           warningX, turnBurnY)
+    elseif atmoDistance ~= nil and atmosphere() == 0 then
+            local displayText, displayUnit = getDistanceDisplayString(atmoDistance)
+            local travelTime = Kinematic.computeTravelTime(velMag, 0, atmoDistance)
+            newContent[#newContent + 1] = stringf([[<text class="crit" x="%d" y="%d">%s Collision In %s (%s)</text>]],
+                                              warningX, turnBurnY,intersectBody.name, FormatTimeString(travelTime), displayText.. displayUnit)
+           
     end
     if VectorToTarget then
         newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">%s</text>]], warningX,
@@ -3068,9 +3103,11 @@ function GetAutopilotTravelTime()
     end
     local velocity = core.getWorldVelocity()
     local speed = vec3(velocity):len()
+    local throttle = unit.getThrottle()/100
+    if AtmoSpeedAssist then throttle = PlayerThrottle end
     local accelDistance, accelTime =
         Kinematic.computeDistanceAndTime(vec3(velocity):len(), MaxGameVelocity, -- From currently velocity to max
-            constructMass(), Nav:maxForceForward(), warmup, -- T50?  Assume none, negligible for this
+            constructMass(), Nav:maxForceForward()*throttle, warmup, -- T50?  Assume none, negligible for this
             0) -- Brake thrust, none for this
     -- accelDistance now has the amount of distance for which we will be accelerating
     -- Then we need the distance we'd brake from full speed
@@ -5390,7 +5427,7 @@ function script.onTick(timerId)
                     WasInAtmo = true
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                         -- Put real throttle into PlayerThrottle as we enter
-                        PlayerThrottle = unit.getAxisCommandValue(0)
+                        --PlayerThrottle = unit.getAxisCommandValue(0)
                     elseif AtmoSpeedAssist then
                         -- If they're reentering atmo from cruise, and have atmo speed Assist
                         -- Put them in throttle mode at 100%
@@ -5410,10 +5447,10 @@ function script.onTick(timerId)
                         system.addDataToWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance) end
                     if system.updateData(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) == 1 then
                         system.addDataToWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude) end
-                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                    --if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                         -- Put PlayerThrottle into the real throttle as we exit so no discrepancies
-                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, PlayerThrottle)
-                    end
+                    --    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, PlayerThrottle)
+                    --end
                     WasInAtmo = false
                 end
             end
@@ -5756,7 +5793,7 @@ function script.onTick(timerId)
                         aligned = AlignToWorldVector(vec3(velocity),0.01) 
                     end
                     autoRoll = true
-                    if aligned and math.abs(roll) < 2 then
+                    if aligned and (math.abs(roll) < 2 or math.abs(adjustedPitch) > 85) then
                             BrakeIsOn = false
                             ProgradeIsOn = false
                             reentryMode = true
@@ -5812,6 +5849,7 @@ function script.onTick(timerId)
             local targetCoords = AutopilotTargetCoords
             -- This isn't right.  Maybe, just take the smallest distance vector between the normal one, and the wrongSide calculated one
             --local wrongSide = (CustomTarget.position-worldPos):len() > (autopilotTargetPlanet.center-worldPos):len()
+            local skipAlign = false
 
             if CustomTarget ~= nil then
                 AutopilotRealigned = true -- Don't realign, point straight at the target.  Or rather, at AutopilotTargetOrbit above it
@@ -5833,24 +5871,45 @@ function script.onTick(timerId)
                         targetCoords = wrongSideCoords
                         AutopilotTargetCoords = targetCoords
                     else
-                        -- If it's right side by the good comparison, set it to offset based on our initial direction instead of gravity.  This helps align better
-                        targetCoords = CustomTarget.position + (worldPos - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
+                        targetCoords = CustomTarget.position + (CustomTarget.position - autopilotTargetPlanet.center):normalize() * (AutopilotTargetOrbit - autopilotTargetPlanet:getAltitude(CustomTarget.position))
                         AutopilotTargetCoords = targetCoords
                     end
                     local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, AutopilotTargetCoords)
                     waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
                     system.setWaypoint(waypoint)
+                    skipAlign = true
+                    TargetSet = true -- Only set the targetCoords once.  Don't let them change as we fly.
                 end
-                
-                
                 --AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8 -- Since we're aiming straight at it, we have to assume gravity?
                 AutopilotPlanetGravity = 0
-                TargetSet = true -- Only set the targetCoords once.  Don't let them change as we fly.
+                
             else
                 AutopilotPlanetGravity = 0
+
+                if not TargetSet then
+                    -- Set the target to something on the radius in the direction closest to velocity
+                    -- We have to fudge a high velocity because at standstill this can give us bad results
+                    local initialDirection = ((worldPos+(velocity*100000)) - autopilotTargetPlanet.center):normalize() -- Should be pointing up
+                    local finalDirection = initialDirection:project_on_plane((autopilotTargetPlanet.center-worldPos):normalize()):normalize()
+                    --system.print("Setting target, finalDir " .. finalDirection:len())
+                    if finalDirection:len() < 1 then
+                        initialDirection = ((worldPos+(vec3(core.getConstructWorldOrientationForward())*100000)) - autopilotTargetPlanet.center):normalize()
+                        finalDirection = initialDirection:project_on_plane((autopilotTargetPlanet.center-worldPos):normalize()):normalize() -- Align to nearest to ship forward then
+                    end
+                    -- And... actually that's all that I need.  If forward is really gone, this should give us a point on the edge of the planet
+                    targetCoords = autopilotTargetPlanet.center + finalDirection*(autopilotTargetPlanet.radius + AutopilotTargetOrbit)
+                    AutopilotTargetCoords = targetCoords
+                    TargetSet = true
+                    skipAlign = true
+                    AutopilotRealigned = true
+                    --AutopilotAccelerating = true
+                    local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, AutopilotTargetCoords)
+                    waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+                    system.setWaypoint(waypoint)
+                end
             end
 
-            local skipAlign = false
+            
             AutopilotDistance = (vec3(targetCoords) - vec3(core.getConstructWorldPos())):len()
             local intersectBody, farSide, nearSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (velocity):normalize(), function(body) if body.noAtmosphericDensityAltitude > 0 then return (body.radius+body.noAtmosphericDensityAltitude) else return (body.radius+body.surfaceMaxAltitude*1.5) end end)
             local atmoDistance = farSide
@@ -5859,11 +5918,12 @@ function script.onTick(timerId)
             end
             if atmoDistance ~= nil and atmoDistance < AutopilotDistance and intersectBody.name == autopilotTargetPlanet.name then
                 AutopilotDistance = atmoDistance -- If we're going to hit atmo before our target, use that distance instead.
-                system.print("Warning, will hit atmo, adjusting distance to atmo distance")
+                -- Can we put this on the HUD easily?
+                --local value, units = getDistanceDisplayString(atmoDistance)
+                --msgText = "Adjusting Brake Distance, will hit atmo in: " .. value .. units
             end
 
-            local displayDistance = (AutopilotTargetCoords - vec3(core.getConstructWorldPos())):len() -- Don't show our weird variations
-            local displayText, displayUnit = getDistanceDisplayString(displayDistance)
+            
             -- We do this in tenthSecond already.
             --system.updateData(widgetDistanceText, '{"label": "distance", "value": "' ..
             --    displayText.. '", "unit":"' .. displayUnit .. '"}')
@@ -5873,7 +5933,7 @@ function script.onTick(timerId)
                                           (vec3(core.getConstructWorldPos()) +
                                               (vec3(velocity):normalize() * AutopilotDistance))):len() -
                                           autopilotTargetPlanet.radius
-            displayText, displayUnit = getDistanceDisplayString(projectedAltitude)
+            local displayText, displayUnit = getDistanceDisplayString(projectedAltitude)
             system.updateData(widgetTrajectoryAltitudeText, '{"label": "Projected Altitude", "value": "' ..
                 displayText.. '", "unit":"' .. displayUnit .. '"}')
             
@@ -5888,9 +5948,7 @@ function script.onTick(timerId)
 
             --orbit.apoapsis == nil and 
             if velMag > 300 and AutopilotAccelerating then
-                
-
-                -- All of that's stupid.  Use signedRotationAngle to get the yaw and pitch angles with shipUp and shipRight as the normals, respectively
+                -- Use signedRotationAngle to get the yaw and pitch angles with shipUp and shipRight as the normals, respectively
                 -- Then use a PID
                 local targetVec = (vec3(targetCoords) - vec3(core.getConstructWorldPos()))
                 local targetYaw = utils.clamp(math.deg(signedRotationAngle(constrUp, velocity:normalize(), targetVec:normalize()))*(velMag/500),-90,90)
@@ -5898,7 +5956,7 @@ function script.onTick(timerId)
 
               
                 -- If they're both very small, scale them both up a lot to converge that last bit
-                if math.abs(targetYaw) < 5 and math.abs(targetPitch) < 5 then
+                if math.abs(targetYaw) < 20 and math.abs(targetPitch) < 20 then
                     targetYaw = targetYaw * 2
                     targetPitch = targetPitch * 2
                 end
@@ -5950,7 +6008,7 @@ function script.onTick(timerId)
 
             if not AutopilotCruising and not AutopilotBraking and not skipAlign then
                 aligned = AlignToWorldVector((targetCoords - vec3(core.getConstructWorldPos())):normalize())
-            elseif TurnBurn and not skipAlign then
+            elseif TurnBurn then
                 aligned = AlignToWorldVector(-vec3(velocity):normalize())
             end
             if AutopilotAccelerating then
@@ -5962,15 +6020,18 @@ function script.onTick(timerId)
                 if not apThrottleSet then
                     BrakeIsOn = false
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, AutopilotInterplanetaryThrottle)
+                    PlayerThrottle = round(AutopilotInterplanetaryThrottle,2)
                     apThrottleSet = true
                 end
-                if (vec3(core.getVelocity()):len() >= MaxGameVelocity or (unit.getThrottle() == 0 and apThrottleSet)) then
+                local throttle = unit.getThrottle()
+                if AtmoSpeedAssist then throttle = PlayerThrottle end
+                if (vec3(core.getVelocity()):len() >= MaxGameVelocity or (throttle == 0 and apThrottleSet)) then
                     AutopilotAccelerating = false
                     AutopilotStatus = "Cruising"
                     AutopilotCruising = true
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
                     PlayerThrottle = 0
-                    apThrottleSet = false
+                    --apThrottleSet = false -- We already did it, if they cancelled let them throttle up again
                 end
                 -- Check if accel needs to stop for braking
                 --if brakeForceRequired >= LastMaxBrake then
@@ -5983,20 +6044,28 @@ function script.onTick(timerId)
                     apThrottleSet = false
                 end
             elseif AutopilotBraking then
-                BrakeIsOn = true
-                brakeInput = 1
+                if AutopilotStatus ~= "Orbiting to Target" then
+                    BrakeIsOn = true
+                    brakeInput = 1
+                end
                 if TurnBurn then
                     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 100) -- This stays 100 to not mess up our calculations
+                    PlayerThrottle = 1
                 end
                 -- Check if an orbit has been established and cut brakes and disable autopilot if so
 
                 -- We'll try <0.9 instead of <1 so that we don't end up in a barely-orbit where touching the controls will make it an escape orbit
                 -- Though we could probably keep going until it starts getting more eccentric, so we'd maybe have a circular orbit
                 local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
-                local targetVec = CustomTarget.position - worldPos
-                local targetAltitude = planet:getAltitude(CustomTarget.position)
-                local horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
-                system.print(horizontalDistance .. "m, or " .. velocity:normalize():dot(targetVec:normalize()))
+                
+
+                local targetVec, targetAltitude, horizontalDistance
+                if CustomTarget ~= nil then
+                    targetVec = CustomTarget.position - worldPos
+                    targetAltitude = planet:getAltitude(CustomTarget.position)
+                    horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
+                    --system.print(horizontalDistance .. "m, or " .. velocity:normalize():dot(targetVec:normalize()))
+                end
                 if (CustomTarget ~=nil and CustomTarget.planetname == "Space" and velMag < 50) then
                     msgText = "Autopilot complete, arrived at space location"
                     AutopilotBraking = false
@@ -6032,11 +6101,11 @@ function script.onTick(timerId)
                             
                             if velocity:normalize():dot(targetVec:normalize()) > 0.4 then -- Triggers when we get close to passing it
                                 AutopilotStatus = "Orbiting to Target"
-                                BrakeIsOn = false -- No braking
-                                brakeInput = 0
-                                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- No throttle
-                                PlayerThrottle = 0
+                                --brakeInput = 0
+                                --Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- And throttle if they want.  
+                                --PlayerThrottle = 0
                                 if not WaypointSet then
+                                    BrakeIsOn = false -- We have to set this at least once
                                     local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, CustomTarget.position)
                                     waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
                                     system.setWaypoint(waypoint)
@@ -6088,7 +6157,9 @@ function script.onTick(timerId)
                     AutopilotStatus = "Braking"
                     AutopilotBraking = true
                 end
-                if unit.getThrottle() > 0 then
+                local throttle = unit.getThrottle()
+                if AtmoSpeedAssist then throttle = PlayerThrottle end
+                if throttle > 0 then
                     AutopilotAccelerating = true
                     AutopilotStatus = "Accelerating"
                     AutopilotCruising = false
@@ -6113,6 +6184,7 @@ function script.onTick(timerId)
                         if not apThrottleSet then
                             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
                             AutopilotInterplanetaryThrottle)
+                            PlayerThrottle = round(AutopilotInterplanetaryThrottle,2)
                             apThrottleSet = true
                             BrakeIsOn = false
                         end
@@ -6281,8 +6353,13 @@ function script.onTick(timerId)
             --if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget and not BrakeLanding then -- When do we even need this, just alt hold? lol
             --    AlignToWorldVector(vec3(velocity))
             --end
-            if (VectorToTarget or spaceLaunch) and CustomTarget ~= nil and AutopilotTargetIndex > 0 then
-                local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
+            if (VectorToTarget or spaceLaunch) and AutopilotTargetIndex > 0 then
+                local targetVec
+                if CustomTarget ~= nil then
+                    targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
+                else
+                    targetVec = autopilotTargetPlanet.center - worldPos
+                end
 
                 -- Okay so, screw AlignToWorldVector.  Pitch is already handled, we just need to detect a Yaw value
                 -- then PID the yaw to that value, with a max value of StallAngle
@@ -6300,9 +6377,13 @@ function script.onTick(timerId)
                 --local targetYaw = math.deg(math.atan(flatForward.y-vectorInYawDirection.y, flatForward.x-vectorInYawDirection.x))
                 local targetYaw = math.deg(signedRotationAngle(worldV,velocity:normalize(),targetVec:normalize()))*2
                 --local targetYaw = math.deg(math.acos((vectorInYawDirection:dot(flatForward)))) * -utils.sign(targetVec:dot(velocity:cross(worldV)))*2
-                
+                --system.print(math.abs(worldV:dot(targetVec:normalize())))
+                if math.abs(worldV:dot(targetVec:normalize())) > 0.95 then -- If it's almost directly above or below us in relation to gravity
+                --if math.abs(targetYaw) > 350 then -- It's being stupid... 
+                    targetYaw = 0 -- Don't yaw at all in those situations.  
+                end
                 -- Let's go twice what they tell us to, which should converge quickly, within our clamp
-
+                --system.print("Target yaw " .. targetYaw)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > minRollVelocity then
@@ -6344,64 +6425,66 @@ function script.onTick(timerId)
                     end
                 end
 
-                --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
-                -- Well, maybe not.  Really we have a triangle.  Of course.  
-                -- We know C, our distance to target.  We know the height we'll be above the target (should be the same as our current height)
-                -- We just don't know the last leg
-                -- a2 + b2 = c2.  c2 - b2 = a2
-                local targetAltitude = planet:getAltitude(CustomTarget.position)
-                local distanceToTarget = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
+                if CustomTarget ~= nil and not spaceLaunch then
+                    --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
+                    -- Well, maybe not.  Really we have a triangle.  Of course.  
+                    -- We know C, our distance to target.  We know the height we'll be above the target (should be the same as our current height)
+                    -- We just don't know the last leg
+                    -- a2 + b2 = c2.  c2 - b2 = a2
+                    local targetAltitude = planet:getAltitude(CustomTarget.position)
+                    local distanceToTarget = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
 
-                -- We want current brake value, not max
-                local curBrake = LastMaxBrakeInAtmo
-                if curBrake then
-                    curBrake = curBrake * utils.clamp(velMag/100,0.1,1) * atmosphere()
-                else
-                    curBrake = LastMaxBrake
-                end
+                    -- We want current brake value, not max
+                    local curBrake = LastMaxBrakeInAtmo
+                    if curBrake then
+                        curBrake = curBrake * utils.clamp(velMag/100,0.1,1) * atmosphere()
+                    else
+                        curBrake = LastMaxBrake
+                    end
+                    
+                    local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
+                    local hSpd = velocity:len() - math.abs(vSpd)
+                    local airFrictionVec = vec3(core.getWorldAirFrictionAcceleration())
+                    local airFriction = math.sqrt(airFrictionVec:len() - airFrictionVec:project_on(up):len()) * constructMass()
+                    -- Assume it will halve over our duration, if not sqrt.  We'll try sqrt because it's underestimating atm
+                    -- First calculate stopping to 100 - that all happens with full brake power
+                    if velMag > 100 then 
+                        brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 100, constructMass(), 0, 0,
+                                                        curBrake + airFriction)
+                        -- Then add in stopping from 100 to 0 at what averages to half brake power.  Assume no friction for this
+                        local lastDist, brakeTime2 = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, curBrake/2)
+                        brakeDistance = brakeDistance + lastDist
+                    else -- Just calculate it regularly assuming the value will be halved while we do it, assuming no friction
+                        brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
+                    end
                 
-                local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-                local hSpd = velocity:len() - math.abs(vSpd)
-                local airFrictionVec = vec3(core.getWorldAirFrictionAcceleration())
-                local airFriction = math.sqrt(airFrictionVec:len() - airFrictionVec:project_on(up):len()) * constructMass()
-                -- Assume it will halve over our duration, if not sqrt.  We'll try sqrt because it's underestimating atm
-                -- First calculate stopping to 100 - that all happens with full brake power
-                if velMag > 100 then 
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 100, constructMass(), 0, 0,
-                                                    curBrake + airFriction)
-                    -- Then add in stopping from 100 to 0 at what averages to half brake power.  Assume no friction for this
-                    local lastDist, brakeTime2 = Kinematic.computeDistanceAndTime(100, 0, constructMass(), 0, 0, curBrake/2)
-                    brakeDistance = brakeDistance + lastDist
-                else -- Just calculate it regularly assuming the value will be halved while we do it, assuming no friction
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
-                end
-               
 
-                --StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
-                StrongBrakes = true -- We don't care about this or glide landing anymore and idk where all it gets used
-                
-                -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
-                if not spaceLaunch and distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then 
-                    VectorStatus = "Finalizing Approach" 
-                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-                        Nav.control.cancelCurrentControlMasterMode()
+                    --StrongBrakes = ((planet.gravity * 9.80665 * constructMass()) < LastMaxBrakeInAtmo)
+                    StrongBrakes = true -- We don't care about this or glide landing anymore and idk where all it gets used
+                    
+                    -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
+                    if not spaceLaunch and distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then 
+                        VectorStatus = "Finalizing Approach" 
+                        if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                            Nav.control.cancelCurrentControlMasterMode()
+                        end
+                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- Kill throttle in case they weren't in cruise
+                        PlayerThrottle = 0
+                        if AltitudeHold then
+                            ToggleAltitudeHold() -- Don't need this anymore
+                            VectorToTarget = true -- But keep this on
+                        end
+                        BrakeIsOn = true
+                    elseif not AutoTakeoff then
+                        BrakeIsOn = false
                     end
-                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- Kill throttle in case they weren't in cruise
-                    PlayerThrottle = 0
-                    if AltitudeHold then
-                        ToggleAltitudeHold() -- Don't need this anymore
-                        VectorToTarget = true -- But keep this on
+                    if VectorStatus == "Finalizing Approach" and (hSpd < 0.1 or distanceToTarget < 0.1 or (LastDistanceToTarget ~= nil and LastDistanceToTarget < distanceToTarget)) then
+                        BrakeLanding = true
+                        VectorToTarget = false
+                        VectorStatus = "Proceeding to Waypoint"
                     end
-                    BrakeIsOn = true
-                elseif not AutoTakeoff then
-                    BrakeIsOn = false
+                    LastDistanceToTarget = distanceToTarget
                 end
-                if VectorStatus == "Finalizing Approach" and (hSpd < 0.1 or distanceToTarget < 0.1 or (LastDistanceToTarget ~= nil and LastDistanceToTarget < distanceToTarget)) then
-                    BrakeLanding = true
-                    VectorToTarget = false
-                    VectorStatus = "Proceeding to Waypoint"
-                end
-                LastDistanceToTarget = distanceToTarget
             end
 
             if stalling and atmosphere() > 0.01 and hovGndDet == -1 and velMag > minRollVelocity and VectorStatus ~= "Finalizing Approach" then
@@ -6554,6 +6637,7 @@ function script.onTick(timerId)
                         Autopilot = true
                         spaceLaunch = false
                         AltitudeHold = false
+                        AutoTakeoff = false
                         if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                             Nav.control.cancelCurrentControlMasterMode()
                         end
@@ -6571,6 +6655,7 @@ function script.onTick(timerId)
                     Autopilot = true
                     spaceLaunch = false
                     AltitudeHold = false
+                    AutoTakeoff = false
                     if Nav.axisCommandManager:getAxisCommandType(0) == 1 then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
@@ -6598,7 +6683,7 @@ function script.onTick(timerId)
                 -- then currentPitch*math.sin(rollRad)+pitch*math.cos(rollRad) = absolutePitch
             end
             local pitchDiff = utils.clamp(targetPitch-pitchToUse, -YawStallAngle*0.85, YawStallAngle*0.85)
-            if math.abs(pitchDiff) > autoPitchThreshold and (((math.abs(roll) < 5 or VectorToTarget)) or BrakeLanding or onGround) then
+            if (((math.abs(roll) < 5 or VectorToTarget)) or BrakeLanding or onGround or AltitudeHold) then
                 if (pitchPID == nil) then -- Changed from 2 to 8 to tighten it up around the target
                     pitchPID = pid.new(8 * 0.01, 0, 8 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                 end
@@ -6735,9 +6820,27 @@ function script.onFlush()
     local tolerancePercentToSkipOtherPriorities = 1 -- if we are within this tolerance (in%), we don't go to the next priorities
 
     if system.getMouseWheel() > 0 then
-        PlayerThrottle = utils.clamp(PlayerThrottle + speedChangeLarge/100, -1, 1)
+        if AltIsOn then
+            if atmosphere > 0 then
+                AtmoSpeedLimit = utils.clamp(AtmoSpeedLimit + speedChangeLarge,0,5000)
+            elseif Autopilot then
+                MaxGameVelocity = utils.clamp(MaxGameVelocity + speedChangeLarge/3.6*100,0, 8333.00)
+            end
+            toggleView = false
+        else
+            PlayerThrottle = round(utils.clamp(PlayerThrottle + speedChangeLarge/100, -1, 1),2)
+        end
     elseif system.getMouseWheel() < 0 then
-        PlayerThrottle = utils.clamp(PlayerThrottle - speedChangeLarge/100, -1, 1)
+        if AltIsOn then
+            if atmosphere > 0 then
+                AtmoSpeedLimit = utils.clamp(AtmoSpeedLimit - speedChangeLarge,0,5000)
+            elseif Autopilot then
+                MaxGameVelocity = utils.clamp(MaxGameVelocity - speedChangeLarge/3.6*100,0, 8333.00)
+            end
+            toggleView = false
+        else
+            PlayerThrottle = round(utils.clamp(PlayerThrottle - speedChangeLarge/100, -1, 1),2)
+        end
     end
 
     brakeInput2 = 0
@@ -6856,7 +6959,9 @@ function script.onFlush()
 
     else
         --PlayerThrottle = 0
-
+        if AtmoSpeedAssist then
+            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, PlayerThrottle) -- Use PlayerThrottle always.
+        end
         -- Brakes - Do these first so Cruise can override it
         local brakeAcceleration = -finalBrakeInput *
         (brakeSpeedFactor * constructVelocity + brakeFlatFactor * constructVelocityDir)
@@ -6967,6 +7072,7 @@ function script.onFlush()
             end
         else -- Atmosphere Rocket Boost Assist Not in Cruise Control by Azraeil
             local throttle = unit.getThrottle()
+            if AtmoSpeedAssist then throttle = PlayerThrottle*100 end
             local targetSpeed = (throttle/100)
             if atmosphere == 0 then
                 targetSpeed = targetSpeed * MaxGameVelocity
@@ -7171,6 +7277,7 @@ function script.onActionStart(action)
             BrakeIsOn = true -- Should never happen
         end
     elseif action == "lalt" then
+        AltIsOn = true
         if isRemote() == 0 and not freeLookToggle and userControlScheme == "keyboard" then
             system.lockView(1)
         end
@@ -7298,6 +7405,7 @@ function script.onActionStop(action)
         elseif isRemote() == 0 and not freeLookToggle and userControlScheme == "keyboard" then
             system.lockView(0)
         end
+        AltIsOn = false
     end
 end
 

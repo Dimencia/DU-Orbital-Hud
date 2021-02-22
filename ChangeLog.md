@@ -6,9 +6,12 @@ Version 5.233
 - Min roll speed increased to 150m/s
 - Surface to surface waypoints now have a more consistent approach - they should arrive at AutopilotTargetOrbit
 - Reentry now uses gravity for higher approach speeds and can be engaged further from the planet
-- Autoroll no longer applies when pitch is +/-75 degrees, where rolling becomes meaningless
+- Autoroll no longer applies when pitch is +/-85 degrees, where rolling becomes meaningless
 - Interplanetary waypoints now correctly aim at the edge of the planet if the waypoint is on the far side
 - Interplanetary waypoints to targets on the far side will orbit until close to the target
+- Yawing to waypoints now no longer bounces when the target is nearly directly above or below
+- Warning added to indicate when your ship is on a collision course with a planet or atmosphere
+- Added on-the-fly adjustment for AtmoSpeedLimit and MaxGameVelocity (during autopilot) with Alt+ScrollWheel
 
 Version 5.232
 - Fixed a potential issue with aligning prograde when not near a planet
