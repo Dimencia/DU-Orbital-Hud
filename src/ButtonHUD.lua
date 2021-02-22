@@ -6275,14 +6275,16 @@ function script.onTick(timerId)
             if AutoTakeoff then velMultiplier = utils.clamp(velMag/100,0.1,1) end
             local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch * velMultiplier
 
-            if atmosphere() == 0 and not Reentry and not spaceLand then
-                -- Widen it up and go much harder.
-                targetPitch = utils.clamp((utils.smoothstep(altDiff, -minmax*20, minmax*20) - 0.5) * 2 * MaxPitch * 2 * velMultiplier,-85,85)
-                if coreAltitude > HoldAltitude and targetPitch == -85 then
-                    BrakeIsOn = true
-                else
-                    BrakeIsOn = false
-                end
+            -- atmosphere() == 0 and
+            if not Reentry and not spaceLand then
+                -- Widen it up and go much harder based on atmo level
+                -- Scaled in a way that no change up to 10% atmo, then from 10% to 0% scales to *20 and *2
+                targetPitch = (utils.smoothstep(altDiff, -minmax*utils.clamp(20 - 19*atmosphere()*10,1,20), minmax*utils.clamp(20 - 19*atmosphere()*10,1,20)) - 0.5) * 2 * MaxPitch * utils.clamp(2 - atmosphere()*10,1,2) * velMultiplier
+                --if coreAltitude > HoldAltitude and targetPitch == -85 then
+                --    BrakeIsOn = true
+                --else
+                --    BrakeIsOn = false
+                --end
             end
 
             if not AltitudeHold then
