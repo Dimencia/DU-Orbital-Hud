@@ -12,6 +12,7 @@ Version 5.233
 - Yawing to waypoints now no longer bounces when the target is nearly directly above or below
 - Warning added to indicate when your ship is on a collision course with a planet or atmosphere
 - Added on-the-fly adjustment for AtmoSpeedLimit and MaxGameVelocity (during autopilot) with Alt+ScrollWheel
+- Improved Autopilot Convergence over short distances
 
 Version 5.232
 - Fixed a potential issue with aligning prograde when not near a planet
