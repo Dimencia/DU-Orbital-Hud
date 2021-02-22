@@ -86,7 +86,6 @@ ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks 
 CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
 autoRollRollThreshold = 0 --export: (Default: 0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
 AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric speeds should be limited to a maximum of AtmoSpeedLimit
-MaxRoll = 60 --export: (Defaut: 60) The max amount your ship can roll and stil maintain altitude.  Do not exceed 90
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -6287,7 +6286,7 @@ function script.onTick(timerId)
             local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch * velMultiplier
 
             -- atmosphere() == 0 and
-            if not Reentry and not spaceLand then
+            if not Reentry and not spaceLand and not VectorToTarget then
                 -- Widen it up and go much harder based on atmo level
                 -- Scaled in a way that no change up to 10% atmo, then from 10% to 0% scales to *20 and *2
                 targetPitch = (utils.smoothstep(altDiff, -minmax*utils.clamp(20 - 19*atmosphere()*10,1,20), minmax*utils.clamp(20 - 19*atmosphere()*10,1,20)) - 0.5) * 2 * MaxPitch * utils.clamp(2 - atmosphere()*12,1,2) * velMultiplier
@@ -6409,7 +6408,6 @@ function script.onTick(timerId)
                 --local targetYaw = math.deg(math.acos((vectorInYawDirection:dot(flatForward)))) * -utils.sign(targetVec:dot(velocity:cross(worldV)))*2
                 --system.print(math.abs(worldV:dot(targetVec:normalize())))
                 -- or math.abs(targetYaw) > 350
-                system.print(targetYaw)
                 --if math.abs(worldV:dot(targetVec:normalize())) > 0.9 then -- If it's almost directly above or below us in relation to gravity
                 --    targetYaw = 0 -- Don't yaw at all in those situations.  
                 --end
@@ -6418,12 +6416,13 @@ function script.onTick(timerId)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > minRollVelocity and atmosphere() > 0.01 then
-                    targetRoll = utils.clamp(targetYaw, -MaxRoll, MaxRoll)
+                    local maxRoll = utils.clamp(90-targetPitch,60,90) -- No downwards roll allowed :( 
+                    targetRoll = utils.clamp(targetYaw, -maxRoll, maxRoll)
                     local origTargetYaw = targetYaw
                     -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
                     -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  
-                    targetYaw = utils.clamp((currentYaw-targetYaw)*math.cos(rollRad),currentYaw-YawStallAngle*0.85,currentYaw+YawStallAngle*0.85) + utils.clamp((targetPitch-adjustedPitch)*math.sin(math.rad(roll)),-YawStallAngle*0.85,YawStallAngle*0.85) --  Try signing the pitch component of this
-                    targetPitch = utils.clamp(targetPitch*math.cos(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85) + utils.clamp(math.abs(origTargetYaw)*math.sin(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85)
+                    targetYaw = utils.clamp(utils.clamp((currentYaw-targetYaw)*math.cos(rollRad),currentYaw-YawStallAngle*0.85,currentYaw+YawStallAngle*0.85) + utils.clamp((targetPitch-adjustedPitch)*math.sin(math.rad(roll)),-YawStallAngle*0.85,YawStallAngle*0.85),currentYaw-YawStallAngle*0.85,currentYaw+YawStallAngle*0.85) --  Try signing the pitch component of this
+                    targetPitch = utils.clamp(utils.clamp(targetPitch*math.cos(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85) + math.abs(utils.clamp(math.abs(origTargetYaw)*math.sin(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85)),-PitchStallAngle*0.85,PitchStallAngle*0.85) -- Always yaw positive 
                 else
                     targetRoll = 0
                     targetYaw = utils.clamp((currentYaw-targetYaw),-90,90)
@@ -6501,7 +6500,7 @@ function script.onTick(timerId)
                     StrongBrakes = true -- We don't care about this or glide landing anymore and idk where all it gets used
                     
                     -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
-                    if not spaceLaunch and distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 then 
+                    if not spaceLaunch and distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and velocity:project_on_plane(worldV):dot(targetVec:project_on_plane(worldV)) > 0.95 then 
                         VectorStatus = "Finalizing Approach" 
                         if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
                             Nav.control.cancelCurrentControlMasterMode()
@@ -6709,7 +6708,7 @@ function script.onTick(timerId)
 
             if VectorToTarget and not onGround and velMag > minRollVelocity and atmosphere() > 0.01 then
                 local rollRad = math.rad(math.abs(roll))
-                pitchToUse = pitch*math.cos(rollRad)+currentPitch*math.sin(rollRad)
+                pitchToUse = pitch*math.abs(math.cos(rollRad))+currentPitch*math.sin(rollRad)
                 --pitchToUse = adjustedPitch -- Use velocity vector pitch instead, we're potentially sideways
                 -- Except.  We should use sin and cosine to get the value between this and our real one
                 -- Because 30 regular pitch is fine, but 30 pitch above what was already 30 regular pitch isn't - it'll eventually flip us in theory
