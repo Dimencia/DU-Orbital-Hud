@@ -2999,6 +2999,7 @@ function UpdateAutopilotTarget()
     if AutopilotTargetIndex == 0 then
         AutopilotTargetName = "None"
         autopilotTargetPlanet = nil
+        CustomTarget = nil
         return true
     end
 
@@ -3077,13 +3078,17 @@ function IncrementAutopilotTargetIndex()
     if AutopilotTargetIndex > #AtlasOrdered then
         AutopilotTargetIndex = 0
     end
-    local atlasIndex = AtlasOrdered[AutopilotTargetIndex].index
-    local autopilotEntry = atlas[0][atlasIndex]
-    if autopilotEntry.name == "Space" then 
-        IncrementAutopilotTargetIndex() 
-    else
-        -- if AutopilotTargetIndex > tablelength(atlas[0]) then
+    if AutopilotTargetIndex == 0 then
         UpdateAutopilotTarget()
+    else
+        local atlasIndex = AtlasOrdered[AutopilotTargetIndex].index
+        local autopilotEntry = atlas[0][atlasIndex]
+        if autopilotEntry.name == "Space" then 
+            IncrementAutopilotTargetIndex() 
+        else
+            -- if AutopilotTargetIndex > tablelength(atlas[0]) then
+            UpdateAutopilotTarget()
+        end
     end
 end
 
@@ -3093,12 +3098,16 @@ function DecrementAutopilotTargetIndex()
         --    AutopilotTargetIndex = tablelength(atlas[0])
             AutopilotTargetIndex = #AtlasOrdered
     end        
-    local atlasIndex = AtlasOrdered[AutopilotTargetIndex].index
-    local autopilotEntry = atlas[0][atlasIndex]
-    if autopilotEntry.name == "Space" then 
-        DecrementAutopilotTargetIndex() 
-    else
+    if AutopilotTargetIndex == 0 then
         UpdateAutopilotTarget()
+    else
+        local atlasIndex = AtlasOrdered[AutopilotTargetIndex].index
+        local autopilotEntry = atlas[0][atlasIndex]
+        if autopilotEntry.name == "Space" then 
+            DecrementAutopilotTargetIndex() 
+        else
+            UpdateAutopilotTarget()
+        end
     end
 end
 
