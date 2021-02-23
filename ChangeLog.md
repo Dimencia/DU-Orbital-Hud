@@ -1,5 +1,75 @@
 ## ChangeLog - Most recent changes at the top
+
+Version 5.300 - Surface-To-Surface Overhaul
+- Throttle Cruise system complete
+    - Alt+Mousewheel changes max speed in atmosphere, with a maximum of AtmoSpeedLimit (user parameter)
+    - Alt+Mousewheel changes shutoff velocity when in Autopilot in space
+    - Max speed shown as Limit: beside throttle above current speed
+- Autopilot to waypoints on other planets overhauled
+    - Aims at the correct yaw during takeoff
+    - Aims the trajectory directly at the target
+    - Begins autopilot as soon as there is line of sight to the target
+    - Brakes just before it reaches atmosphere
+    - Orbit to reach waypoints on the far sides of planets
+- Reentry Overhaul
+    - Smooth reentry
+    - Uses gravity for speed assist when high above atmosphere
+    - Aims for a reentry height where atmosphere is at 10%
+- Autopilot no longer has to do the 'Aligning' phase, and chooses an orbit point closest to your velocity vector
+- Autopilot now uses waypoints to interactively show you its targets through each phase
+- Better Autopilot trajectory convergence
+- New indicator for atmospheric/planetary collisions
+- Safer rolling in atmosphere
+- PARAMETER MODIFIED: StallAngle is now YawStallAngle and PitchStallAngle.  You will need to re-enter these
+
+Version 5.233
+- Fixed issue with displaying cruise throttle while in prograde alignment
+- Waypoints now only brake based on horizontal speed until they are on target
+- Autotakeoff now only engages when hovers detect ground
+- Min roll speed increased to 150m/s
+- Surface to surface waypoints now have a more consistent approach - they should arrive at AutopilotTargetOrbit
+- Reentry now uses gravity for higher approach speeds and can be engaged further from the planet
+- Autoroll no longer applies when pitch is +/-85 degrees, where rolling becomes meaningless
+- Interplanetary waypoints now correctly aim at the edge of the planet if the waypoint is on the far side
+- Interplanetary waypoints to targets on the far side will orbit until close to the target
+- Yawing to waypoints now no longer bounces when the target is nearly directly above or below
+- Warning added to indicate when your ship is on a collision course with a planet or atmosphere
+- Added on-the-fly adjustment for AtmoSpeedLimit and MaxGameVelocity (during autopilot) with Alt+ScrollWheel
+- Improved Autopilot Convergence over short distances
+- Reentry throttle limiting can now happen at atmo values above 1% if descending
+- Reentry smoothed significantly
+- Atmo exits now pitch up when atmosphere gets low to prevent burning
+
+Version 5.232
+- Fixed a potential issue with aligning prograde when not near a planet
+- Removed prints
+
+Version 5.231
+- Autoroll in space has been dampened, and occurs when aligning prograde near a planet
+- Stalling is ignored when atmo is below 1%
+- Glide reentry button fixed to align prograde first
+- Stall axis is now independent so will avoid realigning pitch when yaw stalling, for example
+- Reentry to a waypoint should reenter in the correct direction for that waypoint
+- Reentry height is now always 11% atmosphere level
+- Reentry will now stabilize more completely before swapping to autopilot, if targeting a waypoint
+- Prograde/waypoint alignment on reentry cancels as soon as it is aligned rather than when speed is low enough
+
+Version 5.23
+- Orbital adjustments can now occur even when not in an escape trajectory
+- Planet-To-Planet autopilot overhaul
+    Aims at the correct yaw during takeoff
+    Aims the trajectory directly at the target
+    Begins autopilot as soon as there is line of sight to the target
+    Brakes just before it reaches atmosphere
+
+Version 5.224
+- Ensures Throttle is set to 0 after entering/exiting cruise
+- Speed and Brake limiting for AtmoSpeedAssist now applies up to 5% atmo instead of 10%, unless reentering at more than 80m/s vspeed (up from 5m/s previous)
+- When stalling in AltitudeHold, the pitch should now correctly try to point back at velocity vector to get out of the stall
+- Changed StallAngle into YawStallAngle and PitchStallAngle.  WARNING: You will need to re-set these variables, though they defualt to a low 35
+
 Version 5.223 - Major flight changes including new "Cruise control" mode when using autopilot, read changelog since 5.11
+
 - Adjusted Waypoints to really land immediately if you pass the location or distance starts getting higher
 - IMPORANT:  For any waypoint to be most accurate and use faster brake landing, go to the waypoint and use the Update Position button.
 
