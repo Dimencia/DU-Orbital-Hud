@@ -6287,7 +6287,7 @@ function script.onTick(timerId)
             local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch * velMultiplier
 
             -- atmosphere() == 0 and
-            system.print(constrF:dot(velocity:normalize()))
+            --system.print(constrF:dot(velocity:normalize()))
             if not Reentry and not spaceLand and not VectorToTarget and constrF:dot(velocity:normalize()) < 0.99 then
                 -- Widen it up and go much harder based on atmo level
                 -- Scaled in a way that no change up to 10% atmo, then from 10% to 0% scales to *20 and *2
