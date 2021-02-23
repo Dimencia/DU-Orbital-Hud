@@ -284,6 +284,7 @@ local stalling = false
 local lastApTickTime = system.getTime()
 local targetRoll = 0
 local ahDoubleClick = 0
+local adjustedAtmoSpeedLimit = AtmoSpeedLimit
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -359,6 +360,7 @@ function LoadVariables()
               [[)]]
     rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..
                  mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]    
+    adjustedAtmoSpeedLimit = AtmoSpeedLimit
 end
 
 function CalculateFuelVolume(curMass, vanillaMaxVolume)
@@ -1783,7 +1785,7 @@ function BeginReentry()
         BrakeIsOn = false
         HoldAltitude = planet.spaceEngineMinAltitude - 50
         local text, altUnit = getDistanceDisplayString(HoldAltitude)
-        msgText = "Beginning Re-entry.  Target speed: " .. AtmoSpeedLimit .. " Target Altitude: " .. text .. altUnit
+        msgText = "Beginning Re-entry.  Target speed: " .. adjustedAtmoSpeedLimit .. " Target Altitude: " .. text .. altUnit
     end
     AutoTakeoff = false -- This got left on somewhere.. 
 end
@@ -2250,7 +2252,7 @@ function DrawThrottle(newContent, flightStyle, throt, flightValue)
             <g class="dim txtstart">
                 <text x="%s" y="%s">%s %s</text>
             </g>
-        ]], throtPosX+10, y1-40, "LIMIT: ", AtmoSpeedLimit .. " km/h")
+        ]], throtPosX+10, y1-40, "LIMIT: ", adjustedAtmoSpeedLimit .. " km/h")
     elseif not inAtmo and Autopilot then
         -- Display MaxGameVelocity above the throttle
         newContent[#newContent + 1] = stringf([[
@@ -5789,11 +5791,11 @@ function script.onTick(timerId)
         end
         LastIsWarping = isWarping
         if inAtmo and atmosphere() > 0.09 then
-            if velMag > (AtmoSpeedLimit / 3.6) and not AtmoSpeedAssist and not speedLimitBreaking then
+            if velMag > (adjustedAtmoSpeedLimit / 3.6) and not AtmoSpeedAssist and not speedLimitBreaking then
                     BrakeIsOn = true
                     speedLimitBreaking  = true
             elseif not AtmoSpeedAssist and speedLimitBreaking then
-                if velMag < (AtmoSpeedLimit / 3.6) then
+                if velMag < (adjustedAtmoSpeedLimit / 3.6) then
                     BrakeIsOn = false
                     speedLimitBreaking = false
                 end
@@ -5818,7 +5820,7 @@ function script.onTick(timerId)
                     aligned = AlignToWorldVector(vec3(velocity),0.01) 
                 end
                 autoRoll = true
-                if aligned and (math.abs(roll) < 2 or math.abs(adjustedPitch) > 85) and velMag >= AtmoSpeedLimit/3.6-1 then
+                if aligned and (math.abs(roll) < 2 or math.abs(adjustedPitch) > 85) and velMag >= adjustedAtmoSpeedLimit/3.6-1 then
                         -- Try to force it to get full speed toward target, so it goes straight to throttle and all is well
                         BrakeIsOn = false
                         ProgradeIsOn = false
@@ -5832,7 +5834,7 @@ function script.onTick(timerId)
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                         Nav.control.cancelCurrentControlMasterMode()
                     end -- Force cruise to 0 so it brakes for us and prepares for next step
-                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, math.floor(AtmoSpeedLimit)) -- Trouble drawing if it's not an int
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, math.floor(adjustedAtmoSpeedLimit)) -- Trouble drawing if it's not an int
                     PlayerThrottle = 0
                 end
             elseif velMag > minAutopilotSpeed then
@@ -5859,7 +5861,7 @@ function script.onTick(timerId)
         end
         local up = vec3(core.getWorldVertical()) * -1
         local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-        if finalLand and (coreAltitude < (HoldAltitude + 200) and coreAltitude > (HoldAltitude - 200)) and ((velMag*3.6) > (AtmoSpeedLimit-100)) and math.abs(vSpd) < 20 and atmosphere() >= 0.1 then
+        if finalLand and (coreAltitude < (HoldAltitude + 200) and coreAltitude > (HoldAltitude - 200)) and ((velMag*3.6) > (adjustedAtmoSpeedLimit-100)) and math.abs(vSpd) < 20 and atmosphere() >= 0.1 then
             ToggleAutopilot()
             finalLand = false
         end
@@ -6340,7 +6342,7 @@ function script.onTick(timerId)
                 -- So if we can 1. Align at -80 and get our speed within some range of target
                 -- And then 2. Swap to throttle and let gravity do the rest til we get within brake range
 
-                local ReentrySpeed = math.floor(AtmoSpeedLimit)
+                local ReentrySpeed = math.floor(adjustedAtmoSpeedLimit)
 
                 local brakeDistancer, brakeTimer = Kinematic.computeDistanceAndTime(velMag, ReentrySpeed/3.6, constructMass(), 0, 0, LastMaxBrake - planet.gravity*9.8*constructMass())
                 local distanceToTarget = coreAltitude - (planet.noAtmosphericDensityAltitude + 5000)
@@ -6384,7 +6386,7 @@ function script.onTick(timerId)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                     end -- Then we have to wait a tick for it to take our new speed.
-                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == AtmoSpeedLimit then
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == adjustedAtmoSpeedLimit then
                         targetPitch = -MaxPitch
                         reentryMode = false
                         Reentry = false
@@ -6886,7 +6888,7 @@ function script.onFlush()
     if system.getMouseWheel() > 0 then
         if AltIsOn then
             if atmosphere > 0 or Reentry then
-                AtmoSpeedLimit = utils.clamp(AtmoSpeedLimit + speedChangeLarge,0,5000)
+                adjustedAtmoSpeedLimit = utils.clamp(adjustedAtmoSpeedLimit + speedChangeLarge,0,AtmoSpeedLimit)
             elseif Autopilot then
                 MaxGameVelocity = utils.clamp(MaxGameVelocity + speedChangeLarge/3.6*100,0, 8333.00)
             end
@@ -6897,7 +6899,7 @@ function script.onFlush()
     elseif system.getMouseWheel() < 0 then
         if AltIsOn then
             if atmosphere > 0 or Reentry then
-                AtmoSpeedLimit = utils.clamp(AtmoSpeedLimit - speedChangeLarge,0,5000)
+                adjustedAtmoSpeedLimit = utils.clamp(adjustedAtmoSpeedLimit - speedChangeLarge,0,AtmoSpeedLimit)
             elseif Autopilot then
                 MaxGameVelocity = utils.clamp(MaxGameVelocity - speedChangeLarge/3.6*100,0, 8333.00)
             end
@@ -6947,7 +6949,7 @@ function script.onFlush()
             -- And I think it was, 0.5, 0, 0.001 is smooth, but gets some braking early
             -- 0.5, 0, 1 is v good.  One early braking bit then stabilizes easily .  10 as the last is way too much, it's bouncy.  Even 2.  1 will do
         end
-        throttlePID:inject((AtmoSpeedLimit/3.6 - constructVelocity:dot(constructForward)))
+        throttlePID:inject((adjustedAtmoSpeedLimit/3.6 - constructVelocity:dot(constructForward)))
         local pidGet = throttlePID:get()
         calculatedThrottle = utils.clamp(pidGet,-1,1)
         if calculatedThrottle < PlayerThrottle and (atmosphere > 0.05 or (atmosphere > 0.01 and vSpd < 0)) then -- Don't limit throttle in low atmo unless descending
@@ -6964,7 +6966,7 @@ function script.onFlush()
         if (brakePID == nil) then
             brakePID = pid.new(1 * 0.01, 0, 1 * 0.1)
         end
-        brakePID:inject(constructVelocity:len() - (AtmoSpeedLimit/3.6)) 
+        brakePID:inject(constructVelocity:len() - (adjustedAtmoSpeedLimit/3.6)) 
         local calculatedBrake = utils.clamp(brakePID:get(),0,1)
         if (atmosphere > 0 and vSpd < -80) or atmosphere > 0.05 then -- Don't brake-limit them at <5% atmo if going up (or mostly up), it's mostly safe up there and displays 0% so people would be mad
             brakeInput2 = calculatedBrake
