@@ -109,7 +109,7 @@ AutopilotPlanetGravity = 0
 PrevViewLock = 1
 AutopilotTargetName = "None"
 AutopilotTargetCoords = nil
-AutopilotTargetIndex = 1
+AutopilotTargetIndex = 0
 GearExtended = nil
 TotalDistanceTravelled = 0.0
 TotalFlightTime = 0
@@ -806,7 +806,7 @@ function UpdatePosition(newName)
         end
         UpdateAtlasLocationsList()
         msgText = CustomTarget.name .. " position updated"
-        AutopilotTargetIndex = 1
+        AutopilotTargetIndex = 0
         UpdateAutopilotTarget()
     else
         msgText = "Name Not Found"
@@ -1120,7 +1120,7 @@ end
 function ToggleAutopilot()
     TargetSet = false -- No matter what
     -- Toggle Autopilot, as long as the target isn't None
-    if AutopilotTargetIndex > 1 and not Autopilot and not VectorToTarget and not spaceLaunch then
+    if AutopilotTargetIndex > 0 and not Autopilot and not VectorToTarget and not spaceLaunch then
         -- If it's a custom location... 
         -- Behavior is probably 
         -- a. If not at the same nearest planet and in space and the target has gravity, autopilot to that planet
@@ -1825,19 +1825,19 @@ function SetupButtons()
         function()
             return false
         end, AddNewLocation, function()
-            return AutopilotTargetIndex == 1 or CustomTarget == nil
+            return AutopilotTargetIndex == 0 or CustomTarget == nil
         end)
     MakeButton("Update Position", "Update Position", 200, apbutton.height, apbutton.x + apbutton.width + 30, apbutton.y,
         function()
             return false
         end, UpdatePosition, function()
-            return AutopilotTargetIndex > 1 and CustomTarget ~= nil
+            return AutopilotTargetIndex > 0 and CustomTarget ~= nil
         end)
     MakeButton("Clear Position", "Clear Position", 200, apbutton.height, apbutton.x - 200 - 30, apbutton.y,
         function()
             return true
         end, ClearCurrentPosition, function()
-            return AutopilotTargetIndex > 1 and CustomTarget ~= nil
+            return AutopilotTargetIndex > 0 and CustomTarget ~= nil
         end)
     -- The rest are sort of standardized
     buttonHeight = 60
@@ -2996,10 +2996,9 @@ end
 
 function UpdateAutopilotTarget()
     -- So the indices are weird.  I think we need to do a pairs
-    if AutopilotTargetIndex == 0 or AutopilotTargetIndex == 1 then
+    if AutopilotTargetIndex == 0 then
         AutopilotTargetName = "None"
         autopilotTargetPlanet = nil
-        AutopilotTargetIndex = 1
         return true
     end
 
@@ -3075,21 +3074,32 @@ end
 
 function IncrementAutopilotTargetIndex()
     AutopilotTargetIndex = AutopilotTargetIndex + 1
-    -- if AutopilotTargetIndex > tablelength(atlas[0]) then
     if AutopilotTargetIndex > #AtlasOrdered then
-        AutopilotTargetIndex = 1
+        AutopilotTargetIndex = 0
     end
-    UpdateAutopilotTarget()
+    local atlasIndex = AtlasOrdered[AutopilotTargetIndex].index
+    local autopilotEntry = atlas[0][atlasIndex]
+    if autopilotEntry.name == "Space" then 
+        IncrementAutopilotTargetIndex() 
+    else
+        -- if AutopilotTargetIndex > tablelength(atlas[0]) then
+        UpdateAutopilotTarget()
+    end
 end
 
 function DecrementAutopilotTargetIndex()
     AutopilotTargetIndex = AutopilotTargetIndex - 1
-        
-    if AutopilotTargetIndex < 1 then
-    --    AutopilotTargetIndex = tablelength(atlas[0])
-        AutopilotTargetIndex = #AtlasOrdered
+    if AutopilotTargetIndex < 0 then
+        --    AutopilotTargetIndex = tablelength(atlas[0])
+            AutopilotTargetIndex = #AtlasOrdered
     end        
-    UpdateAutopilotTarget()
+    local atlasIndex = AtlasOrdered[AutopilotTargetIndex].index
+    local autopilotEntry = atlas[0][atlasIndex]
+    if autopilotEntry.name == "Space" then 
+        DecrementAutopilotTargetIndex() 
+    else
+        UpdateAutopilotTarget()
+    end
 end
 
 function GetAutopilotMaxMass()
@@ -6383,7 +6393,7 @@ function script.onTick(timerId)
             --if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget and not BrakeLanding then -- When do we even need this, just alt hold? lol
             --    AlignToWorldVector(vec3(velocity))
             --end
-            if (VectorToTarget or spaceLaunch) and AutopilotTargetIndex > 1 and atmosphere() > 0.01 then
+            if (VectorToTarget or spaceLaunch) and AutopilotTargetIndex > 0 and atmosphere() > 0.01 then
                 local targetVec
                 if CustomTarget ~= nil then
                     targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
@@ -7543,7 +7553,7 @@ function script.onInputText(text)
             msgText = "Usage: /setname Newname"
             return
         end
-        if AutopilotTargetIndex > 1 and CustomTarget ~= nil then
+        if AutopilotTargetIndex > 0 and CustomTarget ~= nil then
             UpdatePosition(arguement)
         else
             msgText = "Select a saved target to rename first"
