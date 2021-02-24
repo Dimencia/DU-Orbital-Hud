@@ -1,4 +1,11 @@
 ## ChangeLog - Most recent changes at the top
+Version 5.31
+- Improved autopilot trajectory alignment weirdness that happened sometimes
+- Added ForceAlignment parameter to return to old AltitudeHold behavior of forcing the ship to face the velocity vector
+- Fixed cruise not swapping to throttled mode during reentry without a target
+- Fixed vertical/lateral engines firing against gravity at all times
+- 'Proceeding to Waypoint' only engages after reentry if you are at least 2km horizontally from the target, to give space to turn
+
 Version 5.233
 - Fixed issue with displaying cruise throttle while in prograde alignment
 - Waypoints now only brake based on horizontal speed until they are on target

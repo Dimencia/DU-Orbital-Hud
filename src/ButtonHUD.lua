@@ -86,6 +86,7 @@ ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks 
 CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
 autoRollRollThreshold = 0 --export: (Default: 0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
 AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric speeds should be limited to a maximum of AtmoSpeedLimit
+ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -136,7 +137,8 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "ReentrySpeed", "AtmoSpeedLimit", "ReentryAltitude", "centerX", "centerY", "SpaceSpeedLimit", "AtmoSpeedAssist",
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
-                        "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed"}
+                        "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed",
+                        "ForceAlignment"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -1363,6 +1365,8 @@ end
 
 local atan = math.atan
 local function signedRotationAngle(normal, vecA, vecB)
+   vecA = vecA:project_on_plane(normal)
+   vecB = vecB:project_on_plane(normal)
   return atan(vecA:cross(vecB):dot(normal), vecA:dot(vecB))
 end
 
@@ -3427,9 +3431,9 @@ function composeAxisAccelerationFromTargetSpeed(commandAxis, targetSpeed)
 
     local finalAcceleration = (accelerationCommand - airResistanceAccelerationCommand - gravityAccelerationCommand) * axisWorldDirection  -- Try to compensate air friction
 
-    -- The hell are these?
-    --self.system.addMeasure("dynamic", "acceleration", "command", accelerationCommand)
-    --self.system.addMeasure("dynamic", "acceleration", "intensity", finalAcceleration:len())
+    -- The hell are these? Uncommented recently just in case they were important
+    system.addMeasure("dynamic", "acceleration", "command", accelerationCommand)
+    system.addMeasure("dynamic", "acceleration", "intensity", finalAcceleration:len())
 
     return finalAcceleration
 end
@@ -5297,7 +5301,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.233
+    VERSION_NUMBER = 5.31
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5404,6 +5408,15 @@ end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
+        if atmosphere() > 0 and not WasInAtmo then
+            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and AtmoSpeedAssist and (AltitudeHold or Reentry) then
+                -- If they're reentering atmo from cruise, and have atmo speed Assist
+                -- Put them in throttle mode at 100%
+                PlayerThrottle = 1
+                Nav.control.cancelCurrentControlMasterMode()
+                WasInCruise = false -- And override the thing that would reset it, in this case
+            end
+        end
         if AutopilotTargetName ~= "None" then
             if panelInterplanetary == nil then
                 SetupInterplanetaryPanel()
@@ -5453,16 +5466,6 @@ function script.onTick(timerId)
                     system.removeDataFromWidget(widgetCurBrakeDistanceText, widgetCurBrakeDistance)
                     system.removeDataFromWidget(widgetTrajectoryAltitudeText, widgetTrajectoryAltitude)
                     WasInAtmo = true
-                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
-                        -- Put real throttle into PlayerThrottle as we enter
-                        --PlayerThrottle = unit.getAxisCommandValue(0)
-                    elseif AtmoSpeedAssist then
-                        -- If they're reentering atmo from cruise, and have atmo speed Assist
-                        -- Put them in throttle mode at 100%
-                        PlayerThrottle = 1
-                        Nav.control.cancelCurrentControlMasterMode()
-                        WasInCruise = false -- And override the thing that would reset it, in this case
-                    end
                 end
                 if atmosphere() == 0 and WasInAtmo then
                     if system.updateData(widgetMaxBrakeTimeText, widgetMaxBrakeTime) == 1 then
@@ -5861,7 +5864,8 @@ function script.onTick(timerId)
         end
         local up = vec3(core.getWorldVertical()) * -1
         local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-        if finalLand and (coreAltitude < (HoldAltitude + 200) and coreAltitude > (HoldAltitude - 200)) and ((velMag*3.6) > (adjustedAtmoSpeedLimit-100)) and math.abs(vSpd) < 20 and atmosphere() >= 0.1 then
+        if finalLand and (coreAltitude < (HoldAltitude + 200) and coreAltitude > (HoldAltitude - 200)) and ((velMag*3.6) > (adjustedAtmoSpeedLimit-100)) and math.abs(vSpd) < 20 and atmosphere() >= 0.1
+            and (CustomTarget.position-worldPos):len() > 2000 + coreAltitude then -- Only engage if far enough away to be able to turn back for it
             ToggleAutopilot()
             finalLand = false
         end
@@ -6373,11 +6377,11 @@ function script.onTick(timerId)
                         autoRoll = autoRollPreference
                     end
                 elseif planet.noAtmosphericDensityAltitude > 0 and coreAltitude > planet.noAtmosphericDensityAltitude + 5000 then -- 5km is good
-                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-                        targetPitch = -70 -- Maybe -70 will do better, something is keeping it from pitching up at the right time... 
-                    else
-                        targetPitch = -MaxPitch
-                    end
+                    --if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                    --    targetPitch = -70 -- Maybe -70 will do better, something is keeping it from pitching up at the right time... 
+                    --else
+                    --    targetPitch = -MaxPitch
+                    --end
                     autoRoll = true -- It shouldn't actually do it, except while aligning
                 elseif coreAltitude <= planet.noAtmosphericDensityAltitude + 5000 then
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then -- Cancel throttle
@@ -6387,7 +6391,7 @@ function script.onTick(timerId)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                     end -- Then we have to wait a tick for it to take our new speed.
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == adjustedAtmoSpeedLimit then
-                        targetPitch = -MaxPitch
+                        --targetPitch = -MaxPitch -- It will handle pitching for us after this.
                         reentryMode = false
                         Reentry = false
                         autoRoll = true -- wtf?  On some ships this makes it flail around because of the -80 and never recover
@@ -6401,9 +6405,9 @@ function script.onTick(timerId)
             -- Align it prograde but keep whatever pitch inputs they gave us before, and ignore pitch input from alignment.
             -- So, you know, just yaw.
             
-            --if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget and not BrakeLanding then -- When do we even need this, just alt hold? lol
-            --    AlignToWorldVector(vec3(velocity))
-            --end
+            if velMag > minAutopilotSpeed and not spaceLaunch and not VectorToTarget and not BrakeLanding and ForceAlignment then -- When do we even need this, just alt hold? lol
+                AlignToWorldVector(vec3(velocity))
+            end
             if (VectorToTarget or spaceLaunch) and AutopilotTargetIndex > 0 and atmosphere() > 0.01 then
                 local targetVec
                 if CustomTarget ~= nil then
@@ -6427,7 +6431,7 @@ function script.onTick(timerId)
                 -- And is wrong?
                 --local targetYaw = math.deg(math.atan(flatForward.y-vectorInYawDirection.y, flatForward.x-vectorInYawDirection.x))
                 -- These projections save it from bugging out at weird angles.
-                local targetYaw = math.deg(signedRotationAngle(worldV:normalize(),velocity:project_on_plane(worldV),targetVec:project_on_plane(worldV)))*2
+                local targetYaw = math.deg(signedRotationAngle(worldV:normalize(),velocity,targetVec))*2
                 --local targetYaw = math.deg(math.acos((vectorInYawDirection:dot(flatForward)))) * -utils.sign(targetVec:dot(velocity:cross(worldV)))*2
                 --system.print(math.abs(worldV:dot(targetVec:normalize())))
                 -- or math.abs(targetYaw) > 350
@@ -6729,7 +6733,7 @@ function script.onTick(timerId)
             local onGround = hoverDetectGround() > -1
             local pitchToUse = pitch
 
-            if VectorToTarget and not onGround and velMag > minRollVelocity and atmosphere() > 0.01 then
+            if (VectorToTarget or spaceLaunch) and not onGround and velMag > minRollVelocity and atmosphere() > 0.01 then
                 local rollRad = math.rad(math.abs(roll))
                 pitchToUse = pitch*math.abs(math.cos(rollRad))+currentPitch*math.sin(rollRad)
                 --pitchToUse = adjustedPitch -- Use velocity vector pitch instead, we're potentially sideways
@@ -6986,14 +6990,10 @@ function script.onFlush()
 
         local autoNavigationEngineTags = ''
         local autoNavigationAcceleration = vec3()
-        local verticalStrafeEngineTags = 'thrust analog vertical '
-        local lateralStrafeEngineTags = 'thrust analog lateral '
-
-        if ExtraLateralTags ~= "none" then lateralStrafeEngineTags = lateralStrafeEngineTags..ExtraLateralTags end
-        if ExtraVerticalTags ~= "none" then verticalStrafeEngineTags = verticalStrafeEngineTags..ExtraVerticalTags end
+        
 
         local verticalStrafeAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.vertical,upAmount*1000)
-        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. verticalStrafeEngineTags
+        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. "vertical airfoil , vertical ground "
         autoNavigationAcceleration = autoNavigationAcceleration + verticalStrafeAcceleration
 
         local longitudinalEngineTags = 'thrust analog longitudinal '
@@ -7003,7 +7003,7 @@ function script.onFlush()
                                                 longitudinalEngineTags, axisCommandId.longitudinal)
 
         local lateralAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral, 0)
-        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. lateralStrafeEngineTags
+        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. "lateral airfoil , lateral ground " -- We handle the rest later
         autoNavigationAcceleration = autoNavigationAcceleration + lateralAcceleration
 
         -- Auto Navigation (Cruise Control)
@@ -7013,6 +7013,25 @@ function script.onFlush()
         end
         -- And let throttle do its thing separately
         Nav:setEngineForceCommand(longitudinalEngineTags, longitudinalAcceleration, keepCollinearity)
+
+        local verticalStrafeEngineTags = 'thrust analog vertical fueled '
+        local lateralStrafeEngineTags = 'thrust analog lateral fueled '
+
+        if ExtraLateralTags ~= "none" then lateralStrafeEngineTags = lateralStrafeEngineTags..ExtraLateralTags end
+        if ExtraVerticalTags ~= "none" then verticalStrafeEngineTags = verticalStrafeEngineTags..ExtraVerticalTags end
+
+        -- Vertical also handles the non-airfoils separately
+        if upAmount ~= 0 or (BrakeLanding and BrakeIsOn) then
+            Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity)
+        else
+           Nav:setEngineForceCommand(verticalStrafeEngineTags, vec3(), keepCollinearity) -- Reset vertical engines but not airfoils or ground
+        end
+
+        if LeftAmount ~= 0 then
+            Nav:setEngineForceCommand(lateralStrafeEngineTags, lateralAcceleration, keepCollinearity)
+        else
+            Nav:setEngineForceCommand(lateralStrafeEngineTags, vec3(), keepCollinearity) -- Reset vertical engines but not airfoils or ground
+        end
 
         if finalBrakeInput == 0 then -- If player isn't braking, use cruise assist braking
             finalBrakeInput = brakeInput2
@@ -7237,8 +7256,10 @@ function script.onActionStart(action)
         yawInput = yawInput + 1
     elseif action == "straferight" then
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.lateral, 1.0)
+        LeftAmount = 1
     elseif action == "strafeleft" then
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.lateral, -1.0)
+        LeftAmount = -1
     elseif action == "up" then
         upAmount = upAmount + 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
@@ -7411,8 +7432,10 @@ function script.onActionStop(action)
         yawInput = 0
     elseif action == "straferight" then
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.lateral, -1.0)
+        LeftAmount = 0
     elseif action == "strafeleft" then
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.lateral, 1.0)
+        LeftAmount = 0
     elseif action == "up" then
         upAmount = 0
         Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
