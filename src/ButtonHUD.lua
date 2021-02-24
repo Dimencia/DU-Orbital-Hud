@@ -3421,8 +3421,8 @@ function composeAxisAccelerationFromTargetSpeed(commandAxis, targetSpeed)
 
     local targetAxisSpeedMS = targetSpeed * constants.kph2m
 
-    if targetSpeedPID == nil then
-        targetSpeedPID = pid.new(1, 0, 10.0) -- The PID used to compute acceleration to reach target speed
+    if targetSpeedPID == nil then -- CHanged first param from 1 to 10...
+        targetSpeedPID = pid.new(10, 0, 10.0) -- The PID used to compute acceleration to reach target speed
     end
 
     targetSpeedPID:inject(targetAxisSpeedMS - currentAxisSpeedMS) -- update PID
@@ -5301,7 +5301,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.31
+    VERSION_NUMBER = 5.32
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6443,16 +6443,15 @@ function script.onTick(timerId)
                 -- We can try it with roll... 
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > minRollVelocity and atmosphere() > 0.01 then
-                    local maxRoll = utils.clamp(90-targetPitch,60,90) -- No downwards roll allowed :( 
-                    targetRoll = utils.clamp(targetYaw, -maxRoll, maxRoll)
+                    local maxRoll = utils.clamp(90-targetPitch*2,-90,90) -- No downwards roll allowed? :( 
+                    targetRoll = utils.clamp(targetYaw*2, -maxRoll, maxRoll)
                     local origTargetYaw = targetYaw
-                    -- I have no fucking clue why we add currentYaw to StallAngle when currentYaw is already potentially a large value outside of the velocity vector
-                    -- But it doesn't work otherwise and stalls if we don't do it like that.  I don't fucking know.  
-                    targetYaw = utils.clamp(utils.clamp((currentYaw-targetYaw)*math.cos(rollRad),currentYaw-YawStallAngle*0.85,currentYaw+YawStallAngle*0.85) + utils.clamp((targetPitch-adjustedPitch)*math.sin(math.rad(roll)),-YawStallAngle*0.85,YawStallAngle*0.85),currentYaw-YawStallAngle*0.85,currentYaw+YawStallAngle*0.85) --  Try signing the pitch component of this
+                    -- 4x weight to pitch consideration because yaw is often very weak compared and the pid needs help?
+                    targetYaw = utils.clamp(utils.clamp(targetYaw,-YawStallAngle*0.85,YawStallAngle*0.85)*math.cos(rollRad) + 4*(adjustedPitch-targetPitch)*math.sin(math.rad(roll)),-YawStallAngle*0.85,YawStallAngle*0.85) -- We don't want any yaw if we're rolled
                     targetPitch = utils.clamp(utils.clamp(targetPitch*math.cos(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85) + math.abs(utils.clamp(math.abs(origTargetYaw)*math.sin(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85)),-PitchStallAngle*0.85,PitchStallAngle*0.85) -- Always yaw positive 
                 else
                     targetRoll = 0
-                    targetYaw = utils.clamp((currentYaw-targetYaw),-90,90)
+                    targetYaw = utils.clamp(targetYaw,-90,90)
                 end-- We're just taking abs of the yaw for pitch, because we just want to pull up, and it rolled the right way already.
                 -- And the pitch now gets info about yaw too?
                 -- cos(roll) should give 0 at 90 and 1/-1 at 0 and 180
@@ -6462,7 +6461,7 @@ function script.onTick(timerId)
                 -- and pitch would be targetPitch*cos(roll) - targetYaw*sin(roll) cuz yaw and pitch are reversed from eachother
 
 
-                local yawDiff = targetYaw
+                local yawDiff = currentYaw-targetYaw
 
                 if not stalling and velMag > minRollVelocity and atmosphere() > 0.01 then
                     if (yawPID == nil) then
@@ -6527,7 +6526,7 @@ function script.onTick(timerId)
                     StrongBrakes = true -- We don't care about this or glide landing anymore and idk where all it gets used
                     
                     -- Fudge it with the distance we'll travel in a tick - or half that and the next tick accounts for the other? idk
-                    if not spaceLaunch and distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and velocity:project_on_plane(worldV):dot(targetVec:project_on_plane(worldV)) > 0.99 then 
+                    if not spaceLaunch and distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and (velocity:project_on_plane(worldV):normalize():dot(targetVec:project_on_plane(worldV):normalize()) > 0.99 or VectorStatus == "Finalizing Approach") then 
                         VectorStatus = "Finalizing Approach" 
                         if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
                             Nav.control.cancelCurrentControlMasterMode()

@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.32
+- Strengthened convergence of velocity vector to ship forward in atmosphere
+- Fixed issue allowing 'Finalizing Approach' to occur when the ship was not on target yet
+- Fixed erratic yaw behavior while rolling in atmosphere
+
 Version 5.31
 - Improved autopilot trajectory alignment weirdness that happened sometimes
 - Added ForceAlignment parameter to return to old AltitudeHold behavior of forcing the ship to face the velocity vector
