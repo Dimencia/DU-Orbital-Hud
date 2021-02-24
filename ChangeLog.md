@@ -1,10 +1,33 @@
 ## ChangeLog - Most recent changes at the top
+
 Version 5.31
 - Improved autopilot trajectory alignment weirdness that happened sometimes
 - Added ForceAlignment parameter to return to old AltitudeHold behavior of forcing the ship to face the velocity vector
 - Fixed cruise not swapping to throttled mode during reentry without a target
 - Fixed vertical/lateral engines firing against gravity at all times
 - 'Proceeding to Waypoint' only engages after reentry if you are at least 2km horizontally from the target, to give space to turn
+
+Version 5.300 - Surface-To-Surface Overhaul
+- Throttle Cruise system complete
+    - Alt+Mousewheel changes max speed in atmosphere, with a maximum of AtmoSpeedLimit (user parameter)
+    - Alt+Mousewheel changes shutoff velocity when in Autopilot in space
+    - Max speed shown as Limit: beside throttle above current speed
+- Autopilot to waypoints on other planets overhauled
+    - Aims at the correct yaw during takeoff
+    - Aims the trajectory directly at the target
+    - Begins autopilot as soon as there is line of sight to the target
+    - Brakes just before it reaches atmosphere
+    - Orbit to reach waypoints on the far sides of planets
+- Reentry Overhaul
+    - Smooth reentry
+    - Uses gravity for speed assist when high above atmosphere
+    - Aims for a reentry height where atmosphere is at 10%
+- Autopilot no longer has to do the 'Aligning' phase, and chooses an orbit point closest to your velocity vector
+- Autopilot now uses waypoints to interactively show you its targets through each phase
+- Better Autopilot trajectory convergence
+- New indicator for atmospheric/planetary collisions
+- Safer rolling in atmosphere
+- PARAMETER MODIFIED: StallAngle is now YawStallAngle and PitchStallAngle.  You will need to re-enter these
 
 Version 5.233
 - Fixed issue with displaying cruise throttle while in prograde alignment
