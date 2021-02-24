@@ -1,5 +1,19 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.32 - Fix VTOL performance.
+- Strengthened convergence of velocity vector to ship forward in atmosphere
+- Fixed issue allowing 'Finalizing Approach' to occur when the ship was not on target yet
+- Fixed erratic yaw behavior while rolling in atmosphere
+- User Parameter: ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
+
+Version 5.31
+- Improved autopilot trajectory alignment weirdness that happened sometimes
+- Added ForceAlignment parameter to return to old AltitudeHold behavior of forcing the ship to face the velocity vector
+- Fixed cruise not swapping to throttled mode during reentry without a target
+- Fixed vertical/lateral engines firing against gravity at all times
+- 'Proceeding to Waypoint' only engages after reentry if you are at least 2km horizontally from the target, to give space to turn
+- Fixed atmospheric exit waypoints from being unable to use pitch properly when rolling in atmosphere
+
 Version 5.300 - Surface-To-Surface Overhaul
 - Throttle Cruise system complete
     - Alt+Mousewheel changes max speed in atmosphere, with a maximum of AtmoSpeedLimit (user parameter)
