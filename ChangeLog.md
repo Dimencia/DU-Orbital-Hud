@@ -6,6 +6,7 @@ Version 5.31
 - Fixed cruise not swapping to throttled mode during reentry without a target
 - Fixed vertical/lateral engines firing against gravity at all times
 - 'Proceeding to Waypoint' only engages after reentry if you are at least 2km horizontally from the target, to give space to turn
+- Fixed atmospheric exit waypoints from being unable to use pitch properly when rolling in atmosphere
 
 Version 5.300 - Surface-To-Surface Overhaul
 - Throttle Cruise system complete
