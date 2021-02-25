@@ -7026,7 +7026,7 @@ function script.onFlush()
         --end
         if brakeInput2 > 0 then
             if ThrottleLimited and calculatedThrottle == 0.01 then
-                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- We clamped it to >0 before but, if braking and it was at that clamp, 0 is good.
+                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, LeftAmount*1000) -- We clamped it to >0 before but, if braking and it was at that clamp, 0 is good.
             end
         else -- For display purposes, keep calculatedThrottle positive in this case
             calculatedThrottle = utils.clamp(calculatedThrottle,0.01,1)
