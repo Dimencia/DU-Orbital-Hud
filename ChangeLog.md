@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.331
+- Fixed issue with space vertical thrusters introduced in 5.33
+
 Version 5.33
 - Fixed vertical adjustments affecting yaw unnecessarily
 
