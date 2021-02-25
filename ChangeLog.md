@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.33
+- Fixed vertical adjustments affecting yaw unnecessarily
+
 Version 5.32
 - Strengthened convergence of velocity vector to ship forward in atmosphere
 - Fixed issue allowing 'Finalizing Approach' to occur when the ship was not on target yet

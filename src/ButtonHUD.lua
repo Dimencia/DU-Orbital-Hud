@@ -123,6 +123,7 @@ LastMaxBrakeInAtmo = 0
 AntigravTargetAltitude = core.getAltitude()
 LastStartTime = 0
 SpaceTarget = false
+LeftAmount = 0
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate", "freeLookToggle", "turnAssist",
@@ -138,7 +139,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed",
-                        "ForceAlignment"}
+                        "ForceAlignment", "autoRollRollThreshold"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -3392,6 +3393,52 @@ function updateDistance()
     lastTravelTime = curTime
 end
 
+function composeAxisAccelerationFromTargetSpeedV(commandAxis, targetSpeed)
+
+    local axisCRefDirection = vec3()
+    local axisWorldDirection = vec3()
+
+    if (commandAxis == axisCommandId.longitudinal) then
+        axisCRefDirection = vec3(core.getConstructOrientationForward())
+        axisWorldDirection = vec3(core.getConstructWorldOrientationForward())
+    elseif (commandAxis == axisCommandId.vertical) then
+        axisCRefDirection = vec3(core.getConstructOrientationUp())
+        axisWorldDirection = vec3(core.getConstructWorldOrientationUp())
+    elseif (commandAxis == axisCommandId.lateral) then
+        axisCRefDirection = vec3(core.getConstructOrientationRight())
+        axisWorldDirection = vec3(core.getConstructWorldOrientationRight())
+    else
+        return vec3()
+    end
+
+    local gravityAcceleration = vec3(core.getWorldGravity())
+    local gravityAccelerationCommand = gravityAcceleration:dot(axisWorldDirection)
+
+    local airResistanceAcceleration = vec3(core.getWorldAirFrictionAcceleration())
+    local airResistanceAccelerationCommand = airResistanceAcceleration:dot(axisWorldDirection)
+
+    local currentVelocity = vec3(core.getVelocity())
+    local currentAxisSpeedMS = currentVelocity:dot(axisCRefDirection)
+
+    local targetAxisSpeedMS = targetSpeed * constants.kph2m
+
+    if targetSpeedPID2 == nil then -- CHanged first param from 1 to 10...
+        targetSpeedPID2 = pid.new(10, 0, 10.0) -- The PID used to compute acceleration to reach target speed
+    end
+
+    targetSpeedPID2:inject(targetAxisSpeedMS - currentAxisSpeedMS) -- update PID
+
+    local accelerationCommand = targetSpeedPID2:get()
+
+    local finalAcceleration = (accelerationCommand - airResistanceAccelerationCommand - gravityAccelerationCommand) * axisWorldDirection  -- Try to compensate air friction
+
+    -- The hell are these? Uncommented recently just in case they were important
+    --system.addMeasure("dynamic", "acceleration", "command", accelerationCommand)
+    --system.addMeasure("dynamic", "acceleration", "intensity", finalAcceleration:len())
+
+    return finalAcceleration
+end
+
 function composeAxisAccelerationFromTargetSpeed(commandAxis, targetSpeed)
 
     local axisCRefDirection = vec3()
@@ -3432,8 +3479,8 @@ function composeAxisAccelerationFromTargetSpeed(commandAxis, targetSpeed)
     local finalAcceleration = (accelerationCommand - airResistanceAccelerationCommand - gravityAccelerationCommand) * axisWorldDirection  -- Try to compensate air friction
 
     -- The hell are these? Uncommented recently just in case they were important
-    system.addMeasure("dynamic", "acceleration", "command", accelerationCommand)
-    system.addMeasure("dynamic", "acceleration", "intensity", finalAcceleration:len())
+    --system.addMeasure("dynamic", "acceleration", "command", accelerationCommand)
+    --system.addMeasure("dynamic", "acceleration", "intensity", finalAcceleration:len())
 
     return finalAcceleration
 end
@@ -6991,9 +7038,10 @@ function script.onFlush()
         local autoNavigationAcceleration = vec3()
         
 
-        local verticalStrafeAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.vertical,upAmount*1000)
-        autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. "vertical airfoil , vertical ground "
-        autoNavigationAcceleration = autoNavigationAcceleration + verticalStrafeAcceleration
+        local verticalStrafeAcceleration = composeAxisAccelerationFromTargetSpeedV(axisCommandId.vertical,upAmount*1000)
+        Nav:setEngineForceCommand("vertical airfoil , vertical ground ", verticalStrafeAcceleration, dontKeepCollinearity)
+        --autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. "vertical airfoil , vertical ground "
+        --autoNavigationAcceleration = autoNavigationAcceleration + verticalStrafeAcceleration
 
         local longitudinalEngineTags = 'thrust analog longitudinal '
         if ExtraLongitudeTags ~= "none" then longitudinalEngineTags = longitudinalEngineTags..ExtraLongitudeTags end
@@ -7023,7 +7071,7 @@ function script.onFlush()
         if upAmount ~= 0 or (BrakeLanding and BrakeIsOn) then
             Nav:setEngineForceCommand(verticalStrafeEngineTags, verticalStrafeAcceleration, keepCollinearity)
         else
-           Nav:setEngineForceCommand(verticalStrafeEngineTags, vec3(), keepCollinearity) -- Reset vertical engines but not airfoils or ground
+            Nav:setEngineForceCommand(verticalStrafeEngineTags, vec3(), keepCollinearity) -- Reset vertical engines but not airfoils or ground
         end
 
         if LeftAmount ~= 0 then
@@ -7262,11 +7310,15 @@ function script.onActionStart(action)
     elseif action == "up" then
         upAmount = upAmount + 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
-        Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
+        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+            Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
+        end
     elseif action == "down" then
         upAmount = upAmount - 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
-        Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
+        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+            Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
+        end
     elseif action == "groundaltitudeup" then
         OldButtonMod = holdAltitudeButtonModifier
         OldAntiMod = antiGravButtonModifier
@@ -7437,12 +7489,16 @@ function script.onActionStop(action)
         LeftAmount = 0
     elseif action == "up" then
         upAmount = 0
-        Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
+        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+            Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
+        end
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
         Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "down" then
         upAmount = 0
-        Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
+        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+            Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
+        end
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
         Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "groundaltitudeup" then
