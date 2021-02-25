@@ -5348,7 +5348,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.32
+    VERSION_NUMBER = 5.320
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
