@@ -5348,7 +5348,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.330
+    VERSION_NUMBER = 5.332
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -7310,15 +7310,12 @@ function script.onActionStart(action)
     elseif action == "up" then
         upAmount = upAmount + 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
-        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-            Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
-        end
+        Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
+        
     elseif action == "down" then
         upAmount = upAmount - 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
-        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-            Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
-        end
+        Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
     elseif action == "groundaltitudeup" then
         OldButtonMod = holdAltitudeButtonModifier
         OldAntiMod = antiGravButtonModifier
@@ -7489,16 +7486,12 @@ function script.onActionStop(action)
         LeftAmount = 0
     elseif action == "up" then
         upAmount = 0
-        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-            Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
-        end
+        Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
         Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "down" then
         upAmount = 0
-        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-            Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
-        end
+        Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
         Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "groundaltitudeup" then
