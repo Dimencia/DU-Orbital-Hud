@@ -5362,7 +5362,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.331
+    VERSION_NUMBER = 5.332
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -7074,7 +7074,6 @@ function script.onFlush()
         Nav:setEngineForceCommand("vertical airfoil , vertical ground ", verticalStrafeAcceleration, dontKeepCollinearity)
         --autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. "vertical airfoil , vertical ground "
         --autoNavigationAcceleration = autoNavigationAcceleration + verticalStrafeAcceleration
-        -- TODO: Vertical ground probably doesn't need to be here, gets overwritten later.  
 
         local longitudinalEngineTags = 'thrust analog longitudinal '
         if ExtraLongitudeTags ~= "none" then longitudinalEngineTags = longitudinalEngineTags..ExtraLongitudeTags end
@@ -7082,7 +7081,7 @@ function script.onFlush()
         local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
                                                 longitudinalEngineTags, axisCommandId.longitudinal)
 
-        local lateralAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral, 0)
+        local lateralAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral, LeftAmount*1000)
         autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. "lateral airfoil , lateral ground " -- We handle the rest later
         autoNavigationAcceleration = autoNavigationAcceleration + lateralAcceleration
 
@@ -7338,6 +7337,7 @@ function script.onActionStart(action)
         upAmount = upAmount + 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
+        
     elseif action == "down" then
         upAmount = upAmount - 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
