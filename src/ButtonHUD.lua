@@ -5348,7 +5348,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.331
+    VERSION_NUMBER = 5.330
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -7026,7 +7026,7 @@ function script.onFlush()
         --end
         if brakeInput2 > 0 then
             if ThrottleLimited and calculatedThrottle == 0.01 then
-                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, LeftAmount*1000) -- We clamped it to >0 before but, if braking and it was at that clamp, 0 is good.
+                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- We clamped it to >0 before but, if braking and it was at that clamp, 0 is good.
             end
         else -- For display purposes, keep calculatedThrottle positive in this case
             calculatedThrottle = utils.clamp(calculatedThrottle,0.01,1)
@@ -7042,7 +7042,6 @@ function script.onFlush()
         Nav:setEngineForceCommand("vertical airfoil , vertical ground ", verticalStrafeAcceleration, dontKeepCollinearity)
         --autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. "vertical airfoil , vertical ground "
         --autoNavigationAcceleration = autoNavigationAcceleration + verticalStrafeAcceleration
-        -- TODO: Vertical ground probably doesn't need to be here, gets overwritten later.  
 
         local longitudinalEngineTags = 'thrust analog longitudinal '
         if ExtraLongitudeTags ~= "none" then longitudinalEngineTags = longitudinalEngineTags..ExtraLongitudeTags end
@@ -7050,7 +7049,7 @@ function script.onFlush()
         local longitudinalAcceleration = Nav.axisCommandManager:composeAxisAccelerationFromThrottle(
                                                 longitudinalEngineTags, axisCommandId.longitudinal)
 
-        local lateralAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral, 0)
+        local lateralAcceleration = composeAxisAccelerationFromTargetSpeed(axisCommandId.lateral, LeftAmount*1000)
         autoNavigationEngineTags = autoNavigationEngineTags .. ' , ' .. "lateral airfoil , lateral ground " -- We handle the rest later
         autoNavigationAcceleration = autoNavigationAcceleration + lateralAcceleration
 
@@ -7311,11 +7310,15 @@ function script.onActionStart(action)
     elseif action == "up" then
         upAmount = upAmount + 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
-        Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
+        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+            Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
+        end
     elseif action == "down" then
         upAmount = upAmount - 1
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
-        Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
+        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+            Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
+        end
     elseif action == "groundaltitudeup" then
         OldButtonMod = holdAltitudeButtonModifier
         OldAntiMod = antiGravButtonModifier
@@ -7486,12 +7489,16 @@ function script.onActionStop(action)
         LeftAmount = 0
     elseif action == "up" then
         upAmount = 0
-        Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
+        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+            Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, -1.0)
+        end
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
         Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "down" then
         upAmount = 0
-        Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
+        if not AtmoSpeedAssist or Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+            Nav.axisCommandManager:updateCommandFromActionStop(axisCommandId.vertical, 1.0)
+        end
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
         Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "groundaltitudeup" then
