@@ -1,7 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
 Version 5.332
-- Attempted fix for lateral strafe engines
+- Fix for lateral strafe engines
 
 Version 5.331
 - Fixed issue with space vertical thrusters introduced in 5.33
