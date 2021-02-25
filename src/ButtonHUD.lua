@@ -5406,9 +5406,12 @@ function script.onStart()
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
-        navLightSwitch.activate()
-        headLightSwitch.activate()
-        fuelDisplaySwitch.activate()
+        if navLightSwitch ~= nil then
+            navLightSwitch.activate()
+        end
+        if headLightSwitch ~= nil then
+            headLightSwitch.activate()
+        end
     end)
 
 end
@@ -5461,14 +5464,17 @@ function script.onStop()
     if button then
         button.activate()
     end
-    navLightSwitch.deactivate()
-    fuelDisplaySwitch.deactivate()
+    if navLightSwitch ~= nil then
+        navLightSwitch.deactivate()
+    end
 
 end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
-        navBlinkSwitch.deactivate()
+        if navBlinkSwitch ~= nil then
+            navBlinkSwitch.deactivate()
+        end
         if atmosphere() > 0 and not WasInAtmo then
             if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and AtmoSpeedAssist and (AltitudeHold or Reentry) then
                 -- If they're reentering atmo from cruise, and have atmo speed Assist
@@ -5559,7 +5565,9 @@ function script.onTick(timerId)
             end
         end        
     elseif timerId == "oneSecond" then
-        navBlinkSwitch.activate()
+        if navBlinkSwitch ~= nil then
+            navBlinkSwitch.activate()
+        end
         -- Timer for evaluation every 1 second
         clearAllCheck = false
         RefreshLastMaxBrake(nil, true) -- force refresh, in case we took damage
@@ -6833,11 +6841,13 @@ function script.onTick(timerId)
                 end
         end
 
-        local groundHeight = core.getAltitude()
-        if (groundHeight < HeadlightGroundHeight) then
-            headLightSwitch.activate()
-        else
-            headLightSwitch.deactivate()
+        if headLightSwitch ~= nil then
+            local groundHeight = core.getAltitude()
+            if groundHeight < HeadlightGroundHeight then
+                headLightSwitch.activate()
+            else
+                headLightSwitch.deactivate()
+            end
         end
     end
 end

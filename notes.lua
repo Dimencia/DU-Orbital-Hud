@@ -25,26 +25,38 @@ end
 
 function script.onStart()
     beginSetup = coroutine.create(function()
-        navLightSwitch.activate()
-        headLightSwitch.activate()
+        if navLightSwitch ~= nil then
+            navLightSwitch.activate()
+        end
+        if headLightSwitch ~= nil then
+            headLightSwitch.activate()
+        end
     end)
 end
 
 function script.onStop()
-    navLightSwitch.deactivate()
+    if navLightSwitch ~= nil then
+        navLightSwitch.deactivate()
+    end
 end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
-        navBlinkSwitch.deactivate()
+        if navBlinkSwitch ~= nil then
+            navBlinkSwitch.deactivate()
+        end
     elseif timerId == "oneSecond" then
-        navBlinkSwitch.activate()
+        if navBlinkSwitch ~= nil then
+            navBlinkSwitch.activate()
+        end
     elseif timerId == "apTick" then
-        local groundHeight = core.getAltitude()
-        if (groundHeight < HeadlightGroundHeight) then
-            headLightSwitch.activate()
-        else
-            headLightSwitch.deactivate()
+        if headLightSwitch ~= nil then
+            local groundHeight = core.getAltitude()
+            if groundHeight < HeadlightGroundHeight then
+                headLightSwitch.activate()
+            else
+                headLightSwitch.deactivate()
+            end
         end
     end
 end
