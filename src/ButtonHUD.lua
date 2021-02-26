@@ -6531,7 +6531,6 @@ function script.onTick(timerId)
                     end
                 end
 
-                system.print(currentYaw .. " - " .. targetYaw .. " gives a yaw input of " .. yawInput2)
 
                 if CustomTarget ~= nil and not spaceLaunch then
                     --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
