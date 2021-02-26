@@ -87,6 +87,8 @@ CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLandi
 autoRollRollThreshold = 0 --export: (Default: 0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
 AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric speeds should be limited to a maximum of AtmoSpeedLimit
 ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
+minRollVelocity = 150 --export: (Default: 150) Min velocity, in m/s, over which advanced rolling can occur
+
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -139,7 +141,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed",
-                        "ForceAlignment", "autoRollRollThreshold"}
+                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -5348,7 +5350,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.332
+    VERSION_NUMBER = 5.333
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5738,8 +5740,7 @@ function script.onTick(timerId)
         local currentPitch = math.deg(signedRotationAngle(constrR, velocity, constrF)) -- Let's use a consistent func that uses global velocity
 
         stalling = inAtmo and currentYaw < -YawStallAngle or currentYaw > YawStallAngle or currentPitch < -PitchStallAngle or currentPitch > PitchStallAngle
-        local minRollVelocity = 150 -- Min velocity over which advanced rolling can occur
-
+        
         deltaX = system.getMouseDeltaX()
         deltaY = system.getMouseDeltaY()
         if InvertMouse and not holdingCtrl then deltaY = -deltaY end
@@ -6498,7 +6499,7 @@ function script.onTick(timerId)
                     targetPitch = utils.clamp(utils.clamp(targetPitch*math.cos(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85) + math.abs(utils.clamp(math.abs(origTargetYaw)*math.sin(rollRad),-PitchStallAngle*0.85,PitchStallAngle*0.85)),-PitchStallAngle*0.85,PitchStallAngle*0.85) -- Always yaw positive 
                 else
                     targetRoll = 0
-                    targetYaw = utils.clamp(targetYaw,-90,90)
+                    targetYaw = utils.clamp(targetYaw,-YawStallAngle*0.85,YawStallAngle*0.85)
                 end-- We're just taking abs of the yaw for pitch, because we just want to pull up, and it rolled the right way already.
                 -- And the pitch now gets info about yaw too?
                 -- cos(roll) should give 0 at 90 and 1/-1 at 0 and 180
@@ -6512,9 +6513,8 @@ function script.onTick(timerId)
 
                 if not stalling and velMag > minRollVelocity and atmosphere() > 0.01 then
                     if (yawPID == nil) then
-                        yawPID = pid.new(5 * 0.01, 0, 5 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                        yawPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
                     end
-                    --yawPID:inject(yawDiff) -- Aim for 85% stall angle, not full
                     yawPID:inject(yawDiff)
                     local autoYawInput = utils.clamp(yawPID:get(),-1,1) -- Keep it reasonable so player can override
                     yawInput2 = yawInput2 + autoYawInput
@@ -6530,6 +6530,8 @@ function script.onTick(timerId)
                         targetPitch = utils.clamp(adjustedPitch-currentPitch,adjustedPitch - PitchStallAngle*0.85, adjustedPitch + PitchStallAngle*0.85) -- Just try to get within un-stalling range to not bounce too much
                     end
                 end
+
+                system.print(currentYaw .. " - " .. targetYaw .. " gives a yaw input of " .. yawInput2)
 
                 if CustomTarget ~= nil and not spaceLaunch then
                     --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
@@ -6816,6 +6818,46 @@ function script.onTick(timerId)
                     desiredBaseAltitude = AntigravTargetAltitude
                     antigrav.setBaseAltitude(desiredBaseAltitude)
                 end
+        end
+
+        if AchieveOrbit then -- Try to achieve an orbit.  This should only be on when in space.  
+            local orbitAltitude = 1000
+            if planet.name ~= "Space" then
+                if planet.hasAtmosphere then 
+                    orbitAltitude = math.floor(planet.radius*(TargetOrbitRadius-1) + planet.noAtmosphericDensityAltitude)
+                else
+                    orbitAltitude = math.floor(planet.radius*(TargetOrbitRadius-1) + planet.surfaceMaxAltitude)
+                end
+            else
+                orbitAltitude = 1000
+            end
+
+            local _, endSpeed = Kep(planet):escapeAndOrbitalSpeed((worldPos-planet.center):len()-planet.radius)
+
+            autoRoll = true
+
+            -- Using the AutopilotTargetOrbit we would calculate for our current nearest planet
+            -- Figure out a target vector that our velocity should be at - that is, perpendicular to gravity, and toward CustomTarget if not nil
+            -- Otherwise ship forward if not orbiting to target
+            local targetVelocityVector
+            if OrbitToTarget and CustomTarget ~= nil then
+                -- So we need a vector pointing from our position to the target
+                -- And project it on a plane defined by worldV, easy
+                -- Not sure if we need the first normalize or not, might as well
+                targetVelocityVector = (target.position-worldPos):normalize():project_on_plane(worldV):normalize()
+            else
+                targetVelocityVector = constrF:project_on_plane(worldV):normalize()
+            end
+
+            -- Adjust the vector to account for being above or below target altitude
+            targetVelocityVector = targetVelocityVector * endSpeed -- Scale based on target speed, and we'll use an un-normalized velocity vector to compare
+            targetVelocityVector = (targetVelocityVector + -worldV*(coreAltitude - orbitAltitude)):normalize()*endSpeed -- Make sure velocity stays capped
+
+            -- So, this is exactly what we want our velocity vector to look like
+
+
+            -- Soo... nothing I do with this is going to really get it to stabilize at an altitude, which is the problem
+            -- To do that, we really need to get vspeed to 0
         end
     end
 end
