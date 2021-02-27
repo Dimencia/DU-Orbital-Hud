@@ -1,5 +1,12 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.334
+- Removed print leftover from 5.333
+
+Version 5.333
+- User Parameter: minRollVelocity = 150 --export: (Default: 150) Min velocity, in m/s, over which advanced rolling can occur
+- Fixed excessive yawing during autopilot causing it to overshoot target angle and trigger stalls
+
 Version 5.332
 - Fix for lateral strafe engines
 
