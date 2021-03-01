@@ -5350,7 +5350,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.333
+    VERSION_NUMBER = 5.335
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6531,7 +6531,6 @@ function script.onTick(timerId)
                     end
                 end
 
-                system.print(currentYaw .. " - " .. targetYaw .. " gives a yaw input of " .. yawInput2)
 
                 if CustomTarget ~= nil and not spaceLaunch then
                     --local distanceToTarget = targetVec:project_on(velocity):len() -- Probably not strictly accurate with curvature but it should work
