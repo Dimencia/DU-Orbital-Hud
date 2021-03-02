@@ -5350,7 +5350,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.335
+    VERSION_NUMBER = 5.336
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5457,6 +5457,27 @@ end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
+        if atmosphere() > 0 and atmosphere() < 0.1 and not InSpaceRange and not EngagedSpace and not Reentry then -- Reentry handles this
+            InSpaceRange = true
+            EngagedSpace = true
+            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                WaitingToThrottle = true
+                Nav.control.cancelCurrentControlMasterMode() -- Go to cruise if it's the first tick in atmosphere space range
+                -- But prevent it from resetting PlayerThrottle
+                WasInCruise = true
+            end
+        elseif InSpaceRange and EngagedSpace and WaitingToThrottle then
+            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                Nav.control.cancelCurrentControlMasterMode() -- Go back to throttle on the second tick
+                WasInCruise = false -- And prevent the reset
+            end
+            WaitingToThrottle = false
+        elseif InSpaceRange and (atmosphere() >= 0.1 or atmosphere() == 0) then
+            InSpaceRange = false
+            EngagedSpace = false
+            WaitingToThrottle = false
+        end
+
         if atmosphere() > 0 and not WasInAtmo then
             if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and AtmoSpeedAssist and (AltitudeHold or Reentry) then
                 -- If they're reentering atmo from cruise, and have atmo speed Assist
@@ -7040,10 +7061,11 @@ function script.onFlush()
             -- And I think it was, 0.5, 0, 0.001 is smooth, but gets some braking early
             -- 0.5, 0, 1 is v good.  One early braking bit then stabilizes easily .  10 as the last is way too much, it's bouncy.  Even 2.  1 will do
         end
-        throttlePID:inject((adjustedAtmoSpeedLimit/3.6 - constructVelocity:dot(constructForward)))
+        -- Add in vertical speed as well as the front speed, to help with ships that have very bad brakes
+        throttlePID:inject(adjustedAtmoSpeedLimit/3.6 - constructVelocity:dot(constructForward))
         local pidGet = throttlePID:get()
         calculatedThrottle = utils.clamp(pidGet,-1,1)
-        if calculatedThrottle < PlayerThrottle and (atmosphere > 0.05 or (atmosphere > 0.01 and vSpd < 0)) then -- Don't limit throttle in low atmo unless descending
+        if calculatedThrottle < PlayerThrottle and (atmosphere > 0.005) then -- We can limit throttle all the way to 0.05% probably
             ThrottleLimited = true
             Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, utils.clamp(calculatedThrottle,0.01,1))
         else
@@ -7059,7 +7081,7 @@ function script.onFlush()
         end
         brakePID:inject(constructVelocity:len() - (adjustedAtmoSpeedLimit/3.6)) 
         local calculatedBrake = utils.clamp(brakePID:get(),0,1)
-        if (atmosphere > 0 and vSpd < -80) or atmosphere > 0.05 then -- Don't brake-limit them at <5% atmo if going up (or mostly up), it's mostly safe up there and displays 0% so people would be mad
+        if (atmosphere > 0 and vSpd < -80) or atmosphere > 0.005 then -- Don't brake-limit them at <5% atmo if going up (or mostly up), it's mostly safe up there and displays 0% so people would be mad
             brakeInput2 = calculatedBrake
         end
         --if calculatedThrottle < 0 then

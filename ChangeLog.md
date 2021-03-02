@@ -1,5 +1,9 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.336
+- Added assistance to fix a DU bug with space engines engaging at low or no power
+- Adjusted speed limiting when leaving/exiting atmo to occur down to 0.5% atmo instead of 5%
+
 Version 5.335
 - Fixed stupid version number
 
