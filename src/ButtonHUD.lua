@@ -6380,7 +6380,6 @@ function script.onTick(timerId)
         if VertTakeOff then
             local targetPitch = 0
             local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
-            system.print("pitch: " .. currentPitch)
             if inAtmo and atmosphere() > 0.08 then -- Go straight up
                 if upVel < VertBrakeHold then
                     BrakeIsOn = true
