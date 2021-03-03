@@ -89,7 +89,8 @@ AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric spee
 HeadlightGroundHeight = 150 --export: (Default: 150) Controls altitude to turn on/off Headlights. Turns off above value
 ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
 minRollVelocity = 150 --export: (Default: 150) Min velocity, in m/s, over which advanced rolling can occur
-
+VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct. Will VTOL on AutoTakeOff.
+VertBrakeHold = 30 --export: (Default: 30) Threshold of m/s vertical velocity before letting go of the brakes to allow engine warmup.
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -102,6 +103,7 @@ AltitudeHold = false
 BrakeLanding = false
 AutoTakeoff = false
 Reentry = false
+VertTakeOff = false
 HoldAltitude = 1000 -- In case something goes wrong, give this a decent start value
 AutopilotAccelerating = false
 AutopilotRealigned = false
@@ -1033,11 +1035,16 @@ function ToggleAutoTakeoff()
             ToggleAltitudeHold()
         end
     else
-        if not AltitudeHold then
-            ToggleAltitudeHold()
+        if VertTakeOffEngine then
+            VertTakeOff = true
+            AltitudeHold = false
+        else
+            if not AltitudeHold then
+                ToggleAltitudeHold()
+            end
+            AutoTakeoff = true
+            HoldAltitude = coreAltitude + AutoTakeoffAltitude
         end
-        AutoTakeoff = true
-        HoldAltitude = coreAltitude + AutoTakeoffAltitude
         GearExtended = false
         Nav.control.retractLandingGears()
         Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard set this for takeoff, you wouldn't use takeoff from a hangar
@@ -1403,6 +1410,7 @@ function clearAll()
         BrakeLanding = false
         BrakeIsOn = false
         AutoTakeoff = false
+        VertTakeOff = false
         followMode = false
         apThrottleSet = false
         spaceLand = false
@@ -5364,7 +5372,7 @@ end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.335
+    VERSION_NUMBER = 5.336
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6368,7 +6376,56 @@ function script.onTick(timerId)
                 pitchInput2 = autoPitchInput
             end
         end
-        
+
+        if VertTakeOff then
+            local targetPitch = 0
+            local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
+            system.print("pitch: " .. currentPitch)
+            if inAtmo and atmosphere() > 0.08 then -- Go straight up
+                if upVel < VertBrakeHold then
+                    BrakeIsOn = true
+                else
+                    BrakeIsOn = false
+                end
+                upAmount = upAmount + 1
+                Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
+                Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
+            elseif atmosphere() < 0.08 and atmosphere() > 0 then -- stop , pitch up, and start moving away from planet.
+                if upVel < VertBrakeHold then
+                    BrakeIsOn = true
+                else
+                    BrakeIsOn = false
+                end
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 3000)
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
+                local autoPitchThreshold = 0
+                if math.abs(targetPitch - currentPitch) > autoPitchThreshold then
+                    if (vTpitchPID == nil) then
+                        vTpitchPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
+                    end
+                    vTpitchPID:inject(targetPitch - currentPitch)
+                    local autoPitchInput = vTpitchPID:get()
+    
+                    pitchInput2 = autoPitchInput
+                end
+            else --Out of planet atmo
+                BrakeIsOn = true
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
+                PlayerThrottle = 0
+                upAmount = 0
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 0)
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
+                if atmosphere() == 0 then
+                    VertTakeOff = false --turn it off when we are beyond atmo
+                end
+            end
+        end
+
         if AltitudeHold or BrakeLanding or Reentry or VectorToTarget or LockPitch ~= nil then
             -- HoldAltitude is the alt we want to hold at
             local nearPlanet = unit.getClosestPlanetInfluence() > 0
@@ -7336,6 +7393,7 @@ function script.onActionStart(action)
                 StrongBrakes = true -- We don't care about this anymore
                 Reentry = false
                 AutoTakeoff = false
+                VertTakeOff = false
                 AltitudeHold = false
                 BrakeLanding = true
                 autoRoll = true
