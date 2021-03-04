@@ -1282,6 +1282,7 @@ function BrakeToggle()
         AltitudeHold = false
         VectorToTarget = false
         AutoTakeoff = false
+        VertTakeOff = false
         Reentry = false
         -- We won't abort interplanetary because that would fuck everyone.
         ProgradeIsOn = false -- No reason to brake while facing prograde, but retrograde yes.
@@ -1292,6 +1293,7 @@ function BrakeToggle()
         autoRoll = autoRollPreference
         spaceLand = false
         finalLand = false
+        upAmount = 0
     end
 end
 
@@ -2810,6 +2812,18 @@ function DrawWarnings(newContent)
             local displayText, displayUnit = getDistanceDisplayString2(HoldAltitude)
             newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Altitude Hold: %s</text>]],
                                               warningX, apY, displayText.. displayUnit)
+        end
+    end
+    if VertTakeOff then
+        if atmosphere() > 0.1 then
+            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Beginning ascent to space</text>]],
+            warningX, apY)
+        elseif atmosphere() < 0.09 and atmosphere() > 0.01 then
+            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Aligning trajectory and moving away from planet</text>]],
+            warningX, apY)
+        elseif atmosphere() < 0.01 then
+            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Heading to orbit distance and engaging autopilot<br>Standby</text>]],
+            warningX, apY)
         end
     end
     if BrakeLanding then
@@ -6378,7 +6392,8 @@ function script.onTick(timerId)
         end
 
         if VertTakeOff then
-            local targetPitch = 0
+            Autopilot = false -- make sure to shut this off for now
+            AltitudeHold = false -- Doesn't work for vtol. Shut this off for now.
             local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
             if inAtmo and atmosphere() > 0.08 then -- Go straight up
                 if upVel < VertBrakeHold then
@@ -6390,39 +6405,68 @@ function script.onTick(timerId)
                 Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
                 Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1.0)
             elseif atmosphere() < 0.08 and atmosphere() > 0 then -- stop , pitch up, and start moving away from planet.
+                local tPitch = 55
                 if upVel < VertBrakeHold then
                     BrakeIsOn = true
                 else
                     BrakeIsOn = false
                 end
+                local autoPitchThreshold = 0
+                if math.abs(tPitch - adjustedPitch) > autoPitchThreshold then -- Pitch adjustment
+                    if (vTpitchPID == nil) then
+                        vTpitchPID = pid.new(2 * 0.01, 0, 2 * 0.1)
+                    end
+                    vTpitchPID:inject(tPitch - adjustedPitch)
+                    local autoPitchInput = vTpitchPID:get()
+
+                    -- system.print("Auto: " .. autoPitchInput) -- for debugging
+                    pitchInput2 = autoPitchInput
+                end
                 if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                     Nav.control.cancelCurrentControlMasterMode()
                 end
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 3000)
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
-                local autoPitchThreshold = 0
-                if math.abs(targetPitch - currentPitch) > autoPitchThreshold then
-                    if (vTpitchPID == nil) then
-                        vTpitchPID = pid.new(2 * 0.01, 0, 2 * 0.1) -- magic number tweaked to have a default factor in the 1-10 range
-                    end
-                    vTpitchPID:inject(targetPitch - currentPitch)
-                    local autoPitchInput = vTpitchPID:get()
-    
-                    pitchInput2 = autoPitchInput
-                end
-            else --Out of planet atmo
-                BrakeIsOn = true
-                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-                    Nav.control.cancelCurrentControlMasterMode()
-                end
-                PlayerThrottle = 0
                 upAmount = 0
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 0)
-                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
-                if atmosphere() == 0 then
-                    VertTakeOff = false --turn it off when we are beyond atmo
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 3000)
+                Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
+                Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 0)
+            else -- Out of planet atmo, get to orbit
+                local planetname = planet.name
+                local autopilotEntry = {}
+                for i=1,100 do
+                    local atlasIndex = AtlasOrdered[i].index
+                    local vapEntry = atlas[0][atlasIndex]
+                    if (vapEntry.name == planetname) then
+                        if AutopilotTargetIndex == 0 then -- Change IP Target if none selected
+                            AutopilotTargetIndex = i
+                            UpdateAutopilotTarget()
+                        end
+                        autopilotEntry = vapEntry
+                        break
+                    end
+                end
+                local vTargetOrbit = 0
+                if autopilotEntry.hasAtmosphere then 
+                    vTargetOrbit = math.floor(autopilotEntry.radius*(TargetOrbitRadius-1) + autopilotEntry.noAtmosphericDensityAltitude)
+                else
+                    vTargetOrbit = math.floor(autopilotEntry.radius*(TargetOrbitRadius-1) + autopilotEntry.surfaceMaxAltitude)
+                end
+                if atmosphere() == 0 and coreAltitude > vTargetOrbit then -- when orbit is reached, set throttle to 100% and engage autopilot
+                    BrakeIsOn = false
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                        Nav.control.cancelCurrentControlMasterMode()
+                    end
+                    PlayerThrottle = 1
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 1)
+                    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
+                    if VertTakeOff then
+                        VertTakeOff = false -- Stop the function
+                    end
+                    if not AutoPilot then
+                        ToggleAutopilot()
+                    end
                 end
             end
+            -- system.print("Detected: " .. adjustedPitch) -- for debugging
         end
 
         if AltitudeHold or BrakeLanding or Reentry or VectorToTarget or LockPitch ~= nil then
