@@ -6432,7 +6432,7 @@ function script.onTick(timerId)
             else -- Out of planet atmo, get to orbit
                 local planetname = planet.name
                 local autopilotEntry = {}
-                for i=1,100 do
+                for i=1,#AtlasOrdered do
                     local atlasIndex = AtlasOrdered[i].index
                     local vapEntry = atlas[0][atlasIndex]
                     if (vapEntry.name == planetname) then
