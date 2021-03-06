@@ -16,9 +16,12 @@ InvertMouse = false -- export: (Default: false) If true, then when controlling f
 userControlScheme = "virtual joystick" -- export: (Default: "virtual joystick") Set to "virtual joystick", "mouse", or "keyboard"
 ResolutionX = 1920 -- export: (Default: 1920) Does not need to be set to same as game resolution.  You can set 1920 on a 2560 to get larger resolution
 ResolutionY = 1080 -- export: (Default: 1080) Does not need to be set to same as game resolution.  You can set 1080 on a 1440 to get larger resolution
-PrimaryR = 130 -- export: (Default: 130) Primary HUD color
-PrimaryG = 224 -- export: (Default: 224) Primary HUD color
-PrimaryB = 255 -- export: (Default: 255) Primary HUD color
+SafeR = 130 -- export: (Default: 130) Primary HUD color
+SafeG = 224 -- export: (Default: 224) Primary HUD color
+SafeB = 255 -- export: (Default: 255) Primary HUD color
+PvPR = 255 -- export: (Default: 255) PvP HUD color
+PvPG = 0 -- export: (Default: 0) PvP HUD color
+PvPB = 0 -- export: (Default: 0) PvP HUD color
 centerX = 960 -- export: (Default: 960) X postion of Artifical Horizon (KSP Navball), Default 960. Use centerX=700 and centerY=880 for lower left placement.
 centerY = 540 -- export: (Default: 540) Y postion of Artifical Horizon (KSP Navball), Default 540. Use centerX=700 and centerY=880 for lower left placement. 
 throtPosX = 1300 -- export: (Default: 1300) X position of Throttle Indicator, default 1300 to put it to right of default AH centerX parameter.
@@ -129,7 +132,7 @@ LeftAmount = 0
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate", "freeLookToggle", "turnAssist",
-                        "PrimaryR", "PrimaryG", "PrimaryB", "warmup", "DeadZone", "circleRad", "MouseXSensitivity",
+                        "SafeR", "SafeG", "SafeB", "warmup", "DeadZone", "circleRad", "MouseXSensitivity",
                         "MouseYSensitivity", "MaxGameVelocity", "showHud", "autoRollPreference", "InvertMouse",
                         "pitchSpeedFactor", "yawSpeedFactor", "rollSpeedFactor", "brakeSpeedFactor",
                         "brakeFlatFactor", "autoRollFactor", "turnAssistFactor", "torqueFactor",
@@ -141,7 +144,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed",
-                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity"}
+                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "PvPR", "PvPG", "PvPB"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -173,6 +176,12 @@ function round(num, numDecimalPlaces)
 end
 
 -- Variables that we declare local outside script because they will be treated as global but get local effectiveness
+local PrimaryR = SafeR
+local PrimaryB = SafeB
+local PrimaryG = SafeG
+local pvpZone = false
+local pvpDist = 0
+local pvpName = ""
 local PlayerThrottle = 0
 local brakeInput2 = 0
 local ThrottleLimited = false
@@ -292,11 +301,6 @@ local ahDoubleClick = 0
 local adjustedAtmoSpeedLimit = AtmoSpeedLimit
 
 -- BEGIN FUNCTION DEFINITIONS
-
-function round(num, numDecimalPlaces)
-    local mult = 10^(numDecimalPlaces or 0)
-    return math.floor(num * mult + 0.5) / mult
-  end
 
 function LoadVariables()
     if dbHud_1 then
@@ -1959,6 +1963,9 @@ function UpdateHud(newContent)
     local throt = mfloor(unit.getThrottle())
     local spd = speed * 3.6
     local flightValue = unit.getAxisCommandValue(0)
+    local pvpBoundaryX = ConvertResolutionX(1770)
+    local pvpBoundaryY = ConvertResolutionY(310)
+
     if AtmoSpeedAssist and Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
         flightValue = PlayerThrottle
         throt = PlayerThrottle*100
@@ -1978,6 +1985,16 @@ function UpdateHud(newContent)
             roll = 0
         end
         bottomText = "YAW"
+    end
+
+    if pvpDist > 50000 and not inAtmo then
+        local dist
+        if pvpDist > 200000 then
+            dist = round((pvpDist/200000),2).." su"
+        else
+            dist = round((pvpDist/1000),1).." km"
+        end
+        newContent[#newContent + 1] = stringf([[<text class="pbright txtbig txtmid" x="%d" y="%d">PvP Boundary: %s</text>]], pvpBoundaryX, pvpBoundaryY, dist)
     end
 
     -- CRUISE/ODOMETER
@@ -2049,6 +2066,17 @@ function IsInFreeLook()
 end
 
 function HUDPrologue(newContent)
+    if not pvpZone then -- misnamed variable, fix later
+        PrimaryR = PvPR
+        PrimaryG = PvPG
+        PrimaryB = PvPB
+    else
+        PrimaryR = SafeR
+        PrimaryG = SafeG
+        PrimaryB = SafeB
+    end
+    rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) .. [[)]]
+    rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..   mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]    
     local bright = rgb
     local dim = rgbdim
     local brightOrig = rgb
@@ -5348,9 +5376,28 @@ function Kinematics()
     return Kinematic
 end
 
+function safeZone(WorldPos) -- Thanks to @SeM for the base code, modified to work with existing Atlas
+    local radius = 500000
+    local distsz, distp, key = math.huge
+    local safe = false
+    local safeWorldPos = vec3({13771471,7435803,-128971})
+    local safeRadius = 18000000 
+    distsz = vec3(WorldPos):dist(safeWorldPos)
+    if distsz < safeRadius then  
+        return true, math.abs(distsz - safeRadius), "Safe Zone", 0
+    end
+    distp = vec3(WorldPos):dist(vec3(planet.center))
+    if distp < radius then safe = true end
+    if math.abs(distp - radius) < math.abs(distsz - safeRadius) then 
+        return safe, math.abs(distp - radius), planet.name, planet.bodyId
+    else
+        return safe, math.abs(distsz - safeRadius), "Safe Zone", 0
+    end
+  end
+
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.336
+    VERSION_NUMBER = 5.340
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5396,7 +5443,6 @@ function script.onStart()
         end
 
     end)
-
 end
 
 function SaveDataBank(copy)
@@ -5641,6 +5687,7 @@ function script.onTick(timerId)
     elseif timerId == "hudTick" then
 
         local newContent = {}
+        
         HUDPrologue(newContent)
 
         if showHud then
@@ -5761,6 +5808,8 @@ function script.onTick(timerId)
         local currentPitch = math.deg(signedRotationAngle(constrR, velocity, constrF)) -- Let's use a consistent func that uses global velocity
 
         stalling = inAtmo and currentYaw < -YawStallAngle or currentYaw > YawStallAngle or currentPitch < -PitchStallAngle or currentPitch > PitchStallAngle
+
+        pvpZone, pvpDist, pvpName, _ = safeZone(worldPos)
         
         deltaX = system.getMouseDeltaX()
         deltaY = system.getMouseDeltaY()
@@ -5882,6 +5931,7 @@ function script.onTick(timerId)
         if coreAltitude == 0 then
             coreAltitude = (vec3(core.getConstructWorldPos()) - planet.center):len() - planet.radius
         end
+
         if ProgradeIsOn then
             if spaceLand then 
                 BrakeIsOn = false -- wtf how does this keep turning on, and why does it matter if we're in cruise?

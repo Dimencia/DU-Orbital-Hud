@@ -1,5 +1,14 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.340 - PvP Distance flagging
+- Hud now monitors for PvP space or not.  If in PvP Space, hud will change to PvP color (red default), if in safe space or atmo, Safe color (the pale blue default)
+- Added pvpHud colors.  If you dont want the change, set them the same value as Safe.
+- Hud colors will update on the fly if you use the /G command while in seat (i.e. /G SafeB 0 will turn the hud green)
+- SafeR, SafeG, SafeB and PvPR, PvPG, PvPB are now the RGB definers for the two hud colors.  You will need to change them if you do not use default colors.
+- FYI, you can use /addlocation SafeZoneCenter ::pos{0,0,13771471,7435803,-128971}  to set a saved location of the center of the SafeZone.
+- Distance to PvP Boundary displayed above Radar Jammed / Radar Contacts in upper right if > 50km from boundary.  (otherwise the vanilla game displays the distance top right if < 50km)
+- Removed extra function round declaration
+
 Version 5.336
 - Added assistance to fix a DU bug with space engines engaging at low or no power
 - Adjusted speed limiting when leaving/exiting atmo to occur down to 0.5% atmo instead of 5%
