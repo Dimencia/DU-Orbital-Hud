@@ -5561,27 +5561,6 @@ function script.onTick(timerId)
         if navBlinkSwitch ~= nil then
             navBlinkSwitch.deactivate()
         end
-        if atmosphere() > 0 and atmosphere() < 0.1 and not InSpaceRange and not EngagedSpace and not Reentry and not VertTakeOff then -- Reentry handles this
-            InSpaceRange = true
-            EngagedSpace = true
-            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
-                WaitingToThrottle = true
-                Nav.control.cancelCurrentControlMasterMode() -- Go to cruise if it's the first tick in atmosphere space range
-                -- But prevent it from resetting PlayerThrottle
-                WasInCruise = true
-            end
-        elseif InSpaceRange and EngagedSpace and WaitingToThrottle then
-            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-                Nav.control.cancelCurrentControlMasterMode() -- Go back to throttle on the second tick
-                WasInCruise = false -- And prevent the reset
-            end
-            WaitingToThrottle = false
-        elseif InSpaceRange and (atmosphere() >= 0.1 or atmosphere() == 0) then
-            InSpaceRange = false
-            EngagedSpace = false
-            WaitingToThrottle = false
-        end
-
         if atmosphere() > 0 and not WasInAtmo then
             if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and AtmoSpeedAssist and (AltitudeHold or Reentry) then
                 -- If they're reentering atmo from cruise, and have atmo speed Assist
