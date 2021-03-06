@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.341
+- Fix no planet LUA error
+
 Version 5.340 - PvP Distance flagging
 - Hud now monitors for PvP space or not.  If in PvP Space, hud will change to PvP color (red default), if in safe space or atmo, Safe color (the pale blue default)
 - Added pvpHud colors.  If you dont want the change, set them the same value as Safe.
