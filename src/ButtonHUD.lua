@@ -1959,7 +1959,7 @@ function SetupButtons()
             function()
                 return IntoOrbit
             end, ToggleIntoOrbit, function()
-                return atmosphere() == 0 
+                return (atmosphere() == 0 and unit.getClosestPlanetInfluence() > 0)
             end)
     y = y + buttonHeight + 20
     MakeButton("Glide Re-Entry", "Cancel Glide Re-Entry", buttonWidth, buttonHeight, x, y,
