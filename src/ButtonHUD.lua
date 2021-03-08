@@ -315,6 +315,9 @@ local orbitMsg = nil
 local orbitThrottle = 0
 local orbitCruiseSpeed = 0
 local orbitPitch = 0
+local orbitYaw = 0
+local orbitRoll = 0
+local orbitAligned = false
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -1079,15 +1082,16 @@ function ToggleIntoOrbit()
             end
             IntoOrbit = false
             OrbitTargetPlanet = nil
-        else
+        elseif unit.getClosestPlanetInfluence() > 0 then
             IntoOrbit = true
             CancelIntoOrbit = false
+            orbitAligned = false
             if OrbitTargetPlanet == nil then
                 OrbitTargetPlanet = planet
             end
+        else
+            msgText = "Unable to engage orbiting, not near planet"
         end
-    --else
-    -- TODO: Add support for engaging other modes if below atmosphere
     end
 end
 
@@ -6556,8 +6560,9 @@ function script.onTick(timerId)
 
         if IntoOrbit then
             local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
-            autoRoll = true
             local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
+            local orbitalYaw = getHeading(vec3(core.getConstructWorldOrientationForward()))
+            local orbitalRoll = getRoll(worldV, constrF, constrR)
             if not OrbitTargetSet then
                 if OrbitTargetPlanet.hasAtmosphere then
                     OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius*(TargetOrbitRadius-1) + OrbitTargetPlanet.noAtmosphericDensityAltitude)
@@ -6572,7 +6577,7 @@ function script.onTick(timerId)
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
                         Nav.control.cancelCurrentControlMasterMode()
                     end
-                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.apoapsis.altitude > orbit.periapsis.altitude and orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
+                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.periapsis.altitude < OrbitTargetOrbit*1.2 and orbit.apoapsis.altitude > orbit.periapsis.altitude and orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
                         BrakeIsOn = false
                         PlayerThrottle = 0
                         orbitThrottle = 0
@@ -6594,18 +6599,26 @@ function script.onTick(timerId)
                         orbitMsg = "Adjusting Orbit"
                         if orbit.periapsis.altitude < OrbitTargetOrbit then
                             if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
-                                if upVel > 25 then 
-                                    orbitPitch = -80
-                                    orbitThrottle = 0.5
-                                    BrakeIsOn = false
-                                elseif upVel < -25 then
+                                if velMag+50 > endSpeed then
+                                    if upVel > 25 then 
+                                        orbitPitch = -80
+                                        orbitThrottle = 0.5
+                                        BrakeIsOn = false
+                                    elseif upVel < -25 then
+                                        orbitPitch = 80
+                                        orbitThrottle = 0.5
+                                        BrakeIsOn = false
+                                    else
+                                        orbitThrottle = 0
+                                        BrakeIsOn = true
+                                    end
+                                elseif velMag-50 < endSpeed then
                                     orbitPitch = 80
                                     orbitThrottle = 0.5
                                     BrakeIsOn = false
                                 else
-                                    orbitPitch = 0
-                                    orbitThrottle = 0.5
-                                    BrakeIsOn = false
+                                    orbitThrottle = 0
+                                    BrakeIsOn = true
                                 end
                             else
                                 orbitPitch = 80
@@ -6613,26 +6626,13 @@ function script.onTick(timerId)
                                 BrakeIsOn = false
                             end
                         else
-                            if upVel > 25 then 
+                            if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
+                                orbitThrottle = 0
+                                BrakeIsOn = true
+                            elseif orbit.periapsis.altitude < OrbitTargetOrbit*1.2 then
                                 orbitPitch = -80
                                 orbitThrottle = 0.5
                                 BrakeIsOn = false
-                            elseif upVel < -25 then
-                                orbitPitch = 80
-                                orbitThrottle = 0.5
-                                BrakeIsOn = false
-                            else
-                                if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
-                                    orbitThrottle = 0
-                                    BrakeIsOn = true
-                                elseif endSpeed+100 < velMag then
-                                    orbitThrottle = 0
-                                    BrakeIsOn = true
-                                elseif endSpeed-100 > velMag then
-                                    orbitPitch = 10
-                                    orbitThrottle = 0.5
-                                    BrakeIsOn = false
-                                end
                             end
                         end
                     end
@@ -6640,42 +6640,93 @@ function script.onTick(timerId)
                 PlayerThrottle = orbitThrottle
                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, orbitThrottle)
             else
-                -- TODO: Use math and figure out how fast I need to be depending on the planet. Have Cruise handle the speed until we're in the orbital zone.
-                BrakeIsOn = false
-                local mod = escapeVel%50
-                local pcs = 0
-                if mod > 0 then pcs = escapeVel - mod + 50 else pcs = escapeVel end
-                orbitCruiseSpeed = pcs*3
                 if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                     Nav.control.cancelCurrentControlMasterMode()
                 end
-                if coreAltitude < OrbitTargetOrbit*0.8 then
-                    orbitMsg = "Aligning to orbital path"
-                    orbitPitch = 35
-                elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.1 then
-                    orbitMsg = "Approaching orbital corridor"
-                    orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit*1.1, 35, -5)
-                elseif coreAltitude >= OrbitTargetOrbit*1.1 and coreAltitude < OrbitTargetOrbit*2.25 then
-                    orbitMsg = "Approaching orbital corridor"
-                    if upVel < 0 then
-                        orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.1, -30, -5) -- Going down? pitch up.
+                local mod = escapeVel%50
+                local pcs = 0
+                
+                if mod > 0 then pcs = escapeVel - mod + 50 else pcs = escapeVel end
+                BrakeIsOn = false
+                orbitCruiseSpeed = pcs*2.5
+                if not orbitAligned then
+                    local yawAligned = false
+                    local pitchAligned = false
+                    local rollAligned = false
+                    if coreAltitude < OrbitTargetOrbit then
+                        orbitMsg = "Aligning to orbital path"
+                        orbitPitch = 0
+                        orbitYaw = 270
+                        orbitRoll = 0
                     else
-                        orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.1, 30, -5) -- Going up? pitch down.
+                        -- TODO: Target a point in space at the proper distance and point there.
+                        orbitMsg = "Aligning to orbital point"
+                        orbitPitch = -50
+                        orbitYaw = 270
+                        orbitRoll = 0
                     end
-                elseif coreAltitude > OrbitTargetOrbit*2.25 then
-                    orbitMsg = "Aligning to orbital path"
-                    orbitPitch = -45
+                    if orbitYaw == math.floor(orbitalYaw) then
+                        yawAligned = true
+                    end
+                    if orbitPitch == math.floor(adjustedPitch) then
+                        pitchAligned = true
+                    end
+                    if orbitRoll <= math.floor(orbitalRoll)+1 or orbitRoll >= math.floor(orbitalRoll)-1 then
+                        rollAligned = true
+                    end
+                    if yawAligned and pitchAligned and rollAligned then 
+                        orbitAligned = true
+                    end
+                else
+                    if coreAltitude < OrbitTargetOrbit*0.8 then
+                        orbitMsg = "Escaping planet gravity"
+                        orbitPitch = 35
+                    elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.1 then
+                        orbitMsg = "Approaching orbital corridor"
+                        orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit*1.1, 35, -5)
+                    elseif coreAltitude >= OrbitTargetOrbit*1.1 and coreAltitude < OrbitTargetOrbit*2 then
+                        orbitMsg = "Approaching orbital corridor"
+                        if upVel < 0 then
+                            orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*2, OrbitTargetOrbit*1.1, -30, -5) -- Going down? pitch up.
+                        else
+                            orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*2, OrbitTargetOrbit*1.1, 30, -5) -- Going up? pitch down.
+                        end
+                    elseif coreAltitude > OrbitTargetOrbit*2 then
+                        orbitPitch = -80
+                        orbitMsg = "Reentering orbital corridor"
+                    end
                 end
                 Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, orbitCruiseSpeed)
             end
             if orbitPitch ~= nil then
-                if (vTpitchPID == nil) then
-                    vTpitchPID = pid.new(2 * 0.01, 0, 2 * 0.1)
+                if (OrbitPitchPID == nil) then
+                    OrbitPitchPID = pid.new(2 * 0.01, 0, 2 * 0.1)
                 end
-                local vTpitchDiff = utils.clamp(orbitPitch-adjustedPitch, -PitchStallAngle*0.85, PitchStallAngle*0.85)
-                vTpitchPID:inject(vTpitchDiff)
-                local vTPitchInput = utils.clamp(vTpitchPID:get(),-1,1)
-                pitchInput2 = vTPitchInput
+                local orbitPitchDiff = orbitPitch - adjustedPitch
+                OrbitPitchPID:inject(orbitPitchDiff)
+                local orbitPitchInput = utils.clamp(OrbitPitchPID:get(),-1,1)
+                pitchInput2 = orbitPitchInput
+            end
+            if orbitYaw ~= nil then
+                if (OrbitYawPID == nil) then
+                    OrbitYawPID = pid.new(2 * 0.01, 0, 2 * 0.1)
+                end
+                local orbitYawDiff = orbitalYaw-orbitYaw
+                OrbitYawPID:inject(orbitYawDiff)
+                local orbitYawInput = utils.clamp(OrbitYawPID:get(),-1,1)
+                yawInput2 = orbitYawInput
+            end
+            if orbitRoll ~= nil then
+                if adjustedPitch < 85 then
+                    local rollFactor = math.max(autoRollFactor, 0.01)/4
+                    if (OrbitRollPID == nil) then
+                        OrbitRollPID = pid.new(rollFactor * 0.01, 0, rollFactor * 0.1)
+                    end
+                    local orbitalRollDiff = orbitRoll - orbitalRoll
+                    OrbitRollPID:inject(orbitalRollDiff)
+                    local orbitRollInput = utils.clamp(OrbitRollPID:get(),-1,1)
+                    rollInput2 = orbitRollInput
+                end
             end
         elseif CancelIntoOrbit then
             BrakeIsOn = true
