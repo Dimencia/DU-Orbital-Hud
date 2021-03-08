@@ -6584,19 +6584,22 @@ function script.onTick(timerId)
                     end
                     if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.apoapsis.altitude > orbit.periapsis.altitude and orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
                         BrakeIsOn = false
-                        msgText = "Orbit established"
-                        orbitMsg = nil
-                        OrbitTargetSet = false
-                        OrbitTargetPlanet = nil
                         PlayerThrottle = 0
                         orbitThrottle = 0
-                        orbitPitch = 0
                         orbitCruiseSpeed = 0
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.vertical, 0)
                         OrbitAchieved = true
-                        autoRoll = autoRollPreference
-                        ToggleIntoOrbit() -- turn off sequence
+                        if adjustedPitch > 2 or adjustedPitch < 2 then
+                            orbitPitch = 0
+                        else
+                            msgText = "Orbit established"
+                            orbitMsg = nil
+                            OrbitTargetSet = false
+                            OrbitTargetPlanet = nil
+                            autoRoll = autoRollPreference
+                            ToggleIntoOrbit() -- turn off sequence
+                        end
                     else
                         orbitMsg = "Adjusting Orbit"
                         if orbit.periapsis.altitude < OrbitTargetOrbit then
@@ -6647,24 +6650,27 @@ function script.onTick(timerId)
                 PlayerThrottle = orbitThrottle
                 Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, orbitThrottle)
             else
-                -- TODO: Use math and figure out how fast I need to be depending on the planet. Have Cruise handle the speed until we're in the orbit zone.
+                -- TODO: Use math and figure out how fast I need to be depending on the planet. Have Cruise handle the speed until we're in the orbital zone.
                 BrakeIsOn = false
-                orbitMsg = "Aligning to orbit path"
                 orbitCruiseSpeed = 4000
                 if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                     Nav.control.cancelCurrentControlMasterMode()
                 end
                 if coreAltitude < OrbitTargetOrbit*0.8 then
+                    orbitMsg = "Aligning to orbital path"
                     orbitPitch = 35
-                elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.25 then
-                    orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit*1.25, 35, -5)
-                elseif coreAltitude >= OrbitTargetOrbit*1.25 and coreAltitude < OrbitTargetOrbit*2.25 then
+                elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.1 then
+                    orbitMsg = "Approaching orbital corridor"
+                    orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit*1.1, 35, -5)
+                elseif coreAltitude >= OrbitTargetOrbit*1.1 and coreAltitude < OrbitTargetOrbit*2.25 then
+                    orbitMsg = "Approaching orbital corridor"
                     if upVel < 0 then
-                        orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.5, -30, -5) -- Going down? pitch up.
+                        orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.1, -30, -5) -- Going down? pitch up.
                     else
-                        orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.5, 30, -5) -- Going up? pitch down.
+                        orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.1, 30, -5) -- Going up? pitch down.
                     end
                 elseif coreAltitude > OrbitTargetOrbit*2.25 then
+                    orbitMsg = "Aligning to orbital path"
                     orbitPitch = -45
                 end
                 Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, orbitCruiseSpeed)
