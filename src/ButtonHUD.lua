@@ -1704,16 +1704,6 @@ function getRelativeYaw(velocity)
     return yaw
 end
 
-function getMap(x, in_min, in_max, out_min, out_max)
-    -- x is the value you want mapped
-    -- in_min, in_max is the min/max of the values you will give it
-    -- out_min, out_max is the output value that maps to the corresponding input
-    -- example value = getMap(10, 1, 20, 1, 100) 10 is the input, the input range will be within 1-20 with excess being brought to min/max
-    --                                   the output would be 50, as the output range is 1-100.
-    -- From the above example, value == 50.
-    return out_min + (x - in_min)*(out_max - out_min)/(in_max - in_min)
-end
-
 function AlignToWorldVector(vector, tolerance, damping)
     -- Sets inputs to attempt to point at the autopilot target
     -- Meant to be called from Update or Tick repeatedly
@@ -6567,7 +6557,7 @@ function script.onTick(timerId)
         if IntoOrbit then
             local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
             autoRoll = true
-            local _, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
+            local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
             if not OrbitTargetSet then
                 if OrbitTargetPlanet.hasAtmosphere then
                     OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius*(TargetOrbitRadius-1) + OrbitTargetPlanet.noAtmosphericDensityAltitude)
@@ -6590,7 +6580,7 @@ function script.onTick(timerId)
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
                         Nav.axisCommandManager:setThrottleCommand(axisCommandId.vertical, 0)
                         OrbitAchieved = true
-                        if adjustedPitch > 2 or adjustedPitch < 2 then
+                        if adjustedPitch > 2 or adjustedPitch < -2 then
                             orbitPitch = 0
                         else
                             msgText = "Orbit established"
@@ -6652,7 +6642,10 @@ function script.onTick(timerId)
             else
                 -- TODO: Use math and figure out how fast I need to be depending on the planet. Have Cruise handle the speed until we're in the orbital zone.
                 BrakeIsOn = false
-                orbitCruiseSpeed = 4000
+                local mod = escapeVel%50
+                local pcs = 0
+                if mod > 0 then pcs = escapeVel - mod + 50 else pcs = escapeVel end
+                orbitCruiseSpeed = pcs*3
                 if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
                     Nav.control.cancelCurrentControlMasterMode()
                 end
@@ -6661,13 +6654,13 @@ function script.onTick(timerId)
                     orbitPitch = 35
                 elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.1 then
                     orbitMsg = "Approaching orbital corridor"
-                    orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit*1.1, 35, -5)
+                    orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit*1.1, 35, -5)
                 elseif coreAltitude >= OrbitTargetOrbit*1.1 and coreAltitude < OrbitTargetOrbit*2.25 then
                     orbitMsg = "Approaching orbital corridor"
                     if upVel < 0 then
-                        orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.1, -30, -5) -- Going down? pitch up.
+                        orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.1, -30, -5) -- Going down? pitch up.
                     else
-                        orbitPitch = getMap(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.1, 30, -5) -- Going up? pitch down.
+                        orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*2.5, OrbitTargetOrbit*1.1, 30, -5) -- Going up? pitch down.
                     end
                 elseif coreAltitude > OrbitTargetOrbit*2.25 then
                     orbitMsg = "Aligning to orbital path"
