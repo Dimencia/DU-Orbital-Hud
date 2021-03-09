@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.4
+- Updates via ShadowMage:
+    - User Parameter: VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct. Will VTOL on AutoTakeOff.
+    - Button to achieve orbit, usable from space.  Uses TargetOrbitRadius to determine the orbital height
+
 Version 5.341
 - Fix no planet LUA error
 
