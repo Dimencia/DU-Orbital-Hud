@@ -7693,17 +7693,17 @@ function script.onActionStart(action)
             if hasGear and not BrakeLanding then
                 Nav.control.extendLandingGears() -- Actually extend
             end
-        elseif action == "light" then
-            if Nav.control.isAnyHeadlightSwitchedOn() == 1 then
-                Nav.control.switchOffHeadlights()
-            else
-                Nav.control.switchOnHeadlights()
-            end
         else
             if hasGear then
                 Nav.control.retractLandingGears()
             end
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
+        end
+    elseif action == "light" then
+        if Nav.control.isAnyHeadlightSwitchedOn() == 1 then
+            Nav.control.switchOffHeadlights()
+        else
+            Nav.control.switchOnHeadlights()
         end
     elseif action == "forward" then
         pitchInput = pitchInput - 1
