@@ -6567,7 +6567,6 @@ function script.onTick(timerId)
         if IntoOrbit then
             local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
             local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
-            local orbitalYaw = getHeading(vec3(core.getConstructWorldOrientationForward()))
             local orbitalRoll = getRoll(worldV, constrF, constrR)
             if not OrbitTargetSet then
                 if OrbitTargetPlanet.hasAtmosphere then
