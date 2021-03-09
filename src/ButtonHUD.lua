@@ -1087,10 +1087,10 @@ function ToggleIntoOrbit()
             OrbitTargetPlanet = nil
         elseif unit.getClosestPlanetInfluence() > 0 then
             IntoOrbit = true
+            OrbitAchieved = false
             CancelIntoOrbit = false
             orbitAligned = false
             orbitPitch = nil
-            orbitYaw = nil
             orbitRoll = nil
             if OrbitTargetPlanet == nil then
                 OrbitTargetPlanet = planet
