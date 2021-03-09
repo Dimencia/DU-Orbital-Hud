@@ -315,7 +315,6 @@ local orbitMsg = nil
 local orbitThrottle = 0
 local orbitCruiseSpeed = 0
 local orbitPitch = 0
-local orbitYaw = 0
 local orbitRoll = 0
 local orbitAligned = false
 local orbitalRecover = false
@@ -1084,7 +1083,6 @@ function ToggleIntoOrbit()
             IntoOrbit = false
             orbitAligned = false
             orbitPitch = nil
-            orbitYaw = nil
             orbitRoll = nil
             OrbitTargetPlanet = nil
         elseif unit.getClosestPlanetInfluence() > 0 then
@@ -6664,7 +6662,6 @@ function script.onTick(timerId)
                 BrakeIsOn = false
                 orbitCruiseSpeed = pcs*2.5
                 if not orbitAligned then
-                    local yawAligned = false
                     local pitchAligned = false
                     local rollAligned = false
                     if coreAltitude < OrbitTargetOrbit then
@@ -6674,13 +6671,7 @@ function script.onTick(timerId)
                         orbitMsg = "Aligning to orbital point"
                     end
                     orbitPitch = 0
-                    orbitYaw = 270
                     orbitRoll = 0
-                    if orbitalYaw <= orbitYaw+1 and orbitalYaw >= orbitYaw-1 then
-                        yawAligned = true
-                    else
-                        yawAligned = false
-                    end
                     if adjustedPitch <= orbitPitch+1 and adjustedPitch >= orbitPitch-1 then
                         pitchAligned = true
                     else
@@ -6691,9 +6682,8 @@ function script.onTick(timerId)
                     else
                         rollAligned = false
                     end
-                    if yawAligned and pitchAligned and rollAligned then
+                    if pitchAligned and rollAligned then
                         orbitPitch = nil
-                        orbitYaw = nil
                         orbitRoll = nil
                         orbitAligned = true
                     end
@@ -6726,15 +6716,6 @@ function script.onTick(timerId)
                 OrbitPitchPID:inject(orbitPitchDiff)
                 local orbitPitchInput = utils.clamp(OrbitPitchPID:get(),-0.5,0.5)
                 pitchInput2 = orbitPitchInput
-            end
-            if orbitYaw ~= nil then
-                if (OrbitYawPID == nil) then
-                    OrbitYawPID = pid.new(2 * 0.01, 0, 2 * 0.1)
-                end
-                local orbitYawDiff = orbitalYaw-orbitYaw
-                OrbitYawPID:inject(orbitYawDiff)
-                local orbitYawInput = utils.clamp(OrbitYawPID:get(),-0.5,0.5)
-                yawInput2 = orbitYawInput
             end
             if orbitRoll ~= nil then
                 if adjustedPitch < 85 then
