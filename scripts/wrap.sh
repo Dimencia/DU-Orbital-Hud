@@ -66,7 +66,7 @@ SLOTS=(
 
 echo "Wrapping ..."
 lua ${ROOTDIR}/scripts/wrap.lua --handle-errors --output yaml \
-             --name "ButtonsHud - ShadowMage v$VERSION_NUMBER (Minified)" \
+             --name "ButtonsHud - Dimencia and Archaegeo v$VERSION_NUMBER (Minified)" \
              $WORK_DIR/ButtonHUD.min.lua $WORK_DIR/ButtonHUD.wrapped.conf \
              --slots ${SLOTS[*]}
 
