@@ -6677,19 +6677,16 @@ function script.onTick(timerId)
                     orbitYaw = 270
                     orbitRoll = 0
                     if orbitalYaw <= orbitYaw+1 and orbitalYaw >= orbitYaw-1 then
-                        system.print("Yaw aligned: "..orbitYaw.." = "..orbitalYaw)
                         yawAligned = true
                     else
                         yawAligned = false
                     end
                     if adjustedPitch <= orbitPitch+1 and adjustedPitch >= orbitPitch-1 then
-                        system.print("Pitch aligned: "..orbitPitch.." = "..adjustedPitch)
                         pitchAligned = true
                     else
                         pitchAligned = false
                     end
                     if orbitalRoll <= orbitRoll+1 and orbitalRoll >= orbitRoll-1 then
-                        system.print("Roll aligned: "..orbitRoll.." = "..orbitalRoll)
                         rollAligned = true
                     else
                         rollAligned = false
