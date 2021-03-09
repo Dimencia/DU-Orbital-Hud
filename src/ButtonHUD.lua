@@ -5563,10 +5563,16 @@ function script.onStop()
         warpdrive.hide()
     end
     core.hide()
+    Nav.control.switchOffHeadlights()
     -- Open door and extend ramp if available
     local atmo = atmosphere()
     if door and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(door) do
+            v.toggle()
+        end
+    end
+    if switch then
+        for _, v in pairs(switch) do
             v.toggle()
         end
     end
@@ -7686,6 +7692,12 @@ function script.onActionStart(action)
 
             if hasGear and not BrakeLanding then
                 Nav.control.extendLandingGears() -- Actually extend
+            end
+        elseif action == "light" then
+            if Nav.control.isAnyHeadlightSwitchedOn() == 1 then
+                Nav.control.switchOffHeadlights()
+            else
+                Nav.control.switchOnHeadlights()
             end
         else
             if hasGear then
