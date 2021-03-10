@@ -91,7 +91,7 @@ autoRollRollThreshold = 0 --export: (Default: 0) The minimum amount of roll befo
 AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric speeds should be limited to a maximum of AtmoSpeedLimit
 ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
 minRollVelocity = 150 --export: (Default: 150) Min velocity, in m/s, over which advanced rolling can occur
-
+VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct. Will VTOL on AutoTakeOff.
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -104,6 +104,7 @@ AltitudeHold = false
 BrakeLanding = false
 AutoTakeoff = false
 Reentry = false
+VertTakeOff = false
 HoldAltitude = 1000 -- In case something goes wrong, give this a decent start value
 AutopilotAccelerating = false
 AutopilotRealigned = false
@@ -129,6 +130,13 @@ AntigravTargetAltitude = core.getAltitude()
 LastStartTime = 0
 SpaceTarget = false
 LeftAmount = 0
+IntoOrbit = false
+OrbitTargetSet = false
+OrbitTargetCoords = nil
+OrbitTargetOrbit = 0
+OrbitTargetPlanet = nil
+OrbitRetriggerTarget = false
+OrbitAchieved = false
 
 -- VARIABLES TO BE SAVED GO HERE, SAVEABLE are Edit LUA Parameter settable, AUTO are ship status saves that occur over get up and sit down.
 local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate", "freeLookToggle", "turnAssist",
@@ -144,7 +152,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed",
-                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "PvPR", "PvPG", "PvPB"}
+                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "VertTakeOffEngine", "PvPR", "PvPG", "PvPB"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -169,6 +177,7 @@ local eleType = core.getElementTypeById
 local eleMass = core.getElementMassById
 local constructMass = core.getConstructMass
 local isRemote = Nav.control.isRemoteControlled
+local atan = math.atan
 
 function round(num, numDecimalPlaces)
     local mult = 10 ^ (numDecimalPlaces or 0)
@@ -299,6 +308,13 @@ local lastApTickTime = system.getTime()
 local targetRoll = 0
 local ahDoubleClick = 0
 local adjustedAtmoSpeedLimit = AtmoSpeedLimit
+local orbitMsg = nil
+local orbitThrottle = 0
+local orbitCruiseSpeed = 0
+local orbitPitch = 0
+local orbitRoll = 0
+local orbitAligned = false
+local orbitalRecover = false
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -495,11 +511,11 @@ function SetupChecks()
             v.toggle()
         end
     end
-    if switch then
+    if switch then 
         for _, v in pairs(switch) do
             v.toggle()
         end
-    end
+    end    
     if forcefield and (atmo > 0 or (atmo == 0 and coreAltitude < 10000)) then
         for _, v in pairs(forcefield) do
             v.toggle()
@@ -1022,16 +1038,53 @@ function ToggleAutoTakeoff()
         if AltitudeHold then
             ToggleAltitudeHold()
         end
+    elseif VertTakeOff then
+        VertTakeOff = false
+        AltitudeHold = false
     else
-        if not AltitudeHold then
-            ToggleAltitudeHold()
+        if VertTakeOffEngine then
+            VertTakeOff = true
+            AltitudeHold = false
+        else
+            if not AltitudeHold then
+                ToggleAltitudeHold()
+            end
+            AutoTakeoff = true
+            HoldAltitude = coreAltitude + AutoTakeoffAltitude
         end
-        AutoTakeoff = true
-        HoldAltitude = coreAltitude + AutoTakeoffAltitude
         GearExtended = false
         Nav.control.retractLandingGears()
         Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard set this for takeoff, you wouldn't use takeoff from a hangar
         BrakeIsOn = true
+    end
+end
+
+function ToggleIntoOrbit()
+    if atmosphere() == 0 then
+        if IntoOrbit then
+            if OrbitAchieved then
+                CancelIntoOrbit = false
+            else
+                CancelIntoOrbit = true
+            end
+            IntoOrbit = false
+            orbitAligned = false
+            orbitPitch = nil
+            orbitRoll = nil
+            OrbitTargetPlanet = nil
+        elseif unit.getClosestPlanetInfluence() > 0 then
+            IntoOrbit = true
+            OrbitAchieved = false
+            CancelIntoOrbit = false
+            orbitAligned = false
+            orbitPitch = nil
+            orbitRoll = nil
+            if OrbitTargetPlanet == nil then
+                OrbitTargetPlanet = planet
+            end
+        else
+            msgText = "Unable to engage orbiting, not near planet"
+        end
     end
 end
 
@@ -1265,6 +1318,7 @@ function BrakeToggle()
         AltitudeHold = false
         VectorToTarget = false
         AutoTakeoff = false
+        VertTakeOff = false
         Reentry = false
         -- We won't abort interplanetary because that would fuck everyone.
         ProgradeIsOn = false -- No reason to brake while facing prograde, but retrograde yes.
@@ -1275,6 +1329,7 @@ function BrakeToggle()
         autoRoll = autoRollPreference
         spaceLand = false
         finalLand = false
+        upAmount = 0
     end
 end
 
@@ -1370,7 +1425,6 @@ function getPitch(gravityDirection, forward, right)
     return pitch
 end
 
-local atan = math.atan
 local function signedRotationAngle(normal, vecA, vecB)
    vecA = vecA:project_on_plane(normal)
    vecB = vecB:project_on_plane(normal)
@@ -1393,6 +1447,7 @@ function clearAll()
         BrakeLanding = false
         BrakeIsOn = false
         AutoTakeoff = false
+        VertTakeOff = false
         followMode = false
         apThrottleSet = false
         spaceLand = false
@@ -1868,10 +1923,17 @@ function SetupButtons()
     MakeButton("Engage Autoland", "Disable Autoland", buttonWidth, buttonHeight, x, y, function()
         return AutoLanding
     end, ToggleAutoLanding)
-    MakeButton("Engage Auto Takeoff", "Disable Auto Takeoff", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+    if VertTakeOffEngine then  
+        MakeButton("Engage Vertical Takeoff", "Disable Vertical Takeoff", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+        function()
+            return VertTakeOff
+        end, ToggleAutoTakeoff)
+    else
+        MakeButton("Engage Auto Takeoff", "Disable Auto Takeoff", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
         function()
             return AutoTakeoff
         end, ToggleAutoTakeoff)
+    end
     y = y + buttonHeight + 20
     MakeButton("Show Orbit Display", "Hide Orbit Display", buttonWidth, buttonHeight, x, y,
         function()
@@ -1884,6 +1946,13 @@ function SetupButtons()
                 msgText = "Orbit Display Disabled"
             end
         end)
+     -- prevent this button from being an option until you're in atmosphere
+    MakeButton("Engage Orbiting", "Cancel Orbiting", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
+            function()
+                return IntoOrbit
+            end, ToggleIntoOrbit, function()
+                return (atmosphere() == 0 and unit.getClosestPlanetInfluence() > 0)
+            end)
     y = y + buttonHeight + 20
     MakeButton("Glide Re-Entry", "Cancel Glide Re-Entry", buttonWidth, buttonHeight, x, y,
         function() return Reentry end, function() spaceLand = true ProgradeToggle() end, function() return (coreAltitude > ReentryAltitude) end )
@@ -2816,6 +2885,24 @@ function DrawWarnings(newContent)
             local displayText, displayUnit = getDistanceDisplayString2(HoldAltitude)
             newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Altitude Hold: %s</text>]],
                                               warningX, apY, displayText.. displayUnit)
+        end
+    end
+    if VertTakeOff then
+        if atmosphere() > 0.1 then
+            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Beginning ascent</text>]],
+            warningX, apY)
+        elseif atmosphere() < 0.09 and atmosphere() > 0.05 then
+            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Aligning trajectory</text>]],
+            warningX, apY)
+        elseif atmosphere() < 0.05 then
+            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">Leaving atmosphere</text>]],
+            warningX, apY, VertTargetPlanet.name)
+        end
+    end
+    if IntoOrbit then
+        if orbitMsg ~= nil then
+            newContent[#newContent + 1] = stringf([[<text class="warn" x="%d" y="%d">%s</text>]],
+            warningX, apY, orbitMsg)
         end
     end
     if BrakeLanding then
@@ -5397,7 +5484,7 @@ function safeZone(WorldPos) -- Thanks to @SeM for the base code, modified to wor
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.341
+    VERSION_NUMBER = 5.4
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5441,7 +5528,6 @@ function script.onStart()
         if UseSatNav then 
             unit.setTimer("fiveSecond", 5) 
         end
-
     end)
 end
 
@@ -5499,31 +5585,11 @@ function script.onStop()
     if button then
         button.activate()
     end
+
 end
 
 function script.onTick(timerId)
     if timerId == "tenthSecond" then
-        if atmosphere() > 0 and atmosphere() < 0.1 and not InSpaceRange and not EngagedSpace and not Reentry then -- Reentry handles this
-            InSpaceRange = true
-            EngagedSpace = true
-            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
-                WaitingToThrottle = true
-                Nav.control.cancelCurrentControlMasterMode() -- Go to cruise if it's the first tick in atmosphere space range
-                -- But prevent it from resetting PlayerThrottle
-                WasInCruise = true
-            end
-        elseif InSpaceRange and EngagedSpace and WaitingToThrottle then
-            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-                Nav.control.cancelCurrentControlMasterMode() -- Go back to throttle on the second tick
-                WasInCruise = false -- And prevent the reset
-            end
-            WaitingToThrottle = false
-        elseif InSpaceRange and (atmosphere() >= 0.1 or atmosphere() == 0) then
-            InSpaceRange = false
-            EngagedSpace = false
-            WaitingToThrottle = false
-        end
-
         if atmosphere() > 0 and not WasInAtmo then
             if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and AtmoSpeedAssist and (AltitudeHold or Reentry) then
                 -- If they're reentering atmo from cruise, and have atmo speed Assist
@@ -6414,7 +6480,245 @@ function script.onTick(timerId)
                 pitchInput2 = autoPitchInput
             end
         end
-        
+
+        if VertTakeOff then
+            Autopilot = false -- make sure to shut this off for now.
+            AltitudeHold = false -- Doesn't work for vtol. Shut this off for now.
+            if VertTargetPlanet == nil then -- Set it once so it doesn't change. Helps when leaving the influence of a planet.
+                VertTargetPlanet = planet
+            end
+            local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
+            local tPitch = nil
+            if atmosphere() > 0.08 then -- Go straight up
+                tPitch = 0
+                autoRoll = true
+                BrakeIsOn = false
+                upAmount = upAmount + 1 -- Only way to make the engines react. 
+                Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
+                Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1)
+            elseif atmosphere() < 0.08 and atmosphere() > 0 then -- stop , pitch up, and start moving away from planet.
+                upAmount = 0
+                Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
+                Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 0)
+                tPitch = 36
+                if upVel < 10 then
+                    BrakeIsOn = true
+                    brakeInput = 1
+                else
+                    BrakeIsOn = false
+                end
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 3500)  -- Space Engines don't turn on when using throttle while in atmo.
+                                                                                                -- Cruise solves this. Also, makes orbits easy.
+            else -- Out of planet atmo, get to orbit
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 0)
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
+                PlayerThrottle = 0
+                Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                Nav.axisCommandManager:setThrottleCommand(axisCommandId.vertical, 0)
+                BrakeIsOn = true
+                brakeInput = 1
+                msgText = "Takeoff completed. Parking."
+                ToggleAutoTakeoff()
+            end
+            if tPitch ~= nil then
+                if (vTpitchPID == nil) then
+                    vTpitchPID = pid.new(2 * 0.01, 0, 2 * 0.1)
+                end
+                local vTpitchDiff = utils.clamp(tPitch-adjustedPitch, -PitchStallAngle*0.85, PitchStallAngle*0.85)
+                vTpitchPID:inject(vTpitchDiff)
+                local vTPitchInput = utils.clamp(vTpitchPID:get(),-1,1)
+                pitchInput2 = vTPitchInput
+            end
+        end
+
+        if IntoOrbit then
+            local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
+            local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
+            local orbitalRoll = getRoll(worldV, constrF, constrR)
+            if not OrbitTargetSet then
+                if OrbitTargetPlanet.hasAtmosphere then
+                    OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius*(TargetOrbitRadius-1) + OrbitTargetPlanet.noAtmosphericDensityAltitude)
+                else
+                    OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius*(TargetOrbitRadius-1) + OrbitTargetPlanet.surfaceMaxAltitude)
+                end
+                OrbitTargetSet = true
+            end
+            -- Getting as close to orbit distance as comfortably possible
+            if orbit.periapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit and coreAltitude < OrbitTargetOrbit*1.3 and orbit.periapsis.altitude > 0 then
+                if orbit.apoapsis ~= nil then
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                        Nav.control.cancelCurrentControlMasterMode()
+                    end
+                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.periapsis.altitude < OrbitTargetOrbit*1.2 and orbit.apoapsis.altitude > orbit.periapsis.altitude and orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
+                        BrakeIsOn = false
+                        PlayerThrottle = 0
+                        orbitThrottle = 0
+                        orbitCruiseSpeed = 0
+                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+                        Nav.axisCommandManager:setThrottleCommand(axisCommandId.vertical, 0)
+                        OrbitAchieved = true
+                        if adjustedPitch > 2 or adjustedPitch < -2 then
+                            orbitPitch = 0
+                        else
+                            msgText = "Orbit established"
+                            orbitMsg = nil
+                            orbitalRecover = false
+                            OrbitTargetSet = false
+                            OrbitTargetPlanet = nil
+                            autoRoll = autoRollPreference
+                            ToggleIntoOrbit() -- turn off sequence
+                        end
+                    else
+                        orbitMsg = "Adjusting Orbit"
+                        orbitalRecover = true
+                        if orbit.periapsis.altitude < OrbitTargetOrbit then
+                            if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
+                                if velMag+10 > endSpeed then
+                                    if upVel > 15 then 
+                                        orbitPitch = -80
+                                        orbitThrottle = 0.5
+                                        BrakeIsOn = false
+                                    elseif upVel < -15 then
+                                        orbitPitch = 80
+                                        orbitThrottle = 0.5
+                                        BrakeIsOn = false
+                                    else
+                                        orbitThrottle = 0
+                                        BrakeIsOn = true
+                                    end
+                                elseif velMag-10 < endSpeed then
+                                    orbitPitch = 80
+                                    orbitThrottle = 0.5
+                                    BrakeIsOn = false
+                                else
+                                    orbitThrottle = 0
+                                    BrakeIsOn = true
+                                end
+                            else
+                                orbitPitch = 80
+                                orbitThrottle = 0.5
+                                BrakeIsOn = false
+                            end
+                        else
+                            if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
+                                orbitThrottle = 0
+                                BrakeIsOn = true
+                            elseif orbit.periapsis.altitude < OrbitTargetOrbit*1.2 then
+                                orbitPitch = -80
+                                orbitThrottle = 0.5
+                                BrakeIsOn = false
+                            end
+                        end
+                    end
+                end
+                if orbitThrottle > 0 and adjustedPitch <= orbitPitch+3 and adjustedPitch >= orbitPitch-3 then
+                    PlayerThrottle = orbitThrottle
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, orbitThrottle)
+                elseif not OrbitAchieved then
+                    PlayerThrottle = 0.05 -- Keep the engines warm
+                    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0.05)
+                end
+            else
+                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
+                local mod = escapeVel%50
+                local pcs = 0
+                if mod > 0 then pcs = escapeVel - mod + 50 else pcs = escapeVel end
+                BrakeIsOn = false
+                orbitCruiseSpeed = pcs*2.5
+                if not orbitAligned then
+                    local pitchAligned = false
+                    local rollAligned = false
+                    if coreAltitude < OrbitTargetOrbit then
+                        orbitMsg = "Aligning to orbital path"
+                    else
+                        -- TODO: Target a point in space at the proper distance and point there.
+                        orbitMsg = "Aligning to orbital point"
+                    end
+                    orbitPitch = 0
+                    orbitRoll = 0
+                    if adjustedPitch <= orbitPitch+1 and adjustedPitch >= orbitPitch-1 then
+                        pitchAligned = true
+                    else
+                        pitchAligned = false
+                    end
+                    if orbitalRoll <= orbitRoll+1 and orbitalRoll >= orbitRoll-1 then
+                        rollAligned = true
+                    else
+                        rollAligned = false
+                    end
+                    if pitchAligned and rollAligned then
+                        orbitPitch = nil
+                        orbitRoll = nil
+                        orbitAligned = true
+                    end
+                else
+                    if coreAltitude < OrbitTargetOrbit*0.8 then
+                        orbitMsg = "Escaping planet gravity"
+                        orbitPitch = 35
+                    elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.01 then
+                        orbitMsg = "Approaching orbital corridor"
+                        orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit, 35, 0)
+                    elseif coreAltitude >= OrbitTargetOrbit*1.01 and coreAltitude < OrbitTargetOrbit*1.5 then
+                        orbitMsg = "Approaching orbital corridor"
+                        if upVel < 0 or orbitalRecover then
+                            orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*1.5, OrbitTargetOrbit*1.01, -30, 0) -- Going down? pitch up.
+                        else
+                            orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.99, OrbitTargetOrbit*1.5, 0, 30) -- Going up? pitch down.
+                        end
+                    elseif coreAltitude > OrbitTargetOrbit*1.5 then
+                        orbitPitch = -80
+                        orbitMsg = "Reentering orbital corridor"
+                    end
+                end
+                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, orbitCruiseSpeed)
+            end
+            if orbitPitch ~= nil then
+                if (OrbitPitchPID == nil) then
+                    OrbitPitchPID = pid.new(2 * 0.01, 0, 2 * 0.1)
+                end
+                local orbitPitchDiff = orbitPitch - adjustedPitch
+                OrbitPitchPID:inject(orbitPitchDiff)
+                local orbitPitchInput = utils.clamp(OrbitPitchPID:get(),-0.5,0.5)
+                pitchInput2 = orbitPitchInput
+            end
+            if orbitRoll ~= nil then
+                if adjustedPitch < 85 then
+                    local rollFactor = math.max(autoRollFactor, 0.01)/4
+                    if (OrbitRollPID == nil) then
+                        OrbitRollPID = pid.new(rollFactor * 0.01, 0, rollFactor * 0.1)
+                    end
+                    local orbitalRollDiff = orbitRoll - orbitalRoll
+                    OrbitRollPID:inject(orbitalRollDiff)
+                    local orbitRollInput = utils.clamp(OrbitRollPID:get(),-0.5,0.5)
+                    rollInput2 = orbitRollInput
+                end
+            end
+        elseif CancelIntoOrbit then
+            BrakeIsOn = true
+            brakeInput = 1
+            msgText = "Orbitting cancelled, parking"
+            OrbitTargetSet = false
+            OrbitTargetPlanet = nil
+            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
+                Nav.control.cancelCurrentControlMasterMode()
+            end
+            PlayerThrottle = 0
+            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
+            Nav.axisCommandManager:setThrottleCommand(axisCommandId.vertical, 0)
+            CancelIntoOrbit = false
+        end
+
+
         if AltitudeHold or BrakeLanding or Reentry or VectorToTarget or LockPitch ~= nil then
             -- HoldAltitude is the alt we want to hold at
             local nearPlanet = unit.getClosestPlanetInfluence() > 0
@@ -7375,6 +7679,7 @@ function script.onActionStart(action)
                 StrongBrakes = true -- We don't care about this anymore
                 Reentry = false
                 AutoTakeoff = false
+                VertTakeOff = false
                 AltitudeHold = false
                 BrakeLanding = true
                 autoRoll = true
