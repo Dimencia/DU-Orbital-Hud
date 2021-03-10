@@ -177,6 +177,7 @@ local eleType = core.getElementTypeById
 local eleMass = core.getElementMassById
 local constructMass = core.getConstructMass
 local isRemote = Nav.control.isRemoteControlled
+local atan = math.atan
 
 function round(num, numDecimalPlaces)
     local mult = 10 ^ (numDecimalPlaces or 0)
@@ -1424,7 +1425,6 @@ function getPitch(gravityDirection, forward, right)
     return pitch
 end
 
-local atan = math.atan
 local function signedRotationAngle(normal, vecA, vecB)
    vecA = vecA:project_on_plane(normal)
    vecB = vecB:project_on_plane(normal)

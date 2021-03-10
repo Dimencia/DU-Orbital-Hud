@@ -1,9 +1,12 @@
 ## ChangeLog - Most recent changes at the top
 
 Version 5.4
-- Updates via ShadowMage:
-    - User Parameter: VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct. Will VTOL on AutoTakeOff.
-    - Button to achieve orbit, usable from space.  Uses TargetOrbitRadius to determine the orbital height
+- Updates via ShadowMage, many thanks!:
+    Initial Pass on Vertical Takeoff
+    - Engage Vertical Takeoff button now available if you set VertTakeoffEngine to True (see below)  This will lift you via VTO till upward velocity falls off or you clear atmosphere
+    - User Parameter: VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct.
+    New Button - Achieve Orbit
+    - Button to achieve orbit, usable from space.  Uses TargetOrbitRadius to determine the orbital height based on planet values (radius, atmosphere height, and TargetOrbitRadius)
 
 Version 5.341
 - Fix no planet LUA error
