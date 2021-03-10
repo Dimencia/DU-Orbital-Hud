@@ -6566,7 +6566,7 @@ function script.onTick(timerId)
                     else
                         BrakeIsOn = false
                     end
-                    if SpaceEngineVertUp then
+                    if SpaceEngineVertDn then
                         VtPitch = 0
                         upAmount = upAmount + 1
                         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
@@ -6618,7 +6618,7 @@ function script.onTick(timerId)
                             autoRoll = autoRollPreference
                             VertTakeOff = false
                         else
-                            if SpaceEngineVertUp then
+                            if SpaceEngineVertDn then
                                 VtPitch = 0
                                 upAmount = upAmount + 1
                                 Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
