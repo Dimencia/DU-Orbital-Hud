@@ -6524,19 +6524,31 @@ function script.onTick(timerId)
             local upVel = -vec3(core.getWorldVertical()):dot(vec3(core.getWorldVelocity()))
             VertTakeOffMode = string.lower(VertTakeOffMode)
             if VertTakeOffMode == "agg" and not ExternalAGG then
+                if AntigravTargetAltitude == nil or AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                 BrakeIsOn = false
-                if coreAltitude < 1000 then
+                if antigrav.getBaseAltitude() ~= AntigravTargetAltitude then
+                    targetheight = antigrav.getBaseAltitude()
+                else
+                    targetheight = AntigravTargetAltitude
+                end
+                if coreAltitude < (targetheight - 250) then
                     VtPitch = 0
                     upAmount = upAmount + 1
                     Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
                     Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1)
                 else
+                    BrakeIsOn = true
                     upAmount = 0
-                    Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
                     Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 0)
-                    VertTakeOff = false
-                    autoRoll = autoRollPreference
-                    ToggleAntigrav()
+                    if upVel < 10 and upVel > 0 then
+                        if coreAltitude < (targetheight + 500) and coreAltitude > (targetheight - 500) then
+                            VertTakeOff = false
+                            autoRoll = autoRollPreference
+                            antigrav = true
+                            antigrav.activate()
+                            antigrav.show()
+                        end
+                    end
                 end
             elseif VertTakeOffMode == "space" or VertTakeOffMode == "orbit" then
                 if atmosphere() > 0.08 then
@@ -6561,7 +6573,6 @@ function script.onTick(timerId)
                         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1)
                     else
                         upAmount = 0
-                        Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
                         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 0)
                         VtPitch = 36
                         if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
@@ -6614,7 +6625,6 @@ function script.onTick(timerId)
                                 Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1)
                             else
                                 upAmount = 0
-                                Nav.axisCommandManager:activateGroundEngineAltitudeStabilization()
                                 Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 0)
                                 VtPitch = 36
                                 if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
