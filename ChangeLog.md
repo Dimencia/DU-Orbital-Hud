@@ -2,12 +2,12 @@
 
 Version 5.41
 - Vertical Engines Detection developed
-    - Currently for Vertical Takeoff, but can be extended in the future
+    - Currently for changing how Vertical Takeoff works, but can be extended in the future. You still need to enable VertTakeOffEngine to activate.
 - Vertical Takeoff v2
-    - Now has three options set by VertTakeOffMode: "Space" to park in space at VertParkingAlt + max atmo (VertParkingAlt if no atmo), 
-    "Orbit" to engage orbiting, and "AGG" to engage the AGG at 1km minimum, or higher if set (Not available when ExternalAGG set to true)
+    - Now has three options set by VertTakeOffMode: "Orbit" to engage orbiting, and "AGG" to engage the AGG at AGG minimum height (1km or AGG Base Alt, whichever is higher), 
+    or higher if set (Not available when ExternalAGG set to true)
     - Protection against mispelling or wrong option in VertTakeOffMode. Does not enable if the option is wrong
-    - Using Vertical Engine Detection, now makes use of vertical engines in space if equiped. If not, will pitch 35 deg up and will move forward
+    - Using Vertical Engine Detection, now makes use of vertical engines in space if equiped. If not, will pitch 35 deg up and will move forward. **Will not activate Vertical Takeoff.**
     - Saftey Net added to Vertical Takeoff. If you don't reach out of atmo and begin falling, BrakeLanding is enabled for a smooth fall back to ground
     - If you cancel Vertical Takeoff mid sequence, BrakeLanding is enabled
     
