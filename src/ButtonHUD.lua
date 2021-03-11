@@ -92,8 +92,7 @@ AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric spee
 ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
 minRollVelocity = 150 --export: (Default: 150) Min velocity, in m/s, over which advanced rolling can occur
 VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct. Changes Auto Takeoff to Vertical Takeoff.
-VertTakeOffMode = "Space" --export: (Default: "Space") Set to: "Space" = parks in space, "AGG" = turn on AGG when at 1km, "Orbit" = go directly to orbit. Must keep quotes. Any case is fine.
-VertParkingAlt = 5000 --export: (Default: 5000) Set the height above atmosphere you want to stop at when taking off vertically in space.
+VertTakeOffMode = "Orbit" --export: (Default: "Orbit") Set to: "AGG" = turn on AGG when above 1km and near AGG activation height, "Orbit" = go directly to orbit based off of TargetOrbitRadius. Must keep quotes. Any case is fine.
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -6550,7 +6549,7 @@ function script.onTick(timerId)
                         end
                     end
                 end
-            elseif VertTakeOffMode == "space" or VertTakeOffMode == "orbit" then
+            elseif VertTakeOffMode == "orbit" then
                 if atmosphere() > 0.08 then
                     VtPitch = 0
                     BrakeIsOn = false
@@ -6581,60 +6580,17 @@ function script.onTick(timerId)
                         Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 3500)
                     end
                 else
-                    if VertTakeOffMode == "orbit" then
-                        autoRoll = autoRollPreference
-                        IntoOrbit = true
-                        OrbitAchieved = false
-                        CancelIntoOrbit = false
-                        orbitAligned = false
-                        orbitPitch = nil
-                        orbitRoll = nil
-                        if OrbitTargetPlanet == nil then
-                            OrbitTargetPlanet = planet
-                        end
-                        VertTakeOff = false
-                    else
-                        local targetHeight = 0
-                        if planet.hasAtmosphere then
-                            targetHeight = math.floor(VertParkingAlt + planet.noAtmosphericDensityAltitude)
-                        else
-                            targetHeight = math.floor(VertParkingAlt + planet.surfaceMaxAltitude)
-                        end
-                        if coreAltitude >= targetHeight then
-                            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
-                                Nav.control.cancelCurrentControlMasterMode()
-                            end
-                            Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 0)
-                            if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then
-                                Nav.control.cancelCurrentControlMasterMode()
-                            end
-                            PlayerThrottle = 0
-                            upAmount = 0
-                            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0)
-                            Nav.axisCommandManager:setThrottleCommand(axisCommandId.vertical, 0)
-                            BrakeIsOn = true
-                            brakeInput = 1
-                            msgText = "Takeoff completed. Parking."
-                            autoRoll = autoRollPreference
-                            VertTakeOff = false
-                        else
-                            if SpaceEngineVertDn then
-                                VtPitch = 0
-                                upAmount = upAmount + 1
-                                Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
-                                Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 1)
-                            else
-                                upAmount = 0
-                                Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, 0)
-                                VtPitch = 36
-                                if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byThrottle then
-                                    Nav.control.cancelCurrentControlMasterMode()
-                                end
-                                Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, 3500)
-                            
-                            end
-                        end
+                    autoRoll = autoRollPreference
+                    IntoOrbit = true
+                    OrbitAchieved = false
+                    CancelIntoOrbit = false
+                    orbitAligned = false
+                    orbitPitch = nil
+                    orbitRoll = nil
+                    if OrbitTargetPlanet == nil then
+                        OrbitTargetPlanet = planet
                     end
+                    VertTakeOff = false
                 end
             else -- stops them from doing bad things and check your settings
                 msgText = "Incorrect settings. Takeoff aborted."
