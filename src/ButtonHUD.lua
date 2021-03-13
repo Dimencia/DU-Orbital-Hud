@@ -6624,12 +6624,12 @@ function script.onTick(timerId)
                     apThrottleSet = false
                 end
             elseif AutopilotBraking then
-                -- if not IntoOrbit then
+                if AutopilotStatus ~= "Orbiting to Target" then
                     BrakeIsOn = true
                     brakeInput = 1
-                -- end
+                end
                 if TurnBurn then
-                    cmdThrottle(100) -- This stays 100 to not mess up our calculations
+                    cmdThrottle(100,true) -- This stays 100 to not mess up our calculations
                     PlayerThrottle = 1
                 end
                 -- Check if an orbit has been established and cut brakes and disable autopilot if so
@@ -6672,6 +6672,7 @@ function script.onTick(timerId)
                     waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
                     system.setWaypoint(waypoint)
                 elseif orbit.periapsis ~= nil and orbit.periapsis.altitude > 0 and orbit.eccentricity < 1 then
+                    AutopilotStatus = "Circularizing"
                     local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
                     if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
                         if CustomTarget ~= nil then
@@ -6715,11 +6716,13 @@ function script.onTick(timerId)
                             AutopilotStatus = "Aligning" -- Disable autopilot and reset
                             -- TODO: This is being added to newContent *after* we already drew the screen, so it'll never get displayed
                             msgText = "Autopilot completed, orbit established"
+                            brakeInput = 0
+                            PlayerThrottle = 0
                             apThrottleSet = false
-                            -- if CustomTarget ~= nil and CustomTarget.planetname ~= "Space" then
-                            --     ProgradeIsOn = true
-                            --     spaceLand = true
-                            -- end
+                            if CustomTarget ~= nil and CustomTarget.planetname ~= "Space" then
+                                ProgradeIsOn = true
+                                spaceLand = true
+                            end
                         end
                     end
                 end
