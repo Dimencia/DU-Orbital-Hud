@@ -6132,10 +6132,11 @@ function script.onTick(timerId)
                     VtPitch = 0
                     upAmount = 15
                 else
-                    if false then--antigrav.getState() == 1 and coreAltitude > antigrav.getBaseAltitude() then
+                    if antigrav.getState() == 1 and coreAltitude >= antigrav.getBaseAltitude() then
                         BrakeIsOn = false
                         upAmount = 0
                         VertTakeOff = false
+                        msgText = "Singularity engaged"
                     else
                         BrakeIsOn = true
                         if vSpd > 0 then
