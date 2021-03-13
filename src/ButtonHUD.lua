@@ -310,7 +310,7 @@ local orbitPitch = 0
 local orbitRoll = 0
 local orbitAligned = false
 local orbitalRecover = false
-local orbitalAutopilot = { Autopilot = false, VectorToTarget = false }
+local orbitalVectorToTarget = false
 local OrbitTargetSet = false
 local OrbitTargetOrbit = 0
 local OrbitTargetPlanet = nil
@@ -6195,12 +6195,12 @@ function script.onTick(timerId)
         end
 
         if IntoOrbit then      
-            if Autopilot or AutoTakeoff or VectorToTarget then 
-                if Autopilot or VectorToTarget then
+            if AutoTakeoff or VectorToTarget then 
+                if VectorToTarget then
                     if OrbitTargetPlanet == nil then
                         OrbitTargetPlanet = autopilotTargetPlanet
                     end
-                    orbitalAutopilot.Autopilot, orbitalAutopilot.VectorToTarget = Autopilot, VectorToTarget --storing for later. Autopilot interferes.
+                    orbitalVectorToTarget = VectorToTarget --storing for later. VectorToTarget interferes.
                 end
                 if OrbitTargetPlanet == nil then
                     OrbitTargetPlanet = planet
@@ -6219,7 +6219,7 @@ function script.onTick(timerId)
                 else
                     OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius*(TargetOrbitRadius-1) + OrbitTargetPlanet.surfaceMaxAltitude)
                 end
-                if orbitalAutopilot.Autopilot or orbitalAutopilot.VectorToTarget or AutoTakeoff then 
+                if orbitalVectorToTarget or AutoTakeoff then 
                     OrbitTargetOrbit = AutoTakeoffAltitude
                 end
                 OrbitTargetSet = true
@@ -6252,10 +6252,10 @@ function script.onTick(timerId)
                             OrbitTargetPlanet = nil
                             autoRoll = autoRollPreference
                             msgText = "Orbit established"
-                            if orbitalAutopilot.Autopilot or orbitalAutopilot.VectorToTarget then
-                                Autopilot, VectorToTarget = orbitalAutopilot.Autopilot, orbitalAutopilot.VectorToTarget -- turn it back on.
+                            if orbitalVectorToTarget then
+                                VectorToTarget = orbitalVectorToTarget -- turn it back on.
                             end
-                            orbitalAutopilot.Autopilot, orbitalAutopilot.VectorToTarget = false, false
+                            orbitalVectorToTarget = false
                             CancelIntoOrbit = false
                             IntoOrbit = false
                             orbitAligned = false
@@ -6406,11 +6406,9 @@ function script.onTick(timerId)
             -- Maybe instead of pointing at our vector, we point at our vector + how far off our velocity vector is
             -- This is gonna be hard to get the negatives right.
             -- If we're still in orbit, don't do anything, that velocity will suck
-            local targetCoords = AutopilotTargetCoords
+            local targetCoords, skipAlign, nearPlanet = AutopilotTargetCoords, false, unit.getClosestPlanetInfluence() > 0
             -- This isn't right.  Maybe, just take the smallest distance vector between the normal one, and the wrongSide calculated one
             --local wrongSide = (CustomTarget.position-worldPos):len() > (autopilotTargetPlanet.center-worldPos):len()
-            local skipAlign = false
-
             if CustomTarget ~= nil and CustomTarget.planetname ~= "Space" then
                 AutopilotRealigned = true -- Don't realign, point straight at the target.  Or rather, at AutopilotTargetOrbit above it
                 if not TargetSet then
@@ -6455,6 +6453,16 @@ function script.onTick(timerId)
                 TargetSet = true
                 AutopilotRealigned = true
                 targetCoords = CustomTarget.position + (worldPos - CustomTarget.position)*AutopilotTargetOrbit
+            elseif CustomTarget == nil and (autopilotTargetPlanet.name == planet.name and nearPlanet) then
+                if IntoOrbit then -- if you ap while orbiting, it's the same as shutting it off.
+                    Autopilot = false
+                    ToggleIntoOrbit()
+                elseif not OrbitAchieved then
+                    Autopilot = false
+                    IntoOrbit = true
+                    OrbitTargetSet = false
+                    OrbitTargetPlanet = autopilotTargetPlanet
+                end
             elseif CustomTarget == nil then -- and not autopilotTargetPlanet.name == planet.name then
                 AutopilotPlanetGravity = 0
 
@@ -6479,14 +6487,6 @@ function script.onTick(timerId)
                     waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
                     system.setWaypoint(waypoint)
                 end
-            -- elseif CustomTarget == nil and autopilotTargetPlanet.name == planet.name then
-            --     if not OrbitAchieved then
-            --         IntoOrbit = true
-            --         OrbitTargetSet = false
-            --         OrbitTargetPlanet = autopilotTargetPlanet
-            --     else
-            --         Autopilot = false
-            --     end
             end
 
             
@@ -6639,10 +6639,10 @@ function script.onTick(timerId)
                 local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
                 
 
-                local targetVec, targetAltitude --, horizontalDistance
+                local targetVec--, targetAltitude, --horizontalDistance
                 if CustomTarget ~= nil then
                     targetVec = CustomTarget.position - worldPos
-                    targetAltitude = planet:getAltitude(CustomTarget.position)
+                    --targetAltitude = planet:getAltitude(CustomTarget.position)
                     --horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
                     --system.print(horizontalDistance .. "m, or " .. velocity:normalize():dot(targetVec:normalize()))
                 end
@@ -6688,7 +6688,7 @@ function script.onTick(timerId)
                                     system.setWaypoint(waypoint)
                                     WaypointSet = true
                                 end
-                            else -- Triggers when we get close to passing it
+                            else 
                                 msgText = "Autopilot complete, proceeding with reentry"
                                 --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
                                 AutopilotTargetCoords = CustomTarget.position -- For setting the waypoint
@@ -7934,11 +7934,15 @@ function script.onActionStart(action)
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionStart(-1.0)
         end
     elseif action == "option1" then
-        IncrementAutopilotTargetIndex()
-        toggleView = false
+        if not Autopilot then -- added to prevent crash when index == 0
+            IncrementAutopilotTargetIndex()
+            toggleView = false
+        end
     elseif action == "option2" then
-        DecrementAutopilotTargetIndex()
-        toggleView = false
+        if not Autopilot then -- added to prevent crash when index == 0
+            DecrementAutopilotTargetIndex()
+            toggleView = false
+        end
     elseif action == "option3" then
         if hideHudOnToggleWidgets then
             if showHud then
