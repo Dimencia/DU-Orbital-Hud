@@ -1096,6 +1096,7 @@ function ToggleAutoTakeoff()
             HoldAltitude = coreAltitude + AutoTakeoffAltitude
         end
         if VertTakeOff or AutoTakeoff then
+            OrbitAchieved = false
             GearExtended = false
             Nav.control.retractLandingGears()
             Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard set this for takeoff, you wouldn't use takeoff from a hangar
@@ -1270,6 +1271,7 @@ function ToggleAutopilot()
                         -- end
                    -- else
                         -- Vector to target
+                        OrbitAchieved = false
                         if not VectorToTarget then
                             ToggleVectorToTarget(SpaceTarget)
                         end
@@ -1277,6 +1279,7 @@ function ToggleAutopilot()
                 else
                     if coreAltitude > 100000 or coreAltitude == 0 then
                         --spaceLaunch = true
+                        OrbitAchieved = false
                         Autopilot = true
                     else
                         spaceLand = true
@@ -5637,14 +5640,20 @@ function script.onStop()
 
 end
 
-local function cmdThrottle(value)
-    if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byThrottle then
+local function cmdThrottle(value, dontSwitch)
+    if dontSwitch == nil then
+        dontSwitch = false
+    end
+    if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byThrottle and not dontSwitch then
         Nav.control.cancelCurrentControlMasterMode()
     end
     Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, value)
 end
-local function cmdCruise(value)
-    if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byTargetSpeed then
+local function cmdCruise(value, dontSwitch)
+    if dontSwitch == nil then
+        dontSwitch = false
+    end
+    if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byTargetSpeed and not dontSwitch then
         Nav.control.cancelCurrentControlMasterMode()
     end
     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, value)
@@ -6903,7 +6912,7 @@ function script.onTick(timerId)
                 --     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.vertical, 0)
                 --     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                 -- end
-                cmdCruise(ReentrySpeed)
+                cmdCruise(ReentrySpeed, true) -- I agree, this is dumb.
                 if not reentryMode then
                     targetPitch = -80
                     if atmosphere() > 0.02 then
@@ -7076,6 +7085,7 @@ function script.onTick(timerId)
                     end
                     if VectorStatus == "Finalizing Approach" and (hSpd < 0.1 or distanceToTarget < 0.1 or (LastDistanceToTarget ~= nil and LastDistanceToTarget < distanceToTarget)) then
                         BrakeLanding = true
+                        
                         VectorToTarget = false
                         VectorStatus = "Proceeding to Waypoint"
                     end

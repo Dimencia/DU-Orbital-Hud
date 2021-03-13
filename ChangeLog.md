@@ -10,7 +10,8 @@ Version 5.42
 - Autopilot
     - While in space, when your target is the same nearby planet (not a custom waypoint), you will begin orbiting to `TargetOrbitRadius`.
     - When a custom target is selected and `AutoTakeoffAltitude` is set above atmo height, autopilot will orbit at the configred height. Once orbited, autopilot will reengage and reenter you close to your target. Recommended minimum distance for this setting is at least 0.5SU away from target.
-
+- Script cleanup
+    - Cleaned up repetative functions and removed unused variables.
 
 Version 5.41
 - Vertical Engines Detection developed
