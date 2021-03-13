@@ -6127,24 +6127,20 @@ function script.onTick(timerId)
                 antigrav = true
                 antigrav.activate()
                 antigrav.show()
-                AntigravTargetAltitude = antigrav.getBaseAltitude()
-                if coreAltitude < (AntigravTargetAltitude) then
+                if coreAltitude < (antigrav.getBaseAltitude() - 100) then
                     VtPitch = 0
                     upAmount = 15
-                else
-                    if antigrav.getState() == 1 and coreAltitude >= antigrav.getBaseAltitude() then
-                        BrakeIsOn = false
-                        upAmount = 0
-                        VertTakeOff = false
-                        msgText = "Singularity engaged"
-                    else
-                        BrakeIsOn = true
-                        if vSpd > 0 then
-                        upAmount = 0
-                        elseif vSpd < 0 then
-                            upAmount = 15
-                        end
-                    end
+                elseif vSpd > 0 then
+                    BrakeIsOn = true
+                    upAmount = 0
+                elseif vSpd < -5 then
+                    BrakeIsOn = true
+                    upAmount = 15
+                elseif coreAltitude == antigrav.getBaseAltitude() then
+                    BrakeIsOn = false
+                    upAmount = 0
+                    VertTakeOff = false
+                    msgText = "Singularity engaged"
                 end
             elseif VertTakeOffMode == "orbit" then
                 if atmosphere() > 0.08 then
@@ -6223,7 +6219,7 @@ function script.onTick(timerId)
                 else
                     OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius*(TargetOrbitRadius-1) + OrbitTargetPlanet.surfaceMaxAltitude)
                 end
-                if orbitalAutopilot or AutoTakeoff then 
+                if orbitalAutopilot.Autopilot or orbitalAutopilot.VectorToTarget or AutoTakeoff then 
                     OrbitTargetOrbit = AutoTakeoffAltitude
                 end
                 OrbitTargetSet = true
@@ -6233,7 +6229,7 @@ function script.onTick(timerId)
             if orbit.periapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit and coreAltitude < OrbitTargetOrbit*1.3 and orbit.periapsis.altitude > 0 then
                 local function orbitThrottle(value, orbitalpitch)
                     orbitPitch = orbitalpitch
-                    if adjustedPitch <= orbitalpitch+3 and orbitalpitch >= pitch-3 then
+                    if adjustedPitch <= orbitalpitch+3 and adjustedPitch >= orbitalpitch-3 then
                         PlayerThrottle=value
                         cmdThrottle(value)
                     else
@@ -6256,9 +6252,8 @@ function script.onTick(timerId)
                             OrbitTargetPlanet = nil
                             autoRoll = autoRollPreference
                             msgText = "Orbit established"
-                            if orbitalAutopilot then
+                            if orbitalAutopilot.Autopilot or orbitalAutopilot.VectorToTarget then
                                 Autopilot, VectorToTarget = orbitalAutopilot.Autopilot, orbitalAutopilot.VectorToTarget -- turn it back on.
-
                             end
                             orbitalAutopilot.Autopilot, orbitalAutopilot.VectorToTarget = false, false
                             CancelIntoOrbit = false
@@ -6484,14 +6479,14 @@ function script.onTick(timerId)
                     waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
                     system.setWaypoint(waypoint)
                 end
-            elseif CustomTarget == nil and autopilotTargetPlanet.name == planet.name then
-                if not OrbitAchieved then
-                    IntoOrbit = true
-                    OrbitTargetSet = false
-                    OrbitTargetPlanet = autopilotTargetPlanet
-                else
-                    Autopilot = false
-                end
+            -- elseif CustomTarget == nil and autopilotTargetPlanet.name == planet.name then
+            --     if not OrbitAchieved then
+            --         IntoOrbit = true
+            --         OrbitTargetSet = false
+            --         OrbitTargetPlanet = autopilotTargetPlanet
+            --     else
+            --         Autopilot = false
+            --     end
             end
 
             
@@ -6629,10 +6624,10 @@ function script.onTick(timerId)
                     apThrottleSet = false
                 end
             elseif AutopilotBraking then
-                if not IntoOrbit then
+                -- if not IntoOrbit then
                     BrakeIsOn = true
                     brakeInput = 1
-                end
+                -- end
                 if TurnBurn then
                     cmdThrottle(100) -- This stays 100 to not mess up our calculations
                     PlayerThrottle = 1
@@ -6678,14 +6673,14 @@ function script.onTick(timerId)
                     system.setWaypoint(waypoint)
                 elseif orbit.periapsis ~= nil and orbit.periapsis.altitude > 0 and orbit.eccentricity < 1 then
                     -- local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
-                    if not OrbitAchieved then
-                        IntoOrbit = true
-                        OrbitTargetPlanet = planet
-                        OrbitTargetSet = false
-                        -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
+                    -- if not OrbitAchieved then
+                    --     IntoOrbit = true
+                    --     OrbitTargetPlanet = planet
+                    --     OrbitTargetSet = false
+                    --     -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
                         
-                        --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
-                    else --if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
+                    --     --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
+                    -- else --if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
                         if CustomTarget ~= nil then
                             if velocity:normalize():dot(targetVec:normalize()) < 0.4 then -- Triggers when we get close to passing it
                                 msgText = "Autopilot complete, proceeding with reentry"
@@ -6721,7 +6716,7 @@ function script.onTick(timerId)
                             --     spaceLand = true
                             -- end
                         end
-                    end
+                    -- end
                 end
             elseif AutopilotCruising then
                 --if brakeForceRequired >= LastMaxBrake then
@@ -6755,8 +6750,9 @@ function script.onTick(timerId)
                         AutopilotStatus = "Accelerating"
                         -- Set throttle to max
                         if not apThrottleSet then
-                            Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
-                            AutopilotInterplanetaryThrottle)
+                            cmdThrottle(AutopilotInterplanetaryThrottle, true)
+                            -- Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal,
+                            -- AutopilotInterplanetaryThrottle)
                             PlayerThrottle = round(AutopilotInterplanetaryThrottle,2)
                             apThrottleSet = true
                             BrakeIsOn = false
