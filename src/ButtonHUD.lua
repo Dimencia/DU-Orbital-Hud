@@ -6213,7 +6213,6 @@ function script.onTick(timerId)
                 AltitudeHold = false
                 Autopilot = false
                 VectorToTarget = false
-                AutoTakeoff = false -- turn these off, we've taken over.
                 orbitAligned = true
             end
             local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
@@ -6226,6 +6225,7 @@ function script.onTick(timerId)
                 end
                 if orbitalVectorToTarget or AutoTakeoff then 
                     OrbitTargetOrbit = AutoTakeoffAltitude
+                    AutoTakeoff = false -- turn these off, we've taken over.
                 end
                 OrbitTargetSet = true
             end
