@@ -6455,7 +6455,7 @@ function script.onTick(timerId)
                 TargetSet = true
                 AutopilotRealigned = true
                 targetCoords = CustomTarget.position + (worldPos - CustomTarget.position)*AutopilotTargetOrbit
-            elseif CustomTarget == nil and not autopilotTargetPlanet.name == planet.name then
+            elseif CustomTarget == nil then -- and not autopilotTargetPlanet.name == planet.name then
                 AutopilotPlanetGravity = 0
 
                 if not TargetSet then
