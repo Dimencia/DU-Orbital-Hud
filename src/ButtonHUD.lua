@@ -6672,17 +6672,22 @@ function script.onTick(timerId)
                     waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
                     system.setWaypoint(waypoint)
                 elseif orbit.periapsis ~= nil and orbit.periapsis.altitude > 0 and orbit.eccentricity < 1 then
-                    -- local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
-                    -- if not OrbitAchieved then
-                    --     IntoOrbit = true
-                    --     OrbitTargetPlanet = planet
-                    --     OrbitTargetSet = false
-                    --     -- Calculate the appropriate speed for the altitude we are from the target planet.  These speeds would be lower further out so, shouldn't trigger early
-                        
-                    --     --if (orbit.eccentricity > lastEccentricity and orbit.eccentricity < 0.5) or
-                    -- else --if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
+                    local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
+                    if velMag <= endSpeed then --or(orbit.apoapsis.altitude < AutopilotTargetOrbit and orbit.periapsis.altitude < AutopilotTargetOrbit) then
                         if CustomTarget ~= nil then
-                            if velocity:normalize():dot(targetVec:normalize()) < 0.4 then -- Triggers when we get close to passing it
+                            if velocity:normalize():dot(targetVec:normalize()) > 0.4 then -- Triggers when we get close to passing it
+                                AutopilotStatus = "Orbiting to Target"
+                                --brakeInput = 0
+                                --Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, 0) -- And throttle if they want.  
+                                --PlayerThrottle = 0
+                                if not WaypointSet then
+                                    BrakeIsOn = false -- We have to set this at least once
+                                    local waypoint = zeroConvertToMapPosition(autopilotTargetPlanet, CustomTarget.position)
+                                    waypoint = "::pos{"..waypoint.systemId..","..waypoint.bodyId..","..waypoint.latitude..","..waypoint.longitude..","..waypoint.altitude.."}"
+                                    system.setWaypoint(waypoint)
+                                    WaypointSet = true
+                                end
+                            else -- Triggers when we get close to passing it
                                 msgText = "Autopilot complete, proceeding with reentry"
                                 --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
                                 AutopilotTargetCoords = CustomTarget.position -- For setting the waypoint
@@ -6716,7 +6721,7 @@ function script.onTick(timerId)
                             --     spaceLand = true
                             -- end
                         end
-                    -- end
+                    end
                 end
             elseif AutopilotCruising then
                 --if brakeForceRequired >= LastMaxBrake then
