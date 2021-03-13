@@ -1298,6 +1298,10 @@ function ToggleAutopilot()
                 end
             end
         elseif atmosphere() == 0 then -- Planetary autopilot
+            local nearPlanet = unit.getClosestPlanetInfluence() > 0
+            if CustomTarget == nil and (autopilotTargetPlanet.name == planet.name and nearPlanet) then
+                ToggleIntoOrbit() -- this works much better here
+            else
             Autopilot = true
             RetrogradeIsOn = false
             ProgradeIsOn = false
@@ -1310,6 +1314,7 @@ function ToggleAutopilot()
             apThrottleSet = false
             LockPitch = nil
             WaypointSet = false
+            end
         else
             spaceLaunch = true
             ToggleAltitudeHold()
@@ -6406,7 +6411,7 @@ function script.onTick(timerId)
             -- Maybe instead of pointing at our vector, we point at our vector + how far off our velocity vector is
             -- This is gonna be hard to get the negatives right.
             -- If we're still in orbit, don't do anything, that velocity will suck
-            local targetCoords, skipAlign, nearPlanet = AutopilotTargetCoords, false, unit.getClosestPlanetInfluence() > 0
+            local targetCoords, skipAlign = AutopilotTargetCoords, false
             -- This isn't right.  Maybe, just take the smallest distance vector between the normal one, and the wrongSide calculated one
             --local wrongSide = (CustomTarget.position-worldPos):len() > (autopilotTargetPlanet.center-worldPos):len()
             if CustomTarget ~= nil and CustomTarget.planetname ~= "Space" then
@@ -6453,16 +6458,6 @@ function script.onTick(timerId)
                 TargetSet = true
                 AutopilotRealigned = true
                 targetCoords = CustomTarget.position + (worldPos - CustomTarget.position)*AutopilotTargetOrbit
-            elseif CustomTarget == nil and (autopilotTargetPlanet.name == planet.name and nearPlanet) then
-                if IntoOrbit then -- if you ap while orbiting, it's the same as shutting it off.
-                    Autopilot = false
-                    ToggleIntoOrbit()
-                elseif not OrbitAchieved then
-                    Autopilot = false
-                    IntoOrbit = true
-                    OrbitTargetSet = false
-                    OrbitTargetPlanet = autopilotTargetPlanet
-                end
             elseif CustomTarget == nil then -- and not autopilotTargetPlanet.name == planet.name then
                 AutopilotPlanetGravity = 0
 
