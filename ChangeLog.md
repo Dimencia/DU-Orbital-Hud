@@ -12,6 +12,7 @@ Version 5.42 - VTO to Orbit or AGG Height and Same Planet Orbital Hops.
 - Autopilot changes
     - While in space, activating autopilot when your target is the same nearby planet (not a custom waypoint), you will begin orbiting to `TargetOrbitRadius`.
     - On ground, if a custom target is selected and Altitude Hold is set above atmo height, autopilot will take off and orbit at the configred height. Once orbited, autopilot will reengage and reenter you close to your target. Recommended minimum distance for this feature is a waypoint at least 0.5SU away.
+    - Target locked when Autopilot is engaged. Disengaging Autopilot allows you to select a new target.
 - Script cleanup
     - Cleaned up repetative functions and removed unused variables.
 
