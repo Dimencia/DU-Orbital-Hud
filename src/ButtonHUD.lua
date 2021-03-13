@@ -92,7 +92,7 @@ AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric spee
 ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
 minRollVelocity = 150 --export: (Default: 150) Min velocity, in m/s, over which advanced rolling can occur
 VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct. Changes Auto Takeoff to Vertical Takeoff.
-VertTakeOffMode = "Orbit" --export: (Default: "Space") Set to: "Space" = parks in space, "AGG" = turn on AGG when at 1km, "Orbit" = go directly to orbit. Must keep quotes. Any case is fine.
+VertTakeOffMode = "Orbit" --export: (Default: "Orbit") Set to: "AGG" = turn on AGG when above 1km and near AGG activation height, "Orbit" = go directly to orbit based off of TargetOrbitRadius. Must keep quotes. Any case is fine.
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
