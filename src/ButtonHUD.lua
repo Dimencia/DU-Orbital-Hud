@@ -1081,7 +1081,7 @@ function ToggleAutoTakeoff()
         if VertTakeOffEngine then
             VertTakeOffMode = string.lower(VertTakeOffMode)
             if VertTakeOffMode ~= "orbit" or VertTakeOffMode ~= "agg" then
-                msgText = "Incorrect settings. Takeoff aborted."
+                msgText = "Incorrect VertTakeOffMode setting. Takeoff aborted."
                 VertTakeOff = false
                 BrakeLanding = true
             else
@@ -6228,6 +6228,7 @@ function script.onTick(timerId)
                 end
                 OrbitTargetSet = true
             end
+            if HoldAltitude > OrbitTargetOrbit then OrbitTargetOrbit = HoldAltitude end
             -- Getting as close to orbit distance as comfortably possible
             if orbit.periapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit and coreAltitude < OrbitTargetOrbit*1.3 and orbit.periapsis.altitude > 0 then
                 local function orbitThrottle(value, orbitalpitch)
@@ -6259,6 +6260,7 @@ function script.onTick(timerId)
                                 Autopilot, VectorToTarget = orbitalAutopilot.Autopilot, orbitalAutopilot.VectorToTarget -- turn it back on.
 
                             end
+                            orbitalAutopilot.Autopilot, orbitalAutopilot.VectorToTarget = false, false
                             CancelIntoOrbit = false
                             IntoOrbit = false
                             orbitAligned = false
