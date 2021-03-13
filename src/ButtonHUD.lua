@@ -6639,10 +6639,10 @@ function script.onTick(timerId)
                 local _, endSpeed = Kep(autopilotTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-planet.center):len()-planet.radius)
                 
 
-                local targetVec, targetAltitude --, horizontalDistance
+                local targetVec--, targetAltitude, --horizontalDistance
                 if CustomTarget ~= nil then
                     targetVec = CustomTarget.position - worldPos
-                    targetAltitude = planet:getAltitude(CustomTarget.position)
+                    --targetAltitude = planet:getAltitude(CustomTarget.position)
                     --horizontalDistance = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
                     --system.print(horizontalDistance .. "m, or " .. velocity:normalize():dot(targetVec:normalize()))
                 end
@@ -6688,7 +6688,7 @@ function script.onTick(timerId)
                                     system.setWaypoint(waypoint)
                                     WaypointSet = true
                                 end
-                            else -- Triggers when we get close to passing it
+                            else 
                                 msgText = "Autopilot complete, proceeding with reentry"
                                 --BrakeIsOn = false -- Leave brakes on to be safe while we align prograde
                                 AutopilotTargetCoords = CustomTarget.position -- For setting the waypoint
@@ -7934,11 +7934,15 @@ function script.onActionStart(action)
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionStart(-1.0)
         end
     elseif action == "option1" then
-        IncrementAutopilotTargetIndex()
-        toggleView = false
+        if not Autopilot then -- added to prevent crash when index == 0
+            IncrementAutopilotTargetIndex()
+            toggleView = false
+        end
     elseif action == "option2" then
-        DecrementAutopilotTargetIndex()
-        toggleView = false
+        if not Autopilot then -- added to prevent crash when index == 0
+            DecrementAutopilotTargetIndex()
+            toggleView = false
+        end
     elseif action == "option3" then
         if hideHudOnToggleWidgets then
             if showHud then
