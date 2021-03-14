@@ -9,6 +9,7 @@ Version 5.42 - VTO to Orbit or AGG Height and Same Planet Orbital Hops.
     - When `VertTakeOffMode` is set to *"Orbit"*, it will vertically fly up and out of atmosphere. If there is not enough force to lift you out, Brake Landing is triggered. If you reach space, it will fly you forward using space engines to the distance set by `TargetOrbitRadius` and then cut off engines and you will be in orbit.
 - Auto Takeoff changes
     - When Altitude Hold is set above atmospheric height (alt-spacebar) and is in space, orbiting will engaged once out of atmosphere. Your ship will orbit at the altitude hold height. **Set this with care, too low and you risk burning up or will yo-yo trying to achieve orbit**
+    - If Agg is turned on first (alt-g default) then autotakeoff (alt-6 default) will take you up to current singularity altitude, turn off engines, and engage brake.
 - Autopilot changes
     - While in space, activating autopilot when your target is the same nearby planet (not a custom waypoint), you will begin orbiting to height determined by `TargetOrbitRadius`.
     - On ground, if a custom target is selected and Altitude Hold is raised (alt-spacebar) above atmo height, autopilot will take off and orbit at the configred height. Once orbited, autopilot will reengage and reenter you close to your target. Recommended minimum distance for this feature is a waypoint at least 0.5SU away.  **Set this with care, too low and you risk burning up or will yo-yo trying to achieve orbit**

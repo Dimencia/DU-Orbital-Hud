@@ -1172,7 +1172,7 @@ function ToggleAltitudeHold()
         Reentry = false
         autoRoll = true
         LockPitch = nil
-        if (hoverDetectGround() == -1) or not inAtmo or (antigrav and antigrav.getState() == 1) then -- Never autotakeoff in space
+        if (hoverDetectGround() == -1) or not inAtmo then -- Never autotakeoff in space
             AutoTakeoff = false
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
@@ -1181,6 +1181,7 @@ function ToggleAltitudeHold()
         else
             AutoTakeoff = true
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude + AutoTakeoffAltitude end
+            if antigrav and antigrav.getState() == 1 then HoldAltitude = antigrav.getBaseAltitude() end
             GearExtended = false
             Nav.control.retractLandingGears()
             BrakeIsOn = true
@@ -6182,7 +6183,7 @@ function script.onTick(timerId)
                     VertTakeOff = false
                 end
             else -- stops them from doing bad things and check your settings
-                msgText = "Incorrect settings. Takeoff aborted."
+                msgText = "Incorrect settings for ship configuration. Takeoff aborted."
                 autoRoll = autoRollPreference
                 VertTakeOff = false
                 BrakeLanding = true
@@ -7272,7 +7273,16 @@ function script.onTick(timerId)
             if AutoTakeoff or spaceLaunch then
                 local intersectBody, nearSide, farSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (AutopilotTargetCoords-worldPos):normalize(), function(body) return (body.radius+body.noAtmosphericDensityAltitude) end)
 
-                if math.abs(targetPitch) < 15 and (coreAltitude/HoldAltitude) > 0.75 then
+                if antigrav and antigrav.getState() == 1 then
+                    if coreAltitude >= (HoldAltitude-50) then
+                        AutoTakeoff = false
+                        BrakeIsOn = true
+                        cmdThrottle(0)
+                        PlayerThrottle = 0
+                    else
+                        HoldAltitude = antigrav.getBaseAltitude()
+                    end
+                elseif math.abs(targetPitch) < 15 and (coreAltitude/HoldAltitude) > 0.75 then
                     AutoTakeoff = false -- No longer in ascent
                     if not spaceLaunch then 
                         if Nav.axisCommandManager:getAxisCommandType(0) == 0 and not AtmoSpeedAssist then
