@@ -92,7 +92,6 @@ AtmoSpeedAssist = true --export: (Default: true)
 ForceAlignment = false --export: (Default: false)
 minRollVelocity = 150 --export: (Default: 150)
 VertTakeOffEngine = false --export: (Default: false)
-VertTakeOffMode = "Orbit" --export: (Default: "Orbit")
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -148,7 +147,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed",
-                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "VertTakeOffEngine","VertTakeOffMode", "PvPR", "PvPG", "PvPB"}
+                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "VertTakeOffEngine", "PvPR", "PvPG", "PvPB"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -1079,15 +1078,8 @@ function ToggleAutoTakeoff()
         AltitudeHold = false
     else
         if VertTakeOffEngine then
-            VertTakeOffMode = string.lower(VertTakeOffMode)
-            if VertTakeOffMode ~= "orbit" and VertTakeOffMode ~= "agg" then
-                msgText = "Incorrect VertTakeOffMode setting. Takeoff aborted."
-                VertTakeOff = false
-                BrakeLanding = true
-            else
             VertTakeOff = true
             AltitudeHold = false
-            end
         else
             if not AltitudeHold then
                 ToggleAltitudeHold()
@@ -1095,13 +1087,11 @@ function ToggleAutoTakeoff()
             AutoTakeoff = true
             HoldAltitude = coreAltitude + AutoTakeoffAltitude
         end
-        if VertTakeOff or AutoTakeoff then
-            OrbitAchieved = false
-            GearExtended = false
-            Nav.control.retractLandingGears()
-            Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard set this for takeoff, you wouldn't use takeoff from a hangar
-            BrakeIsOn = true
-        end
+        OrbitAchieved = false
+        GearExtended = false
+        Nav.control.retractLandingGears()
+        Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard set this for takeoff, you wouldn't use takeoff from a hangar
+        BrakeIsOn = true
     end
 end
 
@@ -6127,10 +6117,13 @@ function script.onTick(timerId)
 
         if VertTakeOff then
             autoRoll = true
-            VertTakeOffMode = string.lower(VertTakeOffMode)
-            if VertTakeOffMode == "agg" and not ExternalAGG and antigrav ~= nil then
-                antigrav.activate()
-                antigrav.show()
+            if vSpd < -30 then -- saftey net
+                msgText = "Unable to achieve lift. Safety Landing."
+                upAmount = 0
+                autoRoll = autoRollPreference
+                VertTakeOff = false
+                BrakeLanding = true
+            elseif antigrav and not ExternalAGG and antigrav.getState() == 1 then
                 if coreAltitude < (antigrav.getBaseAltitude() - 100) then
                     VtPitch = 0
                     upAmount = 15
@@ -6138,23 +6131,17 @@ function script.onTick(timerId)
                 elseif vSpd > 0 then
                     BrakeIsOn = true
                     upAmount = 0
-                elseif vSpd < -5 then
+                elseif vSpd < -30 then
                     BrakeIsOn = true
                     upAmount = 15
                 elseif coreAltitude >= antigrav.getBaseAltitude() then
                     BrakeIsOn = true
                     upAmount = 0
                     VertTakeOff = false
-                    msgText = "Singularity engaged"
+                    msgText = "Takeoff complete. Singularity engaged"
                 end
-            elseif VertTakeOffMode == "orbit" then
-                if vSpd < -30 then -- saftey net
-                    msgText = "Unable to take off. Landing."
-                    upAmount = 0
-                    autoRoll = autoRollPreference
-                    VertTakeOff = false
-                    BrakeLanding = true
-                elseif atmosphere() > 0.08 then
+            else
+                if atmosphere() > 0.08 then
                     VtPitch = 0
                     BrakeIsOn = false
                     upAmount = 20
@@ -6181,11 +6168,6 @@ function script.onTick(timerId)
                     end
                     VertTakeOff = false
                 end
-            else -- stops them from doing bad things and check your settings
-                msgText = "Incorrect settings for ship configuration. Takeoff aborted."
-                autoRoll = autoRollPreference
-                VertTakeOff = false
-                BrakeLanding = true
             end
             if VtPitch ~= nil then
                 if (vTpitchPID == nil) then
@@ -6242,7 +6224,8 @@ function script.onTick(timerId)
                     end
                 end
                 if orbit.apoapsis ~= nil then
-                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.periapsis.altitude < OrbitTargetOrbit*1.2 and orbit.apoapsis.altitude > orbit.periapsis.altitude and orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
+                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.periapsis.altitude < OrbitTargetOrbit*1.2 and orbit.apoapsis.altitude > orbit.periapsis.altitude and 
+                        orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
                         BrakeIsOn = false
                         PlayerThrottle = 0
                         cmdThrottle(0)
@@ -6274,10 +6257,10 @@ function script.onTick(timerId)
                         if orbit.periapsis.altitude < OrbitTargetOrbit then
                             if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
                                 if velMag+10 > endSpeed then
-                                    if vSpd > 15 then 
+                                    if vSpd > 5 then 
                                         orbitThrottle(0.5,-80)                                      
                                         BrakeIsOn = false
-                                    elseif vSpd < -15 then
+                                    elseif vSpd < -5 then
                                         orbitThrottle(0.5,80)
                                         BrakeIsOn = false
                                     else
@@ -7355,46 +7338,6 @@ function script.onTick(timerId)
                     antigrav.setBaseAltitude(desiredBaseAltitude)
                 end
         end
-
-        -- if AchieveOrbit then -- Try to achieve an orbit.  This should only be on when in space.  
-        --     local orbitAltitude = 1000
-        --     if planet.name ~= "Space" then
-        --         if planet.hasAtmosphere then 
-        --             orbitAltitude = math.floor(planet.radius*(TargetOrbitRadius-1) + planet.noAtmosphericDensityAltitude)
-        --         else
-        --             orbitAltitude = math.floor(planet.radius*(TargetOrbitRadius-1) + planet.surfaceMaxAltitude)
-        --         end
-        --     else
-        --         orbitAltitude = 1000
-        --     end
-
-        --     local _, endSpeed = Kep(planet):escapeAndOrbitalSpeed((worldPos-planet.center):len()-planet.radius)
-
-        --     autoRoll = true
-
-        --     -- Using the AutopilotTargetOrbit we would calculate for our current nearest planet
-        --     -- Figure out a target vector that our velocity should be at - that is, perpendicular to gravity, and toward CustomTarget if not nil
-        --     -- Otherwise ship forward if not orbiting to target
-        --     local targetVelocityVector
-        --     if OrbitToTarget and CustomTarget ~= nil then
-        --         -- So we need a vector pointing from our position to the target
-        --         -- And project it on a plane defined by worldV, easy
-        --         -- Not sure if we need the first normalize or not, might as well
-        --         targetVelocityVector = (target.position-worldPos):normalize():project_on_plane(worldV):normalize()
-        --     else
-        --         targetVelocityVector = constrF:project_on_plane(worldV):normalize()
-        --     end
-
-        --     -- Adjust the vector to account for being above or below target altitude
-        --     targetVelocityVector = targetVelocityVector * endSpeed -- Scale based on target speed, and we'll use an un-normalized velocity vector to compare
-        --     targetVelocityVector = (targetVelocityVector + -worldV*(coreAltitude - orbitAltitude)):normalize()*endSpeed -- Make sure velocity stays capped
-
-        --     -- So, this is exactly what we want our velocity vector to look like
-
-
-        --     -- Soo... nothing I do with this is going to really get it to stabilize at an altitude, which is the problem
-        --     -- To do that, we really need to get vspeed to 0
-        -- end
     end
 end
 

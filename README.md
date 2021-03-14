@@ -231,7 +231,6 @@ Right click the seat and go to _Advanced_ -> _Edit Lua Parameters_ to see them a
 * ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
 * minRollVelocity = 150 --export: (Default: 150) Min velocity, in m/s, over which advanced rolling can occur
 * VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct. Changes Auto Takeoff to Vertical Takeoff.
-* VertTakeOffMode = "Orbit" --export: (Default: "Orbit") Set to: "AGG" = turn on AGG when above 1km and near AGG activation height, "Orbit" = go directly to orbit based off of TargetOrbitRadius. Must keep quotes. Any case is fine.
     
 [Return to Table of Contents](#table-of-contents)
 
