@@ -1181,7 +1181,6 @@ function ToggleAltitudeHold()
         else
             AutoTakeoff = true
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude + AutoTakeoffAltitude end
-            if antigrav and antigrav.getState() == 1 then HoldAltitude = antigrav.getBaseAltitude() end
             GearExtended = false
             Nav.control.retractLandingGears()
             BrakeIsOn = true
