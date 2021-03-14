@@ -3,6 +3,12 @@
 Fixed script unloading when away from control unit.  Note: We are now at our script limit even minimized.  We are trying to clean up to give more room, 
 but this might be the limit of everything in the hud meaning new features would remove old features or we might have to get creative on some things.
 
+Version 5.43
+- Removed `VertTakeOffMode` user variable.  Mode determined by checking to see if AGG is on prior to beginning ascent.
+- If AGG is on when doing a AutoTakeOff or Vertical takeoff, ship will go to singularity altitude and stop engines and engage brakes.
+- If AGG not present or off and do Vertical Takeoff, ship will vertically thrust to achieve Orbit.
+- Removed description of user variables from code to Readme.md to free up code space and prevent unloading of script. File size reduced from 192k to 184k minimized.
+
 Version 5.42 - VTO to Orbit or AGG Height, ATO to AGG, and Same Planet Orbital Hops.
 - Vertical Takeoff v3 - (`VertTakeOffEngine` must be set to True for the below to work)
     - When `VertTakeOffMode` is set to *"AGG"*, it will now activate AGG and vertically fly up just above AGG Singularity height and stay in the air until the Singularity is at your height, then the engines are turned off and the brakes are engaged. *Not available if you use ExternalAGG.*

@@ -6,93 +6,92 @@ script = {}  -- wrappable container for all the code. Different than normal DU L
 
 -- Edit LUA Variable user settings.  Must be global to work with databank system as set up due to using _G assignment
 useTheseSettings = false -- export: (Default: false) Toggle on to use the below preferences.  Toggle off to use saved preferences.  Preferences will save regardless when exiting seat. 
-freeLookToggle = true -- export: (Default: true) Set to false for vanilla DU free look behavior.
-BrakeToggleDefault = true -- export: (Default: true) Whether your brake toggle is on/off by default. Can be adjusted in the button menu.  Of is vanilla DU brakes.
-RemoteFreeze = false -- export: (Default: false) Whether or not to freeze you when using a remote controller.  Breaks some things, only freeze on surfboards
-RemoteHud = false -- export: (Default: false) Whether you want full HUD while in remote mode, experimental, might not look right.
-brightHud = false -- export: (Default: false) Enable to prevent hud dimming when in freelook.
-VanillaRockets = false -- export: (Default: false) If on, rockets behave like vanilla
-InvertMouse = false -- export: (Default: false) If true, then when controlling flight mouse Y axis is inverted (pushing up noses plane down)  Does not affect selecting buttons or camera.
+freeLookToggle = true -- export: (Default: true)
+BrakeToggleDefault = true -- export: (Default: true)
+RemoteFreeze = false -- export: (Default: false)
+RemoteHud = false -- export: (Default: false)
+brightHud = false -- export: (Default: false)
+VanillaRockets = false -- export: (Default: false)
+InvertMouse = false -- export: (Default: false)
 userControlScheme = "virtual joystick" -- export: (Default: "virtual joystick") Set to "virtual joystick", "mouse", or "keyboard"
-ResolutionX = 1920 -- export: (Default: 1920) Does not need to be set to same as game resolution.  You can set 1920 on a 2560 to get larger resolution
-ResolutionY = 1080 -- export: (Default: 1080) Does not need to be set to same as game resolution.  You can set 1080 on a 1440 to get larger resolution
-SafeR = 130 -- export: (Default: 130) Primary HUD color
-SafeG = 224 -- export: (Default: 224) Primary HUD color
-SafeB = 255 -- export: (Default: 255) Primary HUD color
-PvPR = 255 -- export: (Default: 255) PvP HUD color
-PvPG = 0 -- export: (Default: 0) PvP HUD color
-PvPB = 0 -- export: (Default: 0) PvP HUD color
-centerX = 960 -- export: (Default: 960) X postion of Artifical Horizon (KSP Navball), Default 960. Use centerX=700 and centerY=880 for lower left placement.
-centerY = 540 -- export: (Default: 540) Y postion of Artifical Horizon (KSP Navball), Default 540. Use centerX=700 and centerY=880 for lower left placement. 
-throtPosX = 1300 -- export: (Default: 1300) X position of Throttle Indicator, default 1300 to put it to right of default AH centerX parameter.
-throtPosY = 540 -- export: (Default: 540) Y position of Throttle indicator, default is 540 to place it centered on default AH centerY parameter.
-vSpdMeterX = 1525  -- export: (Default: 1525) X postion of Vertical Speed Meter.  Default 1525 (use 1920x1080, it will scale)
-vSpdMeterY = 250 -- export: (Default: 250) Y postion of Vertical Speed Meter.  Default 250 (use 1920x1080, it will scale)
-altMeterX = 550  -- export: (Default: 550) X postion of Altimeter.  Default 550 (use 1920x1080, it will scale)
-altMeterY = 540 -- export: (Default: 540) Y postion of Altimeter.  Default 500 (use 1920x1080, it will scale)
-fuelX = 100 -- export: (Default: 100) X position of fuel tanks, default is 100 for left side, set both fuelX and fuelY to 0 to hide fuel
-fuelY = 350 -- export: (Default: 350) Y position of fuel tanks, default 350 for left side, set both fuelX and fuelY to 0 to hide fuel
-circleRad = 400 -- export: (Default: 400) The size of the artifical horizon circle, recommended minimum 100, maximum 400.  Looks different > 200. Set to 0 to remove.
-DeadZone = 50 -- export: (Default: 50) Number of pixels of deadzone at the center of the screen
-DisplayOrbit = true -- export: (Default: true) Show Orbit display when valid or not.  May be toggled with shift Buttons
-OrbitMapSize = 250 -- export: (Default: 250) Size of the orbit map, make sure it is divisible by 4
-OrbitMapX = 75 -- export: (Default: 75) X postion of Orbit Display Disabled
-OrbitMapY = 0 -- export: (Default: 0)  Y position of Orbit Display
-showHud = true -- export: (Default: true) Uncheck to hide the HUD and only use autopilot features via ALT+# keys.
-ShowOdometer = true -- export: (Default: true) Uncheck to hide the odometer panel up top.
-hideHudOnToggleWidgets = true -- export: (Default: true) Uncheck to keep showing HUD when you toggle on the widgets via ALT+3.
-ShiftShowsRemoteButtons = true -- export: (Default: true) Whether or not pressing Shift in remote controller mode shows you the buttons (otherwise no access to them)
-YawStallAngle = 35 --export: (Default: 35) Angle at which the ship stalls when yawing (Stabilizers: 70, Wings: 55, Ailerons: 30)
-PitchStallAngle = 35 --export: (Default: 35) Angle at which the ship stalls when pitching (Stabilizers: 70, Wings: 55, Ailerons: 30)
-speedChangeLarge = 5 -- export: (Default: 5) The speed change that occurs when you tap speed up/down, default is 5 (25% throttle change). 
-speedChangeSmall = 1 -- export: (Default: 1) the speed change that occurs while you hold speed up/down, default is 1 (5% throttle change).
-brakeLandingRate = 30 -- export: (Default: 30) Max loss of altitude speed in m/s when doing a brake landing, default 30.  This is to prevent "bouncing" as hover/boosters catch you.  Do not use negative number.
-MaxPitch = 30 -- export: (Default: 30) Maximum allowed pitch during takeoff and altitude changes while in altitude hold.  You can set higher or lower depending on your ships capabilities.
-ReentrySpeed = 1050 -- export: (Default: 1050) Target re-entry speed once in atmosphere in km/h. 
-AtmoSpeedLimit = 1050 -- export: (Default: 1050) Speed limit in Atmosphere in km/h.  If you exceed this limit the ship will attempt to break till below this limit.
-SpaceSpeedLimit = 30000 -- export: (Default: 30000) Space speed limit in KM/H.  If you hit this speed but are not in active autopilot, engines will turn off.
-ReentryAltitude = 2500 -- export: (Default: 2500) Target alititude when using re-entry.
-AutoTakeoffAltitude = 1000 -- export: (Default: 1000) How high above your ground starting position AutoTakeoff tries to put you
-TargetHoverHeight = 50 -- export: (Default: 50) Hover height when retracting landing gear
-LandingGearGroundHeight = 0 --export: (Default: 0) Set to AGL-1 when on ground (or 0)
-MaxGameVelocity = 8333.00 -- export: (Default: 8333.00) Max speed for your autopilot in m/s, do not go above 8333.055 (30000 km/hr), can be reduced to safe fuel, use 6944.4444 for 25000km/hr
-TargetOrbitRadius = 1.4 -- export: (Default: 1.4) How tight you want to orbit the planet at end of autopilot.  The smaller the value the tighter the orbit.  1.4 sets an Alioth orbit of 56699m.
-AutopilotInterplanetaryThrottle = 1.0 -- export: (Default: 1.0) How much throttle, 0.0 to 1.0, you want it to use when in autopilot to another planet to reach MaxGameVelocity
-warmup = 32 -- export: (Default: 32) How long it takes your engines to warmup.  Basic Space Engines, from XS to XL: 0.25,1,4,16,32
-MouseYSensitivity = 0.003 --export: (Default: 0.003) For virtual joystick only
-MouseXSensitivity = 0.003 -- export: (Default: 0.003) For virtual joystick only
-autoRollPreference = false -- export: (Default: false) [Only in atmosphere]<br>When the pilot stops rolling,  flight model will try to get back to horizontal (no roll)
-autoRollFactor = 2 -- export: (Default: 2) [Only in atmosphere]<br>When autoRoll is engaged, this factor will increase to strength of the roll back to 0<br>Valid values: Superior or equal to 0.01
-rollSpeedFactor = 1.5 -- export: (Default: 1.5) This factor will increase/decrease the player input along the roll axis<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
-turnAssist = true -- export: (Default: true) [Only in atmosphere]<br>When the pilot is rolling, the flight model will try to add yaw and pitch to make the construct turn better<br>The flight model will start by adding more yaw the more horizontal the construct is and more pitch the more vertical it is
-turnAssistFactor = 2 -- export: (Default: 2) [Only in atmosphere]<br>This factor will increase/decrease the turnAssist effect<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
-TrajectoryAlignmentStrength = 0.002 -- export: (Default: 0.002) How strongly AP tries to align your velocity vector to the target when not in orbit, recommend 0.002
-torqueFactor = 2 -- export: (Default: 2) Force factor applied to reach rotationSpeed<br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
-pitchSpeedFactor = 0.8 -- export: (Default: 0.8) For keyboard control
-yawSpeedFactor = 1 -- export: (Default: 1) For keyboard control
-brakeSpeedFactor = 3 -- export: (Default: 3) When braking, this factor will increase the brake force by brakeSpeedFactor * velocity<br>Valid values: Superior or equal to 0.01
-brakeFlatFactor = 1 -- export: (Default: 1) When braking, this factor will increase the brake force by a flat brakeFlatFactor * velocity direction><br>(higher value may be unstable)<br>Valid values: Superior or equal to 0.01
-DampingMultiplier = 40 -- export: (Default: 40) How strongly autopilot dampens when nearing the correct orientation
-fuelTankHandlingAtmo = 0 -- export: (Default: 0) For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
-fuelTankHandlingSpace = 0 -- export: (Default: 0) For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
-fuelTankHandlingRocket = 0 -- export: (Default: 0) For accurate estimates, set this to the fuel tank handling level of the person who placed the element. Ignored for slotted tanks.
-ContainerOptimization = 0 -- export: (Default: 0) For accurate estimates, set this to the Container Optimization level of the person who placed the tanks.  Ignored for slotted tanks.
-FuelTankOptimization = 0 -- export: (Default: 0) For accurate unslotted fuel tank calculation, set this to the fuel tank optimization skill level of the person who placed the tank.  Ignored for slotted tanks.
-ExtraLongitudeTags = "none" -- export: (Default: "none") Enter any extra longitudinal tags you use inside '' seperated by space, i.e. "forward faster major"  These will be added to the engines that are control by longitude.
-ExtraLateralTags = "none" -- export: (Default: "none") Enter any extra lateral tags you use inside '' seperated by space, i.e. "left right"  These will be added to the engines that are control by lateral.
-ExtraVerticalTags = "none" -- export: (Default: "none") Enter any extra longitudinal tags you use inside '' seperated by space, i.e. "up down"  These will be added to the engines that are control by vertical.
-ExternalAGG = false -- export: (Default: false) Toggle On if using an external AGG system.  If on will prevent this HUD from doing anything with AGG.
-UseSatNav = false -- export: (Default: false) Toggle on if using Trog SatNav script.  This will provide SatNav support.
-apTickRate = 0.0166667 -- export: (Default: 0.0166667) Set the Tick Rate for your autopilot features.  0.016667 is effectively 60 fps and the default value. 0.03333333 is 30 fps.  
-hudTickRate = 0.0666667 -- export: (Default: 0.0666667) Set the tick rate for your HUD. Default is 4 times slower than apTickRate
-ShouldCheckDamage = true --export: (Default: true) Whether or not damage checks are performed.  Disabled for performance on very large ships
-CalculateBrakeLandingSpeed = false --export: (Default: false) Whether BrakeLanding speed at non-waypoints should be calculated or use the brakeLandingRate user setting.  Only set to true for ships with low mass to lift capability.
-autoRollRollThreshold = 0 --export: (Default: 0) The minimum amount of roll before autoRoll kicks in and stabilizes (if active)
-AtmoSpeedAssist = true --export: (Default: true) Whether or not atmospheric speeds should be limited to a maximum of AtmoSpeedLimit
-ForceAlignment = false --export: (Default: false) Whether velocity vector alignment should be forced when in Altitude Hold
-minRollVelocity = 150 --export: (Default: 150) Min velocity, in m/s, over which advanced rolling can occur
-VertTakeOffEngine = false --export: (Default: false) Set this to true if you have VTOL engines on your construct. Changes Auto Takeoff to Vertical Takeoff.
-VertTakeOffMode = "Orbit" --export: (Default: "Orbit") Set to: "AGG" = turn on AGG when above 1km and near AGG activation height, "Orbit" = go directly to orbit based off of TargetOrbitRadius. Must keep quotes. Any case is fine.
+ResolutionX = 1920 -- export: (Default: 1920)
+ResolutionY = 1080 -- export: (Default: 1080) 
+SafeR = 130 -- export: (Default: 130)
+SafeG = 224 -- export: (Default: 224)
+SafeB = 255 -- export: (Default: 255)
+PvPR = 255 -- export: (Default: 255)
+PvPG = 0 -- export: (Default: 0)
+PvPB = 0 -- export: (Default: 0)
+centerX = 960 -- export: (Default: 960)
+centerY = 540 -- export: (Default: 540)
+throtPosX = 1300 -- export: (Default: 1300)
+throtPosY = 540 -- export: (Default: 540)
+vSpdMeterX = 1525  -- export: (Default: 1525)
+vSpdMeterY = 250 -- export: (Default: 250)
+altMeterX = 550  -- export: (Default: 550)
+altMeterY = 540 -- export: (Default: 540) 
+fuelX = 100 -- export: (Default: 100)
+fuelY = 350 -- export: (Default: 350)
+circleRad = 400 -- export: (Default: 400)
+DeadZone = 50 -- export: (Default: 50)
+DisplayOrbit = true -- export: (Default: true) 
+OrbitMapSize = 250 -- export: (Default: 250)
+OrbitMapX = 75 -- export: (Default: 75)
+OrbitMapY = 0 -- export: (Default: 0)
+showHud = true -- export: (Default: true) 
+ShowOdometer = true -- export: (Default: true)
+hideHudOnToggleWidgets = true -- export: (Default: true)
+ShiftShowsRemoteButtons = true -- export: (Default: true)
+YawStallAngle = 35 --export: (Default: 35)
+PitchStallAngle = 35 --export: (Default: 35)
+speedChangeLarge = 5 -- export: (Default: 5)
+speedChangeSmall = 1 -- export: (Default: 1)
+brakeLandingRate = 30 -- export: (Default: 30)
+MaxPitch = 30 -- export: (Default: 30)
+ReentrySpeed = 1050 -- export: (Default: 1050)
+AtmoSpeedLimit = 1050 -- export: (Default: 1050)
+SpaceSpeedLimit = 30000 -- export: (Default: 30000).
+ReentryAltitude = 2500 -- export: (Default: 2500)
+AutoTakeoffAltitude = 1000 -- export: (Default: 1000)
+TargetHoverHeight = 50 -- export: (Default: 50)
+LandingGearGroundHeight = 0 --export: (Default: 0)
+MaxGameVelocity = 8333.00 -- export: (Default: 8333.00)
+TargetOrbitRadius = 1.4 -- export: (Default: 1.4)
+AutopilotInterplanetaryThrottle = 1.0 -- export: (Default: 1.0)
+warmup = 32 -- export: (Default: 32)
+MouseYSensitivity = 0.003 --export: (Default: 0.003)
+MouseXSensitivity = 0.003 -- export: (Default: 0.003)
+autoRollPreference = false -- export: (Default: false)
+autoRollFactor = 2 -- export: (Default: 2)
+rollSpeedFactor = 1.5 -- export: (Default: 1.5)
+turnAssist = true -- export: (Default: true)
+turnAssistFactor = 2 -- export: (Default: 2)
+TrajectoryAlignmentStrength = 0.002 -- export: (Default: 0.002)
+torqueFactor = 2 -- export: (Default: 2)
+pitchSpeedFactor = 0.8 -- export: (Default: 0.8)
+yawSpeedFactor = 1 -- export: (Default: 1)
+brakeSpeedFactor = 3 -- export: (Default: 3)
+brakeFlatFactor = 1 -- export: (Default: 1)
+DampingMultiplier = 40 -- export: (Default: 40) 
+fuelTankHandlingAtmo = 0 -- export: (Default: 0)
+fuelTankHandlingSpace = 0 -- export: (Default: 0)
+fuelTankHandlingRocket = 0 -- export: (Default: 0)
+ContainerOptimization = 0 -- export: (Default: 0)
+FuelTankOptimization = 0 -- export: (Default: 0)
+ExtraLongitudeTags = "none" -- export: (Default: "none")
+ExtraLateralTags = "none" -- export: (Default: "none")
+ExtraVerticalTags = "none" -- export: (Default: "none")
+ExternalAGG = false -- export: (Default: false)
+UseSatNav = false -- export: (Default: false)
+apTickRate = 0.0166667 -- export: (Default: 0.0166667)  
+hudTickRate = 0.0666667 -- export: (Default: 0.0666667)
+ShouldCheckDamage = true --export: (Default: true)
+CalculateBrakeLandingSpeed = false --export: (Default: false)
+autoRollRollThreshold = 0 --export: (Default: 0)
+AtmoSpeedAssist = true --export: (Default: true)
+ForceAlignment = false --export: (Default: false)
+minRollVelocity = 150 --export: (Default: 150)
+VertTakeOffEngine = false --export: (Default: false)
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -148,7 +147,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed",
-                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "VertTakeOffEngine","VertTakeOffMode", "PvPR", "PvPG", "PvPB"}
+                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "VertTakeOffEngine", "PvPR", "PvPG", "PvPB"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -1079,15 +1078,8 @@ function ToggleAutoTakeoff()
         AltitudeHold = false
     else
         if VertTakeOffEngine then
-            VertTakeOffMode = string.lower(VertTakeOffMode)
-            if VertTakeOffMode ~= "orbit" and VertTakeOffMode ~= "agg" then
-                msgText = "Incorrect VertTakeOffMode setting. Takeoff aborted."
-                VertTakeOff = false
-                BrakeLanding = true
-            else
             VertTakeOff = true
             AltitudeHold = false
-            end
         else
             if not AltitudeHold then
                 ToggleAltitudeHold()
@@ -1095,13 +1087,11 @@ function ToggleAutoTakeoff()
             AutoTakeoff = true
             HoldAltitude = coreAltitude + AutoTakeoffAltitude
         end
-        if VertTakeOff or AutoTakeoff then
-            OrbitAchieved = false
-            GearExtended = false
-            Nav.control.retractLandingGears()
-            Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard set this for takeoff, you wouldn't use takeoff from a hangar
-            BrakeIsOn = true
-        end
+        OrbitAchieved = false
+        GearExtended = false
+        Nav.control.retractLandingGears()
+        Nav.axisCommandManager:setTargetGroundAltitude(500) -- Hard set this for takeoff, you wouldn't use takeoff from a hangar
+        BrakeIsOn = true
     end
 end
 
@@ -5541,7 +5531,7 @@ function safeZone(WorldPos) -- Thanks to @SeM for the base code, modified to wor
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.42
+    VERSION_NUMBER = 5.43
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6127,10 +6117,13 @@ function script.onTick(timerId)
 
         if VertTakeOff then
             autoRoll = true
-            VertTakeOffMode = string.lower(VertTakeOffMode)
-            if VertTakeOffMode == "agg" and not ExternalAGG and antigrav ~= nil then
-                antigrav.activate()
-                antigrav.show()
+            if vSpd < -30 then -- saftey net
+                msgText = "Unable to achieve lift. Safety Landing."
+                upAmount = 0
+                autoRoll = autoRollPreference
+                VertTakeOff = false
+                BrakeLanding = true
+            elseif antigrav and not ExternalAGG and antigrav.getState() == 1 then
                 if coreAltitude < (antigrav.getBaseAltitude() - 100) then
                     VtPitch = 0
                     upAmount = 15
@@ -6138,23 +6131,17 @@ function script.onTick(timerId)
                 elseif vSpd > 0 then
                     BrakeIsOn = true
                     upAmount = 0
-                elseif vSpd < -5 then
+                elseif vSpd < -30 then
                     BrakeIsOn = true
                     upAmount = 15
                 elseif coreAltitude >= antigrav.getBaseAltitude() then
                     BrakeIsOn = true
                     upAmount = 0
                     VertTakeOff = false
-                    msgText = "Singularity engaged"
+                    msgText = "Takeoff complete. Singularity engaged"
                 end
-            elseif VertTakeOffMode == "orbit" then
-                if vSpd < -30 then -- saftey net
-                    msgText = "Unable to take off. Landing."
-                    upAmount = 0
-                    autoRoll = autoRollPreference
-                    VertTakeOff = false
-                    BrakeLanding = true
-                elseif atmosphere() > 0.08 then
+            else
+                if atmosphere() > 0.08 then
                     VtPitch = 0
                     BrakeIsOn = false
                     upAmount = 20
@@ -6181,11 +6168,6 @@ function script.onTick(timerId)
                     end
                     VertTakeOff = false
                 end
-            else -- stops them from doing bad things and check your settings
-                msgText = "Incorrect settings for ship configuration. Takeoff aborted."
-                autoRoll = autoRollPreference
-                VertTakeOff = false
-                BrakeLanding = true
             end
             if VtPitch ~= nil then
                 if (vTpitchPID == nil) then
@@ -6242,7 +6224,8 @@ function script.onTick(timerId)
                     end
                 end
                 if orbit.apoapsis ~= nil then
-                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.periapsis.altitude < OrbitTargetOrbit*1.2 and orbit.apoapsis.altitude > orbit.periapsis.altitude and orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
+                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.periapsis.altitude < OrbitTargetOrbit*1.2 and orbit.apoapsis.altitude > orbit.periapsis.altitude and 
+                        orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
                         BrakeIsOn = false
                         PlayerThrottle = 0
                         cmdThrottle(0)
@@ -6274,10 +6257,10 @@ function script.onTick(timerId)
                         if orbit.periapsis.altitude < OrbitTargetOrbit then
                             if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
                                 if velMag+10 > endSpeed then
-                                    if vSpd > 15 then 
+                                    if vSpd > 5 then 
                                         orbitThrottle(0.5,-80)                                      
                                         BrakeIsOn = false
-                                    elseif vSpd < -15 then
+                                    elseif vSpd < -5 then
                                         orbitThrottle(0.5,80)
                                         BrakeIsOn = false
                                     else
@@ -7355,46 +7338,6 @@ function script.onTick(timerId)
                     antigrav.setBaseAltitude(desiredBaseAltitude)
                 end
         end
-
-        -- if AchieveOrbit then -- Try to achieve an orbit.  This should only be on when in space.  
-        --     local orbitAltitude = 1000
-        --     if planet.name ~= "Space" then
-        --         if planet.hasAtmosphere then 
-        --             orbitAltitude = math.floor(planet.radius*(TargetOrbitRadius-1) + planet.noAtmosphericDensityAltitude)
-        --         else
-        --             orbitAltitude = math.floor(planet.radius*(TargetOrbitRadius-1) + planet.surfaceMaxAltitude)
-        --         end
-        --     else
-        --         orbitAltitude = 1000
-        --     end
-
-        --     local _, endSpeed = Kep(planet):escapeAndOrbitalSpeed((worldPos-planet.center):len()-planet.radius)
-
-        --     autoRoll = true
-
-        --     -- Using the AutopilotTargetOrbit we would calculate for our current nearest planet
-        --     -- Figure out a target vector that our velocity should be at - that is, perpendicular to gravity, and toward CustomTarget if not nil
-        --     -- Otherwise ship forward if not orbiting to target
-        --     local targetVelocityVector
-        --     if OrbitToTarget and CustomTarget ~= nil then
-        --         -- So we need a vector pointing from our position to the target
-        --         -- And project it on a plane defined by worldV, easy
-        --         -- Not sure if we need the first normalize or not, might as well
-        --         targetVelocityVector = (target.position-worldPos):normalize():project_on_plane(worldV):normalize()
-        --     else
-        --         targetVelocityVector = constrF:project_on_plane(worldV):normalize()
-        --     end
-
-        --     -- Adjust the vector to account for being above or below target altitude
-        --     targetVelocityVector = targetVelocityVector * endSpeed -- Scale based on target speed, and we'll use an un-normalized velocity vector to compare
-        --     targetVelocityVector = (targetVelocityVector + -worldV*(coreAltitude - orbitAltitude)):normalize()*endSpeed -- Make sure velocity stays capped
-
-        --     -- So, this is exactly what we want our velocity vector to look like
-
-
-        --     -- Soo... nothing I do with this is going to really get it to stabilize at an altitude, which is the problem
-        --     -- To do that, we really need to get vspeed to 0
-        -- end
     end
 end
 
