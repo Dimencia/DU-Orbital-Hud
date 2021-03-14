@@ -1080,7 +1080,7 @@ function ToggleAutoTakeoff()
     else
         if VertTakeOffEngine then
             VertTakeOffMode = string.lower(VertTakeOffMode)
-            if VertTakeOffMode ~= "orbit" or VertTakeOffMode ~= "agg" then
+            if VertTakeOffMode ~= "orbit" and VertTakeOffMode ~= "agg" then
                 msgText = "Incorrect VertTakeOffMode setting. Takeoff aborted."
                 VertTakeOff = false
                 BrakeLanding = true
@@ -6129,38 +6129,37 @@ function script.onTick(timerId)
             autoRoll = true
             VertTakeOffMode = string.lower(VertTakeOffMode)
             if VertTakeOffMode == "agg" and not ExternalAGG and antigrav ~= nil then
-                antigrav = true
                 antigrav.activate()
                 antigrav.show()
                 if coreAltitude < (antigrav.getBaseAltitude() - 100) then
                     VtPitch = 0
                     upAmount = 15
+                    BrakeIsOn = false
                 elseif vSpd > 0 then
                     BrakeIsOn = true
                     upAmount = 0
                 elseif vSpd < -5 then
                     BrakeIsOn = true
                     upAmount = 15
-                elseif coreAltitude == antigrav.getBaseAltitude() then
-                    BrakeIsOn = false
+                elseif coreAltitude >= antigrav.getBaseAltitude() then
+                    BrakeIsOn = true
                     upAmount = 0
                     VertTakeOff = false
                     msgText = "Singularity engaged"
                 end
             elseif VertTakeOffMode == "orbit" then
-                if atmosphere() > 0.08 then
+                if vSpd < -30 then -- saftey net
+                    msgText = "Unable to take off. Landing."
+                    upAmount = 0
+                    autoRoll = autoRollPreference
+                    VertTakeOff = false
+                    BrakeLanding = true
+                elseif atmosphere() > 0.08 then
                     VtPitch = 0
                     BrakeIsOn = false
                     upAmount = 20
                 elseif atmosphere() < 0.08 and atmosphere() > 0 then
-                    if vSpd < 0 then -- saftey net
-                        msgText = "Unable to take off. Landing."
-                        autoRoll = autoRollPreference
-                        VertTakeOff = false
-                        BrakeLanding = true
-                    else
-                        BrakeIsOn = false
-                    end
+                    BrakeIsOn = false
                     if SpaceEngineVertDn then
                         VtPitch = 0
                         upAmount = 20

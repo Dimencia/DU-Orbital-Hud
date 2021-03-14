@@ -5,14 +5,14 @@ but this might be the limit of everything in the hud meaning new features would 
 
 Version 5.42 - VTO to Orbit or AGG Height and Same Planet Orbital Hops.
 - Vertical Takeoff v3 - (`VertTakeOffEngine` must be set to True for the below to work)
-    - When `VertTakeOffMode` is set to *"AGG"*, it will now vertically fly up just above AGG Singularity height and stay in the air until the Singularity is at your height, then the engines are turned off and the brakes are disengaged. This will automatically activate your AGG. *Not available if you use ExternalAGG.*
+    - When `VertTakeOffMode` is set to *"AGG"*, it will now activate AGG and vertically fly up just above AGG Singularity height and stay in the air until the Singularity is at your height, then the engines are turned off and the brakes are engaged. *Not available if you use ExternalAGG.*
     - When `VertTakeOffMode` is set to *"Orbit"*, it will vertically fly up and out of atmosphere. If there is not enough force to lift you out, Brake Landing is triggered. If you reach space, it will fly you forward using space engines to the distance set by `TargetOrbitRadius` and then cut off engines and you will be in orbit.
 - Auto Takeoff changes
-    - When Altitude Hold is set above atmospheric height and touches space, orbiting will engaged once out of atmosphere. Your ship will orbit at the altitude hold height. **Set this with care, too low and you risk burning up**
+    - When Altitude Hold is set above atmospheric height (alt-spacebar) and is in space, orbiting will engaged once out of atmosphere. Your ship will orbit at the altitude hold height. **Set this with care, too low and you risk burning up or will yo-yo trying to achieve orbit**
 - Autopilot changes
-    - While in space, activating autopilot when your target is the same nearby planet (not a custom waypoint), you will begin orbiting to `TargetOrbitRadius`.
-    - On ground, if a custom target is selected and Altitude Hold is set above atmo height, autopilot will take off and orbit at the configred height. Once orbited, autopilot will reengage and reenter you close to your target. Recommended minimum distance for this feature is a waypoint at least 0.5SU away.
-    - Target locked when Autopilot is engaged. Disengaging Autopilot allows you to select a new target.
+    - While in space, activating autopilot when your target is the same nearby planet (not a custom waypoint), you will begin orbiting to height determined by `TargetOrbitRadius`.
+    - On ground, if a custom target is selected and Altitude Hold is raised (alt-spacebar) above atmo height, autopilot will take off and orbit at the configred height. Once orbited, autopilot will reengage and reenter you close to your target. Recommended minimum distance for this feature is a waypoint at least 0.5SU away.  **Set this with care, too low and you risk burning up or will yo-yo trying to achieve orbit**
+    - Target locked when Autopilot is engaged (in space). Disengaging Autopilot allows you to select a new target.
 - Script cleanup
     - Cleaned up repetative functions and removed unused variables.
 
