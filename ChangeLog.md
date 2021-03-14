@@ -1,5 +1,34 @@
 ## ChangeLog - Most recent changes at the top
 
+Fixed script unloading when away from control unit.  Note: We are now at our script limit even minimized.  We are trying to clean up to give more room, 
+but this might be the limit of everything in the hud meaning new features would remove old features or we might have to get creative on some things.
+
+Version 5.42 - VTO to Orbit or AGG Height, ATO to AGG, and Same Planet Orbital Hops.
+- Vertical Takeoff v3 - (`VertTakeOffEngine` must be set to True for the below to work)
+    - When `VertTakeOffMode` is set to *"AGG"*, it will now activate AGG and vertically fly up just above AGG Singularity height and stay in the air until the Singularity is at your height, then the engines are turned off and the brakes are engaged. *Not available if you use ExternalAGG.*
+    - When `VertTakeOffMode` is set to *"Orbit"*, it will vertically fly up and out of atmosphere. If there is not enough force to lift you out, Brake Landing is triggered. If you reach space, it will fly you forward using space engines to the distance set by `TargetOrbitRadius` and then cut off engines and you will be in orbit.
+- Auto Takeoff changes
+    - When Altitude Hold is set above atmospheric height (alt-spacebar) and is in space, orbiting will engaged once out of atmosphere. Your ship will orbit at the altitude hold height. **Set this with care, too low and you risk burning up or will yo-yo trying to achieve orbit**
+    - If Agg is turned on first (alt-g default) then autotakeoff (alt-6 default) will take you up to current singularity altitude, turn off engines, and engage brake.
+- Autopilot changes
+    - While in space, activating autopilot when your target is the same nearby planet (not a custom waypoint), you will begin orbiting to height determined by `TargetOrbitRadius`.
+    - On ground, if a custom target is selected and Altitude Hold is raised (alt-spacebar) above atmo height, autopilot will take off and orbit at the configred height. Once orbited, autopilot will reengage and reenter you close to your target. Recommended minimum distance for this feature is a waypoint at least 0.5SU away.  **Set this with care, too low and you risk burning up or will yo-yo trying to achieve orbit**
+    - Target locked when Autopilot is engaged (in space). Disengaging Autopilot allows you to select a new target.
+- Script cleanup
+    - Cleaned up repetative functions and removed unused variables.
+
+
+Version 5.41
+- Vertical Engines Detection developed
+    - Currently for changing how Vertical Takeoff works, but can be extended in the future. You still need to enable VertTakeOffEngine to activate.
+- Vertical Takeoff v2
+    - Now has three options set by VertTakeOffMode: "Orbit" to engage orbiting, and "AGG" to engage the AGG at AGG minimum height (1km or AGG Base Alt, whichever is higher), 
+    or higher if set (Not available when ExternalAGG set to true)
+    - Protection against mispelling or wrong option in VertTakeOffMode. Does not enable if the option is wrong
+    - Using Vertical Engine Detection, now makes use of vertical engines in space if equiped. If not, will pitch 35 deg up and will move forward. **Will not activate Vertical Takeoff.**
+    - Saftey Net added to Vertical Takeoff. If you don't reach out of atmo and begin falling, BrakeLanding is enabled for a smooth fall back to ground
+    - If you cancel Vertical Takeoff mid sequence, BrakeLanding is enabled
+    
 Version 5.4
 - Updates via ShadowMage, many thanks!:
     Initial Pass on Vertical Takeoff
