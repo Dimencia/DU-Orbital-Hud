@@ -5531,7 +5531,7 @@ function safeZone(WorldPos) -- Thanks to @SeM for the base code, modified to wor
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.43
+    VERSION_NUMBER = 5.431
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -7253,8 +7253,10 @@ function script.onTick(timerId)
                 end
             end
             if AutoTakeoff or spaceLaunch then
-                local intersectBody, nearSide, farSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (AutopilotTargetCoords-worldPos):normalize(), function(body) return (body.radius+body.noAtmosphericDensityAltitude) end)
-
+                local intersectBody, nearSide, farSide
+                if AutopilotTargetCoords ~= nil then
+                    intersectBody, nearSide, farSide = galaxyReference:getPlanetarySystem(0):castIntersections(worldPos, (AutopilotTargetCoords-worldPos):normalize(), function(body) return (body.radius+body.noAtmosphericDensityAltitude) end)
+                end
                 if antigrav and antigrav.getState() == 1 then
                     if coreAltitude >= (HoldAltitude-50) then
                         AutoTakeoff = false
