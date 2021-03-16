@@ -9,6 +9,9 @@ Version 5.44
     - `Alt-6` (Altitude Hold) while in space within a planet's influence will orbit you at the height of activation.
     - `Alt-4` (Autopilot) with a custom target over 0.5SU away on the same planet and set with `alt-space` above the atmosphere will now orbit to destination. If you set height over atmosphere and your target is too close, normal climb and reentry will be used.
     - Using the HUD button `Engage Orbiting` sets your altitude to your `TargetOrbitRadius`.
+- Glide Entry
+    - When target is set to planet or not set, glide entry now glides in and holds altitude only.
+    - When a custom target is selected, glide entry now lands your ship at your custom destination.
 - Bugfix
     - When using `Alt-6` without a target selected (using `Alt-1` or `Alt-2`) no longer gives an error.
 

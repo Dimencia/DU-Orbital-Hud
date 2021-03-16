@@ -318,6 +318,8 @@ local OrbitAchieved = false
 -- local AtmoEngineVertDn = false
 local SpaceEngineVertUp = false
 local SpaceEngineVertDn = false
+local entryToggle = false
+
 -- BEGIN FUNCTION DEFINITIONS
 
 function LoadVariables()
@@ -2003,7 +2005,7 @@ function SetupButtons()
             end)
     y = y + buttonHeight + 20
     MakeButton("Glide Re-Entry", "Cancel Glide Re-Entry", buttonWidth, buttonHeight, x, y,
-        function() return Reentry end, function() spaceLand = true ProgradeToggle() end, function() return (coreAltitude > ReentryAltitude) end )
+        function() return Reentry end, function() spaceLand = true entryToggle = not entryToggle ProgradeToggle() end, function() return (coreAltitude > ReentryAltitude) end )
     MakeButton("Parachute Re-Entry", "Cancel Parachute Re-Entry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
         function() return Reentry end, BeginReentry, function() return (coreAltitude > ReentryAltitude) end )
     y = y + buttonHeight + 20
@@ -6077,7 +6079,7 @@ function script.onTick(timerId)
                         BrakeIsOn = false
                         ProgradeIsOn = false
                         reentryMode = true
-                        spaceLand = false   
+                        spaceLand = false
                         finalLand = true
                         Autopilot = false
                         --autoRoll = autoRollPreference   
@@ -6110,7 +6112,7 @@ function script.onTick(timerId)
         end
         local up = vec3(core.getWorldVertical()) * -1
         local vSpd = (velocity.x * up.x) + (velocity.y * up.y) + (velocity.z * up.z)
-        if finalLand and (coreAltitude < (HoldAltitude + 200) and coreAltitude > (HoldAltitude - 200)) and ((velMag*3.6) > (adjustedAtmoSpeedLimit-100)) and math.abs(vSpd) < 20 and atmosphere() >= 0.1
+        if finalLand and CustomTarget ~= nil and (coreAltitude < (HoldAltitude + 200) and coreAltitude > (HoldAltitude - 200)) and ((velMag*3.6) > (adjustedAtmoSpeedLimit-100)) and math.abs(vSpd) < 20 and atmosphere() >= 0.1
             and (CustomTarget.position-worldPos):len() > 2000 + coreAltitude then -- Only engage if far enough away to be able to turn back for it
             ToggleAutopilot()
             finalLand = false
@@ -7065,7 +7067,7 @@ function script.onTick(timerId)
                     end
                     LastDistanceToTarget = distanceToTarget
                 end
-            elseif VectorToTarget and atmosphere() == 0 and not spaceLaunch and not Reentry then
+            elseif VectorToTarget and atmosphere() == 0 and HoldAltitude > planet.noAtmosphericDensityAltitude and not (spaceLaunch or Reentry) then
                 if CustomTarget ~= nil and autopilotTargetPlanet.name == planet.name then
                     local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
                     local targetAltitude = planet:getAltitude(CustomTarget.position)
@@ -7097,7 +7099,7 @@ function script.onTick(timerId)
             end
 
             -- Altitude hold and AutoTakeoff orbiting
-            if atmosphere() == 0 and AltitudeHold and not (spaceLaunch or VectorToTarget or IntoOrbit) then
+            if atmosphere() == 0 and (AltitudeHold and HoldAltitude > planet.noAtmosphericDensityAltitude) and not (spaceLaunch or VectorToTarget or IntoOrbit or Reentry ) then
                 if not OrbitAchieved then
                     IntoOrbit = true
                 end
