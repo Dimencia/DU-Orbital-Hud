@@ -1105,6 +1105,7 @@ function ToggleIntoOrbit()
             else
                 CancelIntoOrbit = true
             end
+            OrbitAchieved = false
             IntoOrbit = false
             orbitAligned = false
             orbitPitch = nil
@@ -1145,7 +1146,9 @@ function ToggleAltitudeHold()
     local time = system.getTime()
     if (time - ahDoubleClick) < 1.5 then
         if planet.hasAtmosphere then
-            HoldAltitude = planet.spaceEngineMinAltitude - 50
+            if atmosphere() > 0 then
+                HoldAltitude = planet.spaceEngineMinAltitude - 50
+            end
             ahDoubleClick = -1
             if AltitudeHold then 
                 return 
@@ -1167,7 +1170,15 @@ function ToggleAltitudeHold()
         OrbitAchieved = false
         if (hoverDetectGround() == -1) or not inAtmo then -- Never autotakeoff in space
             AutoTakeoff = false
-            if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
+            if ahDoubleClick > -1 then
+                HoldAltitude = coreAltitude
+                CancelIntoOrbit = true
+                OrbitAchieved = true
+            else
+                HoldAltitude = coreAltitude
+                IntoOrbit = true
+                OrbitAchieved = false
+            end
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
                 Nav.control.cancelCurrentControlMasterMode()
             end
@@ -6382,7 +6393,6 @@ function script.onTick(timerId)
             -- brakeInput = 1
             -- msgText = "Orbitting cancelled, parking"
             OrbitTargetSet = false
-            OrbitAchieved = false
             OrbitTargetPlanet = nil
             cmdThrottle(0)
             CancelIntoOrbit = false

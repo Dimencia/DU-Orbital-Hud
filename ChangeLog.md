@@ -6,7 +6,7 @@ but this might be the limit of everything in the hud meaning new features would 
 Version 5.44
 - Orbiting
     - `Alt-6` (Altitude Hold) when set with `alt-space` above the atmosphere will now put you in orbit at that height.
-    - `Alt-6` (Altitude Hold) while in space within a planet's influence will orbit you at the height of activation.
+    - `Alt-6` (Altitude Hold) in space will hold you in place. `Alt-6-6` while in space within a planet's influence will orbit you at the height of activation in the direction you are facing.
     - `Alt-4` (Autopilot) with a custom target over 0.5SU away on the same planet and set with `alt-space` above the atmosphere will now orbit to destination. If you set height over atmosphere and your target is too close, normal climb and reentry will be used.
     - Using the HUD button `Engage Orbiting` sets your altitude to your `TargetOrbitRadius`.
 - Glide Entry
