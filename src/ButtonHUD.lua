@@ -92,6 +92,7 @@ AtmoSpeedAssist = true --export: (Default: true)
 ForceAlignment = false --export: (Default: false)
 minRollVelocity = 150 --export: (Default: 150)
 VertTakeOffEngine = false --export: (Default: false)
+DisplayDeadZone = true -- export: (Default: true)
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -147,7 +148,7 @@ local saveableVariables = {"userControlScheme", "TargetOrbitRadius", "apTickRate
                         "vSpdMeterX", "vSpdMeterY", "altMeterX", "altMeterY", "fuelX","fuelY", "LandingGearGroundHeight", "TrajectoryAlignmentStrength",
                         "RemoteHud", "YawStallAngle", "PitchStallAngle", "ResolutionX", "ResolutionY", "UseSatNav", "FuelTankOptimization", "ContainerOptimization",
                         "ExtraLongitudeTags", "ExtraLateralTags", "ExtraVerticalTags", "OrbitMapSize", "OrbitMapX", "OrbitMapY", "DisplayOrbit", "CalculateBrakeLandingSpeed",
-                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "VertTakeOffEngine", "PvPR", "PvPG", "PvPB"}
+                        "ForceAlignment", "autoRollRollThreshold", "minRollVelocity", "VertTakeOffEngine", "PvPR", "PvPG", "PvPB", "DisplayDeadZone"}
 
 local autoVariables = {"SpaceTarget","BrakeToggleStatus", "BrakeIsOn", "RetrogradeIsOn", "ProgradeIsOn",
                     "Autopilot", "TurnBurn", "AltitudeHold", "BrakeLanding",
@@ -210,14 +211,11 @@ local rollInput2 = 0
 local followMode = false
 local holdingCtrl = false
 local msgText = "empty"
---local lastEccentricity = 1
 local holdAltitudeButtonModifier = 5
 local antiGravButtonModifier = 5
 local isBoosting = false -- Dodgin's Don't Die Rocket Govenor
 local brakeDistance, brakeTime = 0
 local maxBrakeDistance, maxBrakeTime = 0
---local hasSpaceRadar = false
---local hasAtmoRadar = false
 local autopilotTargetPlanet = nil
 local totalDistanceTrip = 0
 local flightTime = 0
@@ -291,10 +289,8 @@ local Kep = nil
 local Animating = false
 local Animated = false
 local autoRoll = autoRollPreference
---local rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
 local velocity = vec3(core.getWorldVelocity())
 local velMag = vec3(velocity):len()
---local minimumRateOfChange = math.cos(YawStallAngle*constants.deg2rad)
 local targetGroundAltitude = LandingGearGroundHeight -- So it can tell if one loaded or not
 local deltaX = system.getMouseDeltaX()
 local deltaY = system.getMouseDeltaY()
@@ -314,8 +310,6 @@ local OrbitTargetSet = false
 local OrbitTargetOrbit = 0
 local OrbitTargetPlanet = nil
 local OrbitAchieved = false
--- local AtmoEngineVertUp = false
--- local AtmoEngineVertDn = false
 local SpaceEngineVertUp = false
 local SpaceEngineVertDn = false
 
@@ -376,7 +370,6 @@ function LoadVariables()
         msgText = "Invalid User Control Scheme selected.  Change userControlScheme in Lua Parameters to keyboard, mouse, or virtual joystick\nOr use shift and button in screen"
         msgTimer = 5
     end
-    minimumRateOfChange = math.cos(YawStallAngle*constants.deg2rad)
 
     if antigrav and not ExternalAGG then
         if AntigravTargetAltitude == nil then 
@@ -424,22 +417,6 @@ function ProcessElements()
                 end
             end
         end
-        -- if string.match(type, '^.*Atmospheric Engine$') then
-        --     if string.match(tostring(core.getElementTagsById(elementsID[k])), '^.*vertical.*$') then
-        --         local enrot = core.getElementRotationById(elementsID[k])
-        --         if enrot[4] < 0 then
-        --             if utils.round(-enrot[4],0.1) == 0.5 then
-        --                 AtmoEngineVertUp = true
-        --                 system.print("Atmo Engine Up detected")
-        --             end
-        --         else
-        --             if utils.round(enrot[4],0.1) == 0.5 then
-        --                 AtmoEngineVertDn = true
-        --                 system.print("Atmo Engine Down detected")
-        --             end
-        --         end
-        --     end
-        -- end
         if (type == "Landing Gear") then
             hasGear = true
         end
@@ -531,13 +508,6 @@ function SetupChecks()
         system.lockView(1)
     else
         system.lockView(0)
-    end
-    if radar_1 then
-        if eleType(radar_1.getId()) == "Space Radar" then
-            hasSpaceRadar = true
-        else
-            hasAtmoRadar = true
-        end
     end
     -- Close door and retract ramp if available
     local atmo = atmosphere()
@@ -5851,7 +5821,7 @@ function script.onTick(timerId)
             DisplayMessage(newContent, msgText)
         end
         if isRemote() == 0 and userControlScheme == "virtual joystick" then
-            DrawDeadZone(newContent)
+            if DisplayDeadZone then DrawDeadZone(newContent) end
         end
 
         if isRemote() == 1 and screen_1 and screen_1.getMouseY() ~= -1 then
@@ -5905,7 +5875,7 @@ function script.onTick(timerId)
 
                 if distance > DeadZone then -- Draw a line to the cursor from the screen center
                     -- Note that because SVG lines fucking suck, we have to do a translate and they can't use calc in their params
-                    DrawCursorLine(newContent)
+                    if DisplayDeadZone then DrawCursorLine(newContent) end
                 end
             else
                 SetButtonContains()
@@ -5925,7 +5895,6 @@ function script.onTick(timerId)
         end        
     elseif timerId == "apTick" then
         -- Localized Functions
-        rateOfChange = vec3(core.getConstructWorldOrientationForward()):dot(vec3(core.getWorldVelocity()):normalize())
         inAtmo = (atmosphere() > 0)
 
         local time = system.getTime()
@@ -7330,7 +7299,6 @@ function script.onTick(timerId)
                 pitchInput2 = pitchInput2 + autoPitchInput
             end
         end
-        --lastEccentricity = orbit.eccentricity
 
         if antigrav ~= nil and (antigrav and not ExternalAGG and coreAltitude < 200000) then
                 if AntigravTargetAltitude == nil or AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end

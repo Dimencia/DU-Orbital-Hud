@@ -4,14 +4,16 @@ Fixed script unloading when away from control unit.  Note: We are now at our scr
 but this might be the limit of everything in the hud meaning new features would remove old features or we might have to get creative on some things.
 
 Version 5.44
-- Orbiting
-    - `Alt-6` (Altitude Hold) when set with `alt-space` above the atmosphere will now put you in orbit at that height.
-    - `Alt-6` (Altitude Hold) in space will hold you in place. `Alt-6-6` while in space within a planet's influence will orbit you at the height of activation in the direction you are facing.
-    - `Alt-4` (Autopilot) with a custom target over 0.5SU away on the same planet and set with `alt-space` above the atmosphere will now orbit to destination. If you set height over atmosphere and your target is too close, normal climb and reentry will be used.
-    - Using the HUD button `Engage Orbiting` sets your altitude to your `TargetOrbitRadius`.
+- Orbiting (note: Trying to establish super low orbits (i.e. 7000m at Alioth) could result in achieving luminary status (burning up))
+    - `Alt-6` (Altitude Hold): If target altitude changed (`alt-spacebar`) to above the atmosphere will now establish orbit at that height.
+    - `Alt-6-6` while in space within a planet's influence: Will establish orbit at the height of activation in the direction you are facing.
+    - `Alt-4` (Autopilot) with a custom target over 0.5SU away on the same planet and set with target altitude above the atmosphere will now orbit to destination. 
+              (If you set height over atmosphere and your target is too close, normal climb and reentry will be used.)
+    - Using the HUD button `Engage Orbiting` establishes orbit at height determined by your `TargetOrbitRadius`.
 - Glide Entry
     - When target is set to planet or not set, glide entry now glides in and holds altitude only.
     - When a custom target is selected, glide entry now lands your ship at your custom destination.
+- New user Variable: DisplayDeadZone, defaults true.  If set to false, deadzone circle and line to cursor will not be drawn when in virtual joystick mode..
 - Bugfix
     - When using `Alt-6` without a target selected (using `Alt-1` or `Alt-2`) no longer gives an error.
 
