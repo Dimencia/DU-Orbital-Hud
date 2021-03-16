@@ -318,7 +318,6 @@ local OrbitAchieved = false
 -- local AtmoEngineVertDn = false
 local SpaceEngineVertUp = false
 local SpaceEngineVertDn = false
-local entryToggle = false
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -2016,7 +2015,7 @@ function SetupButtons()
             end)
     y = y + buttonHeight + 20
     MakeButton("Glide Re-Entry", "Cancel Glide Re-Entry", buttonWidth, buttonHeight, x, y,
-        function() return Reentry end, function() spaceLand = true entryToggle = not entryToggle ProgradeToggle() end, function() return (coreAltitude > ReentryAltitude) end )
+        function() return Reentry end, function() spaceLand = true ProgradeToggle() end, function() return (coreAltitude > ReentryAltitude) end )
     MakeButton("Parachute Re-Entry", "Cancel Parachute Re-Entry", buttonWidth, buttonHeight, x + buttonWidth + 20, y,
         function() return Reentry end, BeginReentry, function() return (coreAltitude > ReentryAltitude) end )
     y = y + buttonHeight + 20
