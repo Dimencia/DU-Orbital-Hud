@@ -3,7 +3,7 @@
 Fixed script unloading when away from control unit.  Note: We are now at our script limit even minimized.  We are trying to clean up to give more room, 
 but this might be the limit of everything in the hud meaning new features would remove old features or we might have to get creative on some things.
 
-Version 5.431
+Version 5.44
 - Orbiting
     - `Alt-6` (Altitude Hold) when set with `alt-space` above the atmosphere will now put you in orbit at that height.
     - `Alt-6` (Altitude Hold) while in space within a planet's influence will orbit you at the height of activation.
@@ -11,7 +11,7 @@ Version 5.431
     - Using the HUD button `Engage Orbiting` sets your altitude to your `TargetOrbitRadius`.
 - Bugfix
     - When using `Alt-6` without a target selected (using `Alt-1` or `Alt-2`) no longer gives an error.
-    
+
 Version 5.43
 - Removed `VertTakeOffMode` user variable.  Mode determined by checking to see if AGG is on prior to beginning ascent.
 - If AGG is on when doing a AutoTakeOff or Vertical takeoff, ship will go to singularity altitude and stop engines and engage brakes.
