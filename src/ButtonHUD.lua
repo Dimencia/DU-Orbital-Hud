@@ -309,7 +309,7 @@ local orbitPitch = 0
 local orbitRoll = 0
 local orbitAligned = false
 local orbitalRecover = false
-local orbitalVectorToTarget = false
+local orbitalParams = { VectorToTarget = false } --, AltitudeHold = false }
 local OrbitTargetSet = false
 local OrbitTargetOrbit = 0
 local OrbitTargetPlanet = nil
@@ -1162,6 +1162,7 @@ function ToggleAltitudeHold()
         Reentry = false
         autoRoll = true
         LockPitch = nil
+        OrbitAchieved = false
         if (hoverDetectGround() == -1) or not inAtmo then -- Never autotakeoff in space
             AutoTakeoff = false
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
@@ -6180,37 +6181,37 @@ function script.onTick(timerId)
             end
         end
 
-        if IntoOrbit then      
-            if AutoTakeoff or VectorToTarget then 
+        if IntoOrbit then
+            if OrbitTargetPlanet == nil then
                 if VectorToTarget then
-                    if OrbitTargetPlanet == nil then
-                        OrbitTargetPlanet = autopilotTargetPlanet
-                    end
-                    orbitalVectorToTarget = VectorToTarget --storing for later. VectorToTarget interferes.
-                end
-                if OrbitTargetPlanet == nil then
+                    OrbitTargetPlanet = autopilotTargetPlanet
+                    
+                else
                     OrbitTargetPlanet = planet
                 end
-                AltitudeHold = false
-                Autopilot = false
-                VectorToTarget = false
-                orbitAligned = true
             end
-            local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
-            local orbitalRoll = roll
             if not OrbitTargetSet then
                 if OrbitTargetPlanet.hasAtmosphere then
                     OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius*(TargetOrbitRadius-1) + OrbitTargetPlanet.noAtmosphericDensityAltitude)
                 else
                     OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius*(TargetOrbitRadius-1) + OrbitTargetPlanet.surfaceMaxAltitude)
                 end
-                if orbitalVectorToTarget or AutoTakeoff then 
-                    OrbitTargetOrbit = AutoTakeoffAltitude
-                    AutoTakeoff = false -- turn these off, we've taken over.
-                end
                 OrbitTargetSet = true
+            end     
+            if AltitudeHold or VectorToTarget then
+                if not spaceLaunch then 
+                    OrbitTargetOrbit = HoldAltitude
+                    orbitAligned = true
+                    -- orbitalParams.AltitudeHold = AltitudeHold
+                    AltitudeHold = false
+                end
+                if VectorToTarget then
+                    orbitalParams.VectorToTarget = VectorToTarget
+                    VectorToTarget = false
+                end
             end
-            if HoldAltitude > OrbitTargetOrbit then OrbitTargetOrbit = HoldAltitude end
+            local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
+            local orbitalRoll = roll
             -- Getting as close to orbit distance as comfortably possible
             if orbit.periapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit and coreAltitude < OrbitTargetOrbit*1.3 and orbit.periapsis.altitude > 0 then
                 local function orbitThrottle(value, orbitalpitch)
@@ -6239,10 +6240,10 @@ function script.onTick(timerId)
                             OrbitTargetPlanet = nil
                             autoRoll = autoRollPreference
                             msgText = "Orbit established"
-                            if orbitalVectorToTarget then
-                                VectorToTarget = orbitalVectorToTarget -- turn it back on.
+                            if orbitalParams.VectorToTarget then
+                                VectorToTarget = orbitalParams.VectorToTarget -- turn it back on.
                             end
-                            orbitalVectorToTarget = false
+                            orbitalParams.VectorToTarget = false
                             CancelIntoOrbit = false
                             IntoOrbit = false
                             orbitAligned = false
@@ -6829,18 +6830,7 @@ function script.onTick(timerId)
             if AutoTakeoff then velMultiplier = utils.clamp(velMag/100,0.1,1) end
             local targetPitch = (utils.smoothstep(altDiff, -minmax, minmax) - 0.5) * 2 * MaxPitch * velMultiplier
 
-            if atmosphere() == 0 and (autopilotTargetPlanet ~= nil and autopilotTargetPlanet.name == planet.name) and not VectorToTarget and not Reentry and not BrakeLanding and LockPitch == nil and coreAltitude < HoldAltitude then
-                if not OrbitAchieved then
-                    --Autopilot = true
-                    spaceLaunch = false
-                    AltitudeHold = false
-                    IntoOrbit = true
-                    OrbitTargetSet = false
-                    OrbitTargetPlanet = autopilotTargetPlanet
-                end
-            end
-
-            -- atmosphere() == 0 and
+                        -- atmosphere() == 0 and
             --system.print(constrF:dot(velocity:normalize()))
             if not Reentry and not spaceLand and not VectorToTarget and constrF:dot(velocity:normalize()) < 0.99 then
                 -- Widen it up and go much harder based on atmo level
@@ -7075,43 +7065,41 @@ function script.onTick(timerId)
                     end
                     LastDistanceToTarget = distanceToTarget
                 end
-            elseif (VectorToTarget or spaceLaunch) and not Reentry and AutopilotTargetIndex > 0 and atmosphere() == 0 and autopilotTargetPlanet.name == planet.name then
-                if not OrbitAchieved then -- right now this is based solely on if you get out of atmo. It will take AutoTakeOffAltitude and use that height, so if you put it above 7k on alioth, you orbit.
-                                        -- eventually I want to make it so I calculate the minimum distance and set a trajectory, and go a few km above amto == 0 and ride the orbit expressway.
-                                        -- but only if the distance to get complete orbit is short enough. wouldn't make sense to orbit and overshoot your target...
-                    Autopilot = false
-                    spaceLaunch = false
-                    AltitudeHold = false
-                    IntoOrbit = true
-                    OrbitTargetSet = false
-                    OrbitTargetPlanet = autopilotTargetPlanet
-                else
-                    local targetVec
-                    if CustomTarget ~= nil then
-                        targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
-                    else
-                        targetVec = autopilotTargetPlanet.center - worldPos
-                    end
+            elseif VectorToTarget and atmosphere() == 0 and not spaceLaunch and not Reentry then
+                if CustomTarget ~= nil and autopilotTargetPlanet.name == planet.name then
+                    local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
                     local targetAltitude = planet:getAltitude(CustomTarget.position)
                     local distanceToTarget = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
                     local curBrake = LastMaxBrakeInAtmo
-                    curBrake = LastMaxBrake
-                    --local hSpd = velocity:len() - math.abs(vSpd)
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
-                    StrongBrakes = true
-                    if not spaceLaunch and distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and (velocity:project_on_plane(worldV):normalize():dot(targetVec:project_on_plane(worldV):normalize()) > 0.99 or VectorStatus == "Finalizing Approach") then 
-                        if planet.hasAtmosphere then
-                            BrakeIsOn = false
-                            ProgradeIsOn = false
-                            reentryMode = true
-                            spaceLand = false   
-                            finalLand = true
-                            Autopilot = false
-                            VectorToTarget = false
-                            BeginReentry()
+                    if not OrbitAchieved and distanceToTarget > 100000 then 
+                        OrbitTargetSet = false
+                        IntoOrbit = true
+                    else
+                        curBrake = LastMaxBrake
+                        --local hSpd = velocity:len() - math.abs(vSpd)
+                        brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
+                        StrongBrakes = true
+                        if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and velocity:project_on_plane(worldV):normalize():dot(targetVec:project_on_plane(worldV):normalize()) > 0.99 then 
+                            if planet.hasAtmosphere then
+                                BrakeIsOn = false
+                                ProgradeIsOn = false
+                                reentryMode = true
+                                spaceLand = false   
+                                finalLand = true
+                                Autopilot = false
+                                -- VectorToTarget = true
+                                BeginReentry()
+                            end
                         end
+                        LastDistanceToTarget = distanceToTarget
                     end
-                    LastDistanceToTarget = distanceToTarget
+                end
+            end
+
+            -- Altitude hold and AutoTakeoff orbiting
+            if atmosphere() == 0 and AltitudeHold and not (spaceLaunch or VectorToTarget or IntoOrbit) then
+                if not OrbitAchieved then
+                    IntoOrbit = true
                 end
             end
 
