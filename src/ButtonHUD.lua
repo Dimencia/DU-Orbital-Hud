@@ -2355,7 +2355,7 @@ function DrawThrottle(newContent, flightStyle, throt, flightValue)
     newContent[#newContent + 1] = stringf([[
         <g class="pbright txtstart">
                 <text x="%s" y="%s">%s</text>
-                <text x="%s" y="%s">%d %s</text>
+                <text x="%s" y="%s">%.0f %s</text>
         </g>
     </g>]], throtPosX+10, y1, label, throtPosX+10, y2, value, unit)
 
@@ -2376,8 +2376,7 @@ function DrawThrottle(newContent, flightStyle, throt, flightValue)
                 <g class="pbright txtstart">
                         <text x="%s" y="%s">%s</text>
                         <text x="%s" y="%s">%d %s</text>
-                </g>
-            </g>]], throtPosX+10, y1+40, "LIMIT", throtPosX+10, y2+40, throt, "%")
+                </g>]], throtPosX+10, y1+40, "LIMIT", throtPosX+10, y2+40, throt, "%")
     end
     if (inAtmo and AtmoSpeedAssist) or Reentry then
         -- Display AtmoSpeedLimit above the throttle
@@ -5634,7 +5633,7 @@ local function cmdCruise(value, dontSwitch)
     if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byTargetSpeed and not dontSwitch then
         Nav.control.cancelCurrentControlMasterMode()
     end
-    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, round(value,0))
+    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, value)
 end
 
 function script.onTick(timerId)
@@ -6206,8 +6205,8 @@ function script.onTick(timerId)
                     end
                 end
                 if orbit.apoapsis ~= nil then
-                    if orbit.periapsis.altitude >= OrbitTargetOrbit and orbit.periapsis.altitude >= OrbitTargetOrbit and 
-                        orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.1 then -- conditions for a near perfect orbit
+                    if orbit.periapsis.altitude >= OrbitTargetOrbit-50 and orbit.apoapsis.altitude >= OrbitTargetOrbit-50 and 
+                        orbit.periapsis.altitude >= orbit.apoapsis.altitude-100 then -- This should get us a stable orbit within 100m with the way we do it
                         BrakeIsOn = false
                         PlayerThrottle = 0
                         cmdThrottle(0)
@@ -6236,15 +6235,23 @@ function script.onTick(timerId)
                     else
                         orbitMsg = "Adjusting Orbit"
                         orbitalRecover = true
-                        -- Just set cruise to endspeed, and add 1 just so it has enough to barely squeak past our altitude on apo or peri
-                        cmdCruise(endSpeed*3.6+1)
+                        -- Just set cruise to endspeed... I guess we still have to add a little bit arbitrarily because the braking gets overzealous
+                        cmdCruise(endSpeed*3.6)
                         -- And set pitch to something that scales with vSpd
                         -- Well, a pid is made for this stuff
                         if (VSpdPID == nil) then
-                            VSpdPID = pid.new(1, 0, 2 * 0.1)
+                            VSpdPID = pid.new(1, 0, 10 * 0.1) -- Has to stay low at base to avoid overshoot
                         end
                         VSpdPID:inject(vSpd)
                         orbitPitch = utils.clamp(-VSpdPID:get(),-90,90)
+                        -- Also, add pitch to try to adjust us to our correct altitude
+                        -- Dammit, that's another PID I guess... I don't want another PID... 
+                        if (OrbitAltPID == nil) then
+                            OrbitAltPID = pid.new(0.05, 0, 10 * 0.1)
+                        end
+                        OrbitAltPID:inject(coreAltitude - OrbitTargetOrbit) -- We clamp this to max 15 degrees so it doesn't screw us too hard
+                        -- And this will fight with the other PID to keep vspd reasonable
+                        orbitPitch = utils.clamp(orbitPitch - utils.clamp(OrbitAltPID:get(),-15,15),-90,90)
                     end
                 end
             else
@@ -7639,7 +7646,7 @@ function script.onFlush()
         local targetSpeed = unit.getAxisCommandValue(0)
         -- Auto Navigation (Cruise Control)
         if (autoNavigationAcceleration:len() > constants.epsilon) then -- This means it's in cruise
-            if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.8) or velocity:len() > targetSpeed/3.6 -- if the velocity is not properly aligned with the forward
+            if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.8) or velocity:len() > targetSpeed/3.6
             then
                 autoNavigationEngineTags = autoNavigationEngineTags .. ', brake'
             end
