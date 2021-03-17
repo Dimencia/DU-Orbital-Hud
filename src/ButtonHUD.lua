@@ -5514,7 +5514,7 @@ function safeZone(WorldPos) -- Thanks to @SeM for the base code, modified to wor
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.441
+    VERSION_NUMBER = 5.442
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6206,7 +6206,7 @@ function script.onTick(timerId)
                     end
                 end
                 if orbit.apoapsis ~= nil then
-                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.95 and orbit.periapsis.altitude < OrbitTargetOrbit*1.25 and orbit.apoapsis.altitude > orbit.periapsis.altitude and 
+                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.85 and orbit.periapsis.altitude < OrbitTargetOrbit*1.15 and orbit.apoapsis.altitude > orbit.periapsis.altitude and 
                         orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
                         BrakeIsOn = false
                         PlayerThrottle = 0
@@ -6267,10 +6267,10 @@ function script.onTick(timerId)
                             if velMag*0.5 > endSpeed then
                                 cmdThrottle(0)
                                 BrakeIsOn = not BrakeIsOn
-                            elseif velMag+20 > endSpeed and vSpd > 35 then 
+                            elseif velMag > endSpeed+100 and vSpd > 35 then 
                                     orbitThrottle(0.5,-80)                                      
                                     BrakeIsOn = false
-                            elseif velMag+20 > endSpeed and vSpd < -35 then
+                            elseif velMag > endSpeed+100 and vSpd < -35 then
                                     orbitThrottle(0.5,80)
                                     BrakeIsOn = false
                             -- elseif velMag*0.5 > endSpeed then
@@ -6280,12 +6280,15 @@ function script.onTick(timerId)
                             --             orbitThrottle(0.5,15)
                             --             BrakeIsOn = false
                             --         end
-                            elseif velMag-20 < endSpeed then
+                            elseif velMag < endSpeed-100 then
                                         orbitThrottle(0.75,15)
                                         BrakeIsOn = false
                             -- elseif orbit.apoapsis.altitude > orbit.periapsis.altitude*1.3 then
                             --     cmdThrottle(0)
                             --     BrakeIsOn = not BrakeIsOn
+                            elseif orbit.periapsis.altitude > OrbitTargetOrbit then
+                                cmdThrottle(0)
+                                BrakeIsOn = not BrakeIsOn
                             else
                                 orbitThrottle(0.5,15)
                                 BrakeIsOn = false
