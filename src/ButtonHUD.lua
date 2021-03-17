@@ -1140,13 +1140,17 @@ function ToggleAltitudeHold()
         if (hoverDetectGround() == -1) or not inAtmo then -- Never autotakeoff in space
             AutoTakeoff = false
             if ahDoubleClick > -1 then
-                HoldAltitude = coreAltitude
-                CancelIntoOrbit = true
-                OrbitAchieved = true
+                if unit.getClosestPlanetInfluence() > 0 then -- Orbit at 2km above Atmo
+                    HoldAltitude = planet.noAtmosphericDensityAltitude + 2000
+                    IntoOrbit = true
+                    OrbitAchieved = false
+                end
             else
-                HoldAltitude = coreAltitude
-                IntoOrbit = true
-                OrbitAchieved = false
+                if unit.getClosestPlanetInfluence() > 0 then -- Orbit at your height
+                    HoldAltitude = coreAltitude
+                    IntoOrbit = true
+                    OrbitAchieved = false
+                end
             end
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
                 Nav.control.cancelCurrentControlMasterMode()
@@ -6195,18 +6199,8 @@ function script.onTick(timerId)
             local orbitalRoll = roll
             -- Getting as close to orbit distance as comfortably possible
             if orbit.periapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit and coreAltitude < OrbitTargetOrbit*1.4 then
-                local function orbitThrottle(value, orbitalpitch)
-                    orbitPitch = orbitalpitch
-                    if adjustedPitch <= orbitalpitch+3 and adjustedPitch >= orbitalpitch-3 then
-                        PlayerThrottle=value
-                        cmdThrottle(value)
-                    else
-                        PlayerThrottle = 0.05
-                        cmdThrottle(0.05)
-                    end
-                end
                 if orbit.apoapsis ~= nil then
-                    if orbit.periapsis.altitude >= OrbitTargetOrbit and orbit.periapsis.altitude >= OrbitTargetOrbit and 
+                    if orbit.periapsis.altitude >= OrbitTargetOrbit and 
                         orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.1 then -- conditions for a near perfect orbit
                         BrakeIsOn = false
                         PlayerThrottle = 0
@@ -6384,15 +6378,6 @@ function script.onTick(timerId)
                 end
                 --AutopilotPlanetGravity = autopilotTargetPlanet.gravity*9.8 -- Since we're aiming straight at it, we have to assume gravity?
                 AutopilotPlanetGravity = 0
-                -- if autopilotTargetPlanet.name == planet.name then
-                --     if not OrbitAchieved then
-                --         IntoOrbit = true
-                --         OrbitTargetSet = false
-                --         OrbitTargetPlanet = autopilotTargetPlanet
-                --     else
-                --         AutopilotCruising = true
-                --     end
-                -- end
             elseif CustomTarget ~= nil and CustomTarget.planetname == "Space" then
                 AutopilotPlanetGravity = 0
                 skipAlign = true
@@ -7029,7 +7014,7 @@ function script.onTick(timerId)
                     local targetAltitude = planet:getAltitude(CustomTarget.position)
                     local distanceToTarget = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
                     local curBrake = LastMaxBrakeInAtmo
-                    if not OrbitAchieved and distanceToTarget > 100000 then 
+                    if not OrbitAchieved and distanceToTarget > 75000 then 
                         OrbitTargetSet = false
                         IntoOrbit = true
                     else
