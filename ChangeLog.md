@@ -1,5 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.443
+- Orbiting
+    - Improved efficiency of achieving orbit
+    - Improved accuracy with final orbit
+
 Fixed script unloading when away from control unit.  Note: We are now at our script limit even minimized.  We are trying to clean up to give more room, 
 but this might be the limit of everything in the hud meaning new features would remove old features or we might have to get creative on some things.
 

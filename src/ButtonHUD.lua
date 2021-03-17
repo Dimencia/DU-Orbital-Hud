@@ -5514,7 +5514,7 @@ function safeZone(WorldPos) -- Thanks to @SeM for the base code, modified to wor
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.442
+    VERSION_NUMBER = 5.443
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -5634,7 +5634,7 @@ local function cmdCruise(value, dontSwitch)
     if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byTargetSpeed and not dontSwitch then
         Nav.control.cancelCurrentControlMasterMode()
     end
-    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, value)
+    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, round(value,0))
 end
 
 function script.onTick(timerId)
@@ -6206,8 +6206,8 @@ function script.onTick(timerId)
                     end
                 end
                 if orbit.apoapsis ~= nil then
-                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.85 and orbit.periapsis.altitude < OrbitTargetOrbit*1.15 and orbit.apoapsis.altitude > orbit.periapsis.altitude and 
-                        orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
+                    if orbit.periapsis.altitude >= OrbitTargetOrbit and orbit.periapsis.altitude >= OrbitTargetOrbit and 
+                        orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.1 then -- conditions for a near perfect orbit
                         BrakeIsOn = false
                         PlayerThrottle = 0
                         cmdThrottle(0)
@@ -6236,69 +6236,15 @@ function script.onTick(timerId)
                     else
                         orbitMsg = "Adjusting Orbit"
                         orbitalRecover = true
-                        if vSpd > 125 then
-                            orbitThrottle(0.5,-65)                                      
-                            BrakeIsOn = false
-                        elseif orbit.periapsis.altitude < 0 then
-                            -- if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
-                                if velMag+10 > endSpeed then
-                                    if vSpd > 5 then 
-                                        orbitThrottle(0.5,-65)                                      
-                                        BrakeIsOn = false
-                                    elseif vSpd < -5 then
-                                        orbitThrottle(0.5,65)
-                                        BrakeIsOn = false
-                                    else
-                                        cmdThrottle(0)
-                                        BrakeIsOn = not BrakeIsOn
-                                    end
-                                elseif velMag-10 < endSpeed then
-                                    orbitThrottle(0.75,15)
-                                    BrakeIsOn = false
-                                else
-                                    cmdThrottle(0)
-                                    BrakeIsOn = not BrakeIsOn
-                                end
-                            -- else
-                            --     orbitThrottle(0.5,15)
-                            --     BrakeIsOn = false
-                            -- end
-                        elseif orbit.periapsis.altitude > 0 and orbit.periapsis.altitude < OrbitTargetOrbit*1.25 then
-                            if velMag*0.5 > endSpeed then
-                                cmdThrottle(0)
-                                BrakeIsOn = not BrakeIsOn
-                            elseif velMag > endSpeed+100 and vSpd > 35 then 
-                                    orbitThrottle(0.5,-80)                                      
-                                    BrakeIsOn = false
-                            elseif velMag > endSpeed+100 and vSpd < -35 then
-                                    orbitThrottle(0.5,80)
-                                    BrakeIsOn = false
-                            -- elseif velMag*0.5 > endSpeed then
-                            --             cmdThrottle(0)
-                            --             BrakeIsOn = not BrakeIsOn
-                            --         else
-                            --             orbitThrottle(0.5,15)
-                            --             BrakeIsOn = false
-                            --         end
-                            elseif velMag < endSpeed-100 then
-                                        orbitThrottle(0.75,15)
-                                        BrakeIsOn = false
-                            -- elseif orbit.apoapsis.altitude > orbit.periapsis.altitude*1.3 then
-                            --     cmdThrottle(0)
-                            --     BrakeIsOn = not BrakeIsOn
-                            elseif orbit.periapsis.altitude > OrbitTargetOrbit then
-                                cmdThrottle(0)
-                                BrakeIsOn = not BrakeIsOn
-                            else
-                                orbitThrottle(0.5,15)
-                                BrakeIsOn = false
-                            end
-                        else
-                            if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.3 then
-                                cmdThrottle(0)
-                                BrakeIsOn = not BrakeIsOn
-                            end
+                        -- Just set cruise to endspeed, and add 1 just so it has enough to barely squeak past our altitude on apo or peri
+                        cmdCruise(endSpeed*3.6+1)
+                        -- And set pitch to something that scales with vSpd
+                        -- Well, a pid is made for this stuff
+                        if (VSpdPID == nil) then
+                            VSpdPID = pid.new(1, 0, 2 * 0.1)
                         end
+                        VSpdPID:inject(vSpd)
+                        orbitPitch = utils.clamp(-VSpdPID:get(),-90,90)
                     end
                 end
             else
