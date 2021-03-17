@@ -298,6 +298,7 @@ local stalling = false
 local lastApTickTime = system.getTime()
 local targetRoll = 0
 local ahDoubleClick = 0
+local apDoubleClick = 0
 local adjustedAtmoSpeedLimit = AtmoSpeedLimit
 local VtPitch = 0
 local orbitMsg = nil
@@ -1205,6 +1206,20 @@ function ToggleFollowMode()
 end
 
 function ToggleAutopilot()
+    local time = system.getTime()
+    if (time - apDoubleClick) < 1.5 then
+        if planet.hasAtmosphere then
+            if atmosphere() > 0 then
+                HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
+            end
+            apDoubleClick = -1
+            if Autopilot or VectorToTarget then 
+                return 
+            end
+        end
+    else
+        apDoubleClick = time
+    end
     TargetSet = false -- No matter what
     -- Toggle Autopilot, as long as the target isn't None
     if AutopilotTargetIndex > 0 and not Autopilot and not VectorToTarget and not spaceLaunch then
@@ -5514,9 +5529,53 @@ function safeZone(WorldPos) -- Thanks to @SeM for the base code, modified to wor
     else
         return safe, math.abs(distsz - safeRadius), "Safe Zone", 0
     end
-  end
+end
+
+local function cmdThrottle(value, dontSwitch)
+    if dontSwitch == nil then
+        dontSwitch = false
+    end
+    if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byThrottle and not dontSwitch then
+        Nav.control.cancelCurrentControlMasterMode()
+    end
+    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, value)
+end
+
+local function cmdCruise(value, dontSwitch)
+    if dontSwitch == nil then
+        dontSwitch = false
+    end
+    if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byTargetSpeed and not dontSwitch then
+        Nav.control.cancelCurrentControlMasterMode()
+    end
+    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, round(value,0))
+end
+
+function SaveDataBank(copy)
+    if dbHud_1 then
+        if not wipedDatabank then
+            for k, v in pairs(autoVariables) do
+                dbHud_1.setStringValue(v, jencode(_G[v]))
+                if copy and dbHud_2 then
+                    dbHud_2.setStringValue(v, jencode(_G[v]))
+                end
+            end
+            for k, v in pairs(saveableVariables) do
+                dbHud_1.setStringValue(v, jencode(_G[v]))
+                if copy and dbHud_2 then
+                    dbHud_2.setStringValue(v, jencode(_G[v]))
+                end
+            end
+            sprint("Saved Variables to Datacore")
+            if copy and dbHud_2 then
+                msgText = "Databank copied.  Remove copy when ready."
+            end
+        end
+    end
+end
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
+
 function script.onStart()
     VERSION_NUMBER = 5.443
     SetupComplete = false
@@ -5565,29 +5624,6 @@ function script.onStart()
     end)
 end
 
-function SaveDataBank(copy)
-    if dbHud_1 then
-        if not wipedDatabank then
-            for k, v in pairs(autoVariables) do
-                dbHud_1.setStringValue(v, jencode(_G[v]))
-                if copy and dbHud_2 then
-                    dbHud_2.setStringValue(v, jencode(_G[v]))
-                end
-            end
-            for k, v in pairs(saveableVariables) do
-                dbHud_1.setStringValue(v, jencode(_G[v]))
-                if copy and dbHud_2 then
-                    dbHud_2.setStringValue(v, jencode(_G[v]))
-                end
-            end
-            sprint("Saved Variables to Datacore")
-            if copy and dbHud_2 then
-                msgText = "Databank copied.  Remove copy when ready."
-            end
-        end
-    end
-end
-
 function script.onStop()
     _autoconf.hideCategoryPanels()
     if antigrav ~= nil  and not ExternalAGG then
@@ -5620,25 +5656,6 @@ function script.onStop()
         button.activate()
     end
 
-end
-
-local function cmdThrottle(value, dontSwitch)
-    if dontSwitch == nil then
-        dontSwitch = false
-    end
-    if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byThrottle and not dontSwitch then
-        Nav.control.cancelCurrentControlMasterMode()
-    end
-    Nav.axisCommandManager:setThrottleCommand(axisCommandId.longitudinal, value)
-end
-local function cmdCruise(value, dontSwitch)
-    if dontSwitch == nil then
-        dontSwitch = false
-    end
-    if Nav.axisCommandManager:getAxisCommandType(0) ~= axisCommandType.byTargetSpeed and not dontSwitch then
-        Nav.control.cancelCurrentControlMasterMode()
-    end
-    Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.longitudinal, round(value,0))
 end
 
 function script.onTick(timerId)
@@ -6216,7 +6233,10 @@ function script.onTick(timerId)
                             autoRoll = autoRollPreference
                             msgText = "Orbit established"
                             if orbitalParams.VectorToTarget then
-                                VectorToTarget = orbitalParams.VectorToTarget -- turn it back on.
+                                Autopilot = true 
+                                AutopilotStatus = "Orbiting to Target"
+                                AutopilotBraking = true
+                                --VectorToTarget = orbitalParams.VectorToTarget -- turn it back on.
                             end
                             orbitalParams.VectorToTarget = false
                             CancelIntoOrbit = false
