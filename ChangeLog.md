@@ -3,6 +3,10 @@
 Fixed script unloading when away from control unit.  Note: We are now at our script limit even minimized.  We are trying to clean up to give more room, 
 but this might be the limit of everything in the hud meaning new features would remove old features or we might have to get creative on some things.
 
+Version 5.442
+- Orbiting
+    - Adjusted tolerances. Should orbit better at tight orbits
+
 Version 5.44
 - Orbiting (note: Trying to establish super low orbits (i.e. 7000m at Alioth) could result in achieving luminary status (burning up))
     - `Alt-6` (Altitude Hold): If target altitude changed (`alt-spacebar`) to above the atmosphere will now establish orbit at that height.

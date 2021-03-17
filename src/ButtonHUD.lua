@@ -27,7 +27,7 @@ centerY = 540 -- export: (Default: 540)
 throtPosX = 1300 -- export: (Default: 1300)
 throtPosY = 540 -- export: (Default: 540)
 vSpdMeterX = 1525  -- export: (Default: 1525)
-vSpdMeterY = 250 -- export: (Default: 250)
+vSpdMeterY = 325 -- export: (Default: 325)
 altMeterX = 550  -- export: (Default: 550)
 altMeterY = 540 -- export: (Default: 540) 
 fuelX = 100 -- export: (Default: 100)
@@ -5514,7 +5514,7 @@ function safeZone(WorldPos) -- Thanks to @SeM for the base code, modified to wor
 
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 function script.onStart()
-    VERSION_NUMBER = 5.44
+    VERSION_NUMBER = 5.442
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6194,7 +6194,7 @@ function script.onTick(timerId)
             local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
             local orbitalRoll = roll
             -- Getting as close to orbit distance as comfortably possible
-            if orbit.periapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit and coreAltitude < OrbitTargetOrbit*1.3 and orbit.periapsis.altitude > 0 then
+            if orbit.periapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit and coreAltitude < OrbitTargetOrbit*1.4 then
                 local function orbitThrottle(value, orbitalpitch)
                     orbitPitch = orbitalpitch
                     if adjustedPitch <= orbitalpitch+3 and adjustedPitch >= orbitalpitch-3 then
@@ -6206,7 +6206,7 @@ function script.onTick(timerId)
                     end
                 end
                 if orbit.apoapsis ~= nil then
-                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.9 and orbit.periapsis.altitude < OrbitTargetOrbit*1.2 and orbit.apoapsis.altitude > orbit.periapsis.altitude and 
+                    if orbit.periapsis.altitude > OrbitTargetOrbit*0.85 and orbit.periapsis.altitude < OrbitTargetOrbit*1.15 and orbit.apoapsis.altitude > orbit.periapsis.altitude and 
                         orbit.apoapsis.altitude <= orbit.periapsis.altitude*1.35 then -- conditions for a near perfect orbit
                         BrakeIsOn = false
                         PlayerThrottle = 0
@@ -6236,37 +6236,67 @@ function script.onTick(timerId)
                     else
                         orbitMsg = "Adjusting Orbit"
                         orbitalRecover = true
-                        if orbit.periapsis.altitude < OrbitTargetOrbit then
-                            if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
+                        if vSpd > 125 then
+                            orbitThrottle(0.5,-65)                                      
+                            BrakeIsOn = false
+                        elseif orbit.periapsis.altitude < 0 then
+                            -- if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
                                 if velMag+10 > endSpeed then
                                     if vSpd > 5 then 
-                                        orbitThrottle(0.5,-80)                                      
+                                        orbitThrottle(0.5,-65)                                      
                                         BrakeIsOn = false
                                     elseif vSpd < -5 then
-                                        orbitThrottle(0.5,80)
+                                        orbitThrottle(0.5,65)
                                         BrakeIsOn = false
                                     else
                                         cmdThrottle(0)
-                                        BrakeIsOn = true
+                                        BrakeIsOn = not BrakeIsOn
                                     end
                                 elseif velMag-10 < endSpeed then
-                                    orbitThrottle(0.5,80)
+                                    orbitThrottle(0.75,15)
                                     BrakeIsOn = false
                                 else
                                     cmdThrottle(0)
-                                    BrakeIsOn = true
+                                    BrakeIsOn = not BrakeIsOn
                                 end
+                            -- else
+                            --     orbitThrottle(0.5,15)
+                            --     BrakeIsOn = false
+                            -- end
+                        elseif orbit.periapsis.altitude > 0 and orbit.periapsis.altitude < OrbitTargetOrbit*1.25 then
+                            if velMag*0.5 > endSpeed then
+                                cmdThrottle(0)
+                                BrakeIsOn = not BrakeIsOn
+                            elseif velMag > endSpeed+100 and vSpd > 35 then 
+                                    orbitThrottle(0.5,-80)                                      
+                                    BrakeIsOn = false
+                            elseif velMag > endSpeed+100 and vSpd < -35 then
+                                    orbitThrottle(0.5,80)
+                                    BrakeIsOn = false
+                            -- elseif velMag*0.5 > endSpeed then
+                            --             cmdThrottle(0)
+                            --             BrakeIsOn = not BrakeIsOn
+                            --         else
+                            --             orbitThrottle(0.5,15)
+                            --             BrakeIsOn = false
+                            --         end
+                            elseif velMag < endSpeed-100 then
+                                        orbitThrottle(0.75,15)
+                                        BrakeIsOn = false
+                            -- elseif orbit.apoapsis.altitude > orbit.periapsis.altitude*1.3 then
+                            --     cmdThrottle(0)
+                            --     BrakeIsOn = not BrakeIsOn
+                            elseif orbit.periapsis.altitude > OrbitTargetOrbit then
+                                cmdThrottle(0)
+                                BrakeIsOn = not BrakeIsOn
                             else
-                                orbitThrottle(0.5,80)
+                                orbitThrottle(0.5,15)
                                 BrakeIsOn = false
                             end
                         else
-                            if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.25 then
+                            if orbit.apoapsis.altitude > orbit.periapsis.altitude*1.3 then
                                 cmdThrottle(0)
-                                BrakeIsOn = true
-                            elseif orbit.periapsis.altitude < OrbitTargetOrbit*1.2 then
-                                orbitThrottle(0.5,-80)
-                                BrakeIsOn = false
+                                BrakeIsOn = not BrakeIsOn
                             end
                         end
                     end
@@ -6306,17 +6336,19 @@ function script.onTick(timerId)
                 else
                     if coreAltitude < OrbitTargetOrbit*0.8 then
                         orbitMsg = "Escaping planet gravity"
-                        orbitPitch = 35
-                    elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.01 then
+                        orbitPitch = utils.map(vSpd, 200, 0, -15, 80)
+                    elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.15 then
                         orbitMsg = "Approaching orbital corridor"
-                        if vSpd > 100 then
-                            pcs = pcs*0.75
-                            orbitPitch = -50
-                        else
-                            orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit, 35, 0)
-                        end
-                    elseif coreAltitude >= OrbitTargetOrbit*1.01 and coreAltitude < OrbitTargetOrbit*1.5 then
+                        pcs = pcs*0.75
+                        -- if vSpd > 100 then
+                        --     orbitPitch = -30
+                        -- else
+                        --     orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit, 45, 10)
+                        -- end
+                        orbitPitch = utils.map(vSpd, 100, -100, -15, 65)
+                    elseif coreAltitude >= OrbitTargetOrbit*1.15 and coreAltitude < OrbitTargetOrbit*1.5 then
                         orbitMsg = "Approaching orbital corridor"
+                        pcs = pcs*0.75
                         if vSpd < 0 or orbitalRecover then
                             orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*1.5, OrbitTargetOrbit*1.01, -30, 0) -- Going down? pitch up.
                         else
