@@ -1121,6 +1121,10 @@ function ToggleAltitudeHold()
         if planet.hasAtmosphere then
             if atmosphere() > 0 then
                 HoldAltitude = planet.spaceEngineMinAltitude - 50
+            else
+                if unit.getClosestPlanetInfluence() > 0 then
+                    HoldAltitude = planet.noAtmosphericDensityAltitude + 2000
+                end
             end
             ahDoubleClick = -1
             if AltitudeHold then 
@@ -1145,17 +1149,12 @@ function ToggleAltitudeHold()
             AutoTakeoff = false
             if ahDoubleClick > -1 then
                 if unit.getClosestPlanetInfluence() > 0 then -- Orbit at 2km above Atmo
-                    HoldAltitude = planet.noAtmosphericDensityAltitude + 2000
-                    IntoOrbit = true
-                    OrbitAchieved = false
-                end
-            else
-                if unit.getClosestPlanetInfluence() > 0 then -- Orbit at your height
                     HoldAltitude = coreAltitude
-                    IntoOrbit = true
-                    OrbitAchieved = false
                 end
             end
+            OrbitAchieved = false
+            OrbitTargetSet = true
+            IntoOrbit = true
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
                 Nav.control.cancelCurrentControlMasterMode()
             end
@@ -1169,6 +1168,9 @@ function ToggleAltitudeHold()
         end
         if spaceLaunch then HoldAltitude = 100000 end
     else
+        IntoOrbit = false
+        OrbitAchieved = false
+        CancelIntoOrbit = true
         autoRoll = autoRollPreference
         AutoTakeoff = false
         BrakeLanding = false
@@ -1295,6 +1297,7 @@ function ToggleAutopilot()
         elseif atmosphere() == 0 then -- Planetary autopilot
             local nearPlanet = unit.getClosestPlanetInfluence() > 0
             if CustomTarget == nil and (autopilotTargetPlanet.name == planet.name and nearPlanet) then
+                OrbitAchieved = false
                 ToggleIntoOrbit() -- this works much better here
             else
             Autopilot = true
@@ -6220,16 +6223,6 @@ function script.onTick(timerId)
             -- Getting as close to orbit distance as comfortably possible
 
             if orbit.periapsis ~= nil and orbit.apoapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit*0.9 and coreAltitude < OrbitTargetOrbit*1.4 then
-                local function orbitThrottle(value, orbitalpitch)
-                    orbitPitch = orbitalpitch
-                    if adjustedPitch <= orbitalpitch+3 and adjustedPitch >= orbitalpitch-3 then
-                        PlayerThrottle=value
-                        cmdThrottle(value)
-                    else
-                        PlayerThrottle = 0.05
-                        cmdThrottle(0.05)
-                    end
-                end
                 if orbit.apoapsis ~= nil then
                     if (orbit.periapsis.altitude >= OrbitTargetOrbit*0.99 and orbit.apoapsis.altitude >= OrbitTargetOrbit*0.99 and 
                         orbit.periapsis.altitude < orbit.apoapsis.altitude and orbit.periapsis.altitude*1.05 >= orbit.apoapsis.altitude) or OrbitAchieved then -- This should get us a stable orbit within 10% with the way we do it
@@ -6376,13 +6369,8 @@ function script.onTick(timerId)
                         end
                     elseif coreAltitude > OrbitTargetOrbit*1.5 then
                         orbitMsg = "Reentering orbital corridor"
-                        if vSpd < -100 then
-                            orbitPitch = 45
-                            pcs = pcs*1.25
-                        else
-                            orbitPitch = -80
-                            pcs = pcs*0.75
-                        end
+                        orbitPitch = utils.map(vSpd, 100, -100, -65, 0)
+                        pcs = pcs*0.75
                     end
                 end
                 cmdCruise(math.floor(pcs))
