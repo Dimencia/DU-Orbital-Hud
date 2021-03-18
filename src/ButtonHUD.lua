@@ -1156,6 +1156,7 @@ function ToggleAltitudeHold()
             end
             OrbitAchieved = false
             OrbitTargetSet = true
+            orbitAligned = true
             IntoOrbit = true
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
                 Nav.control.cancelCurrentControlMasterMode()
@@ -1172,6 +1173,7 @@ function ToggleAltitudeHold()
     else
         IntoOrbit = false
         OrbitAchieved = false
+        orbitAligned = false
         CancelIntoOrbit = true
         autoRoll = autoRollPreference
         AutoTakeoff = false
@@ -1275,6 +1277,7 @@ function ToggleAutopilot()
                    -- else
                         -- Vector to target
                         OrbitAchieved = false
+                        orbitAligned = true
                         if not VectorToTarget then
                             ToggleVectorToTarget(SpaceTarget)
                         end
@@ -1287,6 +1290,7 @@ function ToggleAutopilot()
                     elseif coreAltitude < 100000 then
                         HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
                         VectorToTarget = true
+                        orbitAligned = false
                         OrbitAchieved = false
                         OrbitTargetSet = true
                         orbitalParams.AutopilotAlign = true
@@ -1310,6 +1314,7 @@ function ToggleAutopilot()
             local nearPlanet = unit.getClosestPlanetInfluence() > 0
             if CustomTarget == nil and (autopilotTargetPlanet.name == planet.name and nearPlanet) then
                 OrbitAchieved = false
+                orbitAligned = false
                 ToggleIntoOrbit() -- this works much better here
             else
             Autopilot = true
@@ -6179,6 +6184,7 @@ function script.onTick(timerId)
                 else
                     autoRoll = autoRollPreference
                     IntoOrbit = true
+                    orbitAligned = true
                     OrbitAchieved = false
                     CancelIntoOrbit = false
                     orbitAligned = false
@@ -6230,7 +6236,36 @@ function script.onTick(timerId)
             local escapeVel, endSpeed = Kep(OrbitTargetPlanet):escapeAndOrbitalSpeed((vec3(core.getConstructWorldPos())-OrbitTargetPlanet.center):len()-OrbitTargetPlanet.radius)
             local orbitalRoll = roll
             -- Getting as close to orbit distance as comfortably possible
-
+            if not orbitAligned then
+                cmdThrottle(0)
+                orbitRoll = 0
+                orbitMsg = "Aligning to orbital path"
+                local pitchAligned = false
+                local rollAligned = false
+                if CustomTarget ~= nil and orbitalParams.AutopilotAlign then
+                    orbitPitch = nil
+                    pitchAligned = AlignToWorldVector(CustomTarget.position-worldPos,0.01)
+                elseif not orbitalParams.VectorToTarget then
+                    orbitPitch = 0
+                    if adjustedPitch <= orbitPitch+1 and adjustedPitch >= orbitPitch-1 then
+                        pitchAligned = true
+                    else
+                        pitchAligned = false
+                    end
+                else
+                    pitchAligned = true
+                end
+                if orbitalRoll <= orbitRoll+1 and orbitalRoll >= orbitRoll-1 then
+                    rollAligned = true
+                else
+                    rollAligned = false
+                end
+                if pitchAligned and rollAligned then
+                    orbitPitch = nil
+                    orbitRoll = nil
+                    orbitAligned = true
+                end
+            end
             if orbit.periapsis ~= nil and orbit.apoapsis ~= nil and orbit.eccentricity < 1 and coreAltitude > OrbitTargetOrbit*0.9 and coreAltitude < OrbitTargetOrbit*1.4 then
                 if orbit.apoapsis ~= nil then
                     if (orbit.periapsis.altitude >= OrbitTargetOrbit*0.99 and orbit.apoapsis.altitude >= OrbitTargetOrbit*0.99 and 
@@ -6328,65 +6363,34 @@ function script.onTick(timerId)
                 local mod = pcs%50
                 if mod > 0 then pcs = (pcs - mod) + 50 end
                 BrakeIsOn = false
-                if not orbitAligned then
-                    cmdThrottle(0)
-                    orbitRoll = 0
-                    orbitMsg = "Aligning to orbital path"
-                    local pitchAligned = false
-                    local rollAligned = false
-                    if CustomTarget ~= nil and orbitalParams.AutopilotAlign then
-                        orbitPitch = nil
-                        pitchAligned = AlignToWorldVector(CustomTarget.position-worldPos,0.01)
-                    elseif not orbitalParams.VectorToTarget then
-                        orbitPitch = 0
-                        if adjustedPitch <= orbitPitch+1 and adjustedPitch >= orbitPitch-1 then
-                            pitchAligned = true
-                        else
-                            pitchAligned = false
-                        end
+                if coreAltitude < OrbitTargetOrbit*0.8 then
+                    orbitMsg = "Escaping planet gravity"
+                    orbitPitch = utils.map(vSpd, 200, 0, -15, 80)
+                elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.15 then
+                    orbitMsg = "Approaching orbital corridor"
+                    pcs = pcs*0.75
+                    -- if vSpd > 100 then
+                    --     orbitPitch = -30
+                    -- else
+                    --     orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit, 45, 10)
+                    -- end
+                    orbitPitch = utils.map(vSpd, 100, -100, -15, 65)
+                elseif coreAltitude >= OrbitTargetOrbit*1.15 and coreAltitude < OrbitTargetOrbit*1.5 then
+                    orbitMsg = "Approaching orbital corridor"
+                    pcs = pcs*0.75
+                    if vSpd < 0 or orbitalRecover then
+                        orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*1.5, OrbitTargetOrbit*1.01, -30, 0) -- Going down? pitch up.
+                        --orbitPitch = utils.map(vSpd, 100, -100, -15, 65)
                     else
-                        pitchAligned = true
+                        orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.99, OrbitTargetOrbit*1.5, 0, 30) -- Going up? pitch down.
                     end
-                    if orbitalRoll <= orbitRoll+1 and orbitalRoll >= orbitRoll-1 then
-                        rollAligned = true
-                    else
-                        rollAligned = false
-                    end
-                    if pitchAligned and rollAligned then
-                        orbitPitch = nil
-                        orbitRoll = nil
-                        orbitAligned = true
-                    end
-                else
-                    if coreAltitude < OrbitTargetOrbit*0.8 then
-                        orbitMsg = "Escaping planet gravity"
-                        orbitPitch = utils.map(vSpd, 200, 0, -15, 80)
-                    elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.15 then
-                        orbitMsg = "Approaching orbital corridor"
-                        pcs = pcs*0.75
-                        -- if vSpd > 100 then
-                        --     orbitPitch = -30
-                        -- else
-                        --     orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.6, OrbitTargetOrbit, 45, 10)
-                        -- end
-                        orbitPitch = utils.map(vSpd, 100, -100, -15, 65)
-                    elseif coreAltitude >= OrbitTargetOrbit*1.15 and coreAltitude < OrbitTargetOrbit*1.5 then
-                        orbitMsg = "Approaching orbital corridor"
-                        pcs = pcs*0.75
-                        if vSpd < 0 or orbitalRecover then
-                            orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*1.5, OrbitTargetOrbit*1.01, -30, 0) -- Going down? pitch up.
-                            --orbitPitch = utils.map(vSpd, 100, -100, -15, 65)
-                        else
-                            orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.99, OrbitTargetOrbit*1.5, 0, 30) -- Going up? pitch down.
-                        end
-                    elseif coreAltitude > OrbitTargetOrbit*1.5 then
-                        orbitMsg = "Reentering orbital corridor"
-                        orbitPitch = -85 --utils.map(vSpd, 25, -200, -65, -30)
-                        local pcsAdjust = utils.map(vSpd, -150, -300, 1, 0.45)
-                        pcs = pcs*pcsAdjust
-                    end
-                    cmdCruise(math.floor(pcs))
+                elseif coreAltitude > OrbitTargetOrbit*1.5 then
+                    orbitMsg = "Reentering orbital corridor"
+                    orbitPitch = -85 --utils.map(vSpd, 25, -200, -65, -30)
+                    local pcsAdjust = utils.map(vSpd, -150, -300, 1, 0.45)
+                    pcs = pcs*pcsAdjust
                 end
+                cmdCruise(math.floor(pcs))
             end
             if orbitPitch ~= nil then
                 if (OrbitPitchPID == nil) then
@@ -7098,6 +7102,7 @@ function script.onTick(timerId)
                     local curBrake = LastMaxBrakeInAtmo
                     if not OrbitAchieved then 
                         OrbitTargetSet = false
+                        orbitAligned = true
                         IntoOrbit = true
                     else
                         curBrake = LastMaxBrake
@@ -7124,6 +7129,7 @@ function script.onTick(timerId)
             -- Altitude hold and AutoTakeoff orbiting
             if atmosphere() == 0 and (AltitudeHold and HoldAltitude > planet.noAtmosphericDensityAltitude) and not (spaceLaunch or VectorToTarget or IntoOrbit or Reentry ) then
                 if not OrbitAchieved then
+                    orbitAligned = true
                     IntoOrbit = true
                 end
             end
