@@ -313,6 +313,7 @@ local OrbitTargetPlanet = nil
 local OrbitAchieved = false
 local SpaceEngineVertUp = false
 local SpaceEngineVertDn = false
+local SpaceEngines = false
 local OrbitTicks = 0
 
 -- BEGIN FUNCTION DEFINITIONS
@@ -404,6 +405,7 @@ function ProcessElements()
     for k in pairs(elementsID) do
         local type = eleType(elementsID[k])
         if string.match(type, '^.*Space Engine$') then
+            SpaceEngines = true
             if string.match(tostring(core.getElementTagsById(elementsID[k])), '^.*vertical.*$') then
                 local enrot = core.getElementRotationById(elementsID[k])
                 if enrot[4] < 0 then
@@ -1213,6 +1215,10 @@ end
 function ToggleAutopilot()
     local time = system.getTime()
     if (time - apDoubleClick) < 1.5 then
+        if not SpaceEngines then
+            msgText = "No space engines detected, Orbital Hop not supported"
+            return
+        end
         if planet.hasAtmosphere then
             if atmosphere() > 0 then
                 HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
@@ -1232,7 +1238,7 @@ function ToggleAutopilot()
         -- Behavior is probably 
         -- a. If not at the same nearest planet and in space and the target has gravity, autopilot to that planet
         -- a1. 
-        -- b. If at nearest planet but not in atmo (and the destination is in atmo), and destination is less than (radius) away or our orbit is not stable, auto-reentry
+        -- b. If at nearest planet but not in atmo (and the destination is win atmo), and destination is less than (radius) away or our orbit is not stable, auto-reentry
         -- (IE if in an orbit, like from AP, it should wait until destination is on the correct side of the planet before engaging reentry)
         -- c.  If at correct planet and in atmo and alt hold isn't on and they aren't landed, engage altitude hold at that alt and speed
         -- d. If alt hold is on and we're within tolerance of our target altitude, slowly yaw toward the target position
@@ -6239,7 +6245,7 @@ function script.onTick(timerId)
 
                                 local brakeDistance, _ =  Kinematic.computeDistanceAndTime(velMag, adjustedAtmoSpeedLimit/3.6, constructMass(), 0, 0, LastMaxBrake)
 
-                                if velocity:normalize():dot(targetVec:normalize()) > 0.85 and targetVec:len() > 10000+brakeDistance+coreAltitude then -- Triggers when we get close to passing it or within 12km+height I guess
+                                if velocity:normalize():dot(targetVec:normalize()) > 0.5 and targetVec:len() > 10000+brakeDistance+coreAltitude then -- Triggers when we get close to passing it or within 12km+height I guess
                                     orbitMsg = "Orbiting to Target"
                                 else 
                                     msgText = "Orbit complete, proceeding with reentry"
