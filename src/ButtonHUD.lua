@@ -306,7 +306,7 @@ local orbitPitch = 0
 local orbitRoll = 0
 local orbitAligned = false
 local orbitalRecover = false
-local orbitalParams = { VectorToTarget = false } --, AltitudeHold = false }
+local orbitalParams = { VectorToTarget , AutopilotAlign }
 local OrbitTargetSet = false
 local OrbitTargetOrbit = 0
 local OrbitTargetPlanet = nil
@@ -1284,10 +1284,16 @@ function ToggleAutopilot()
                         --spaceLaunch = true
                         OrbitAchieved = false
                         Autopilot = true
-                    else
-                        spaceLand = true
-                        ProgradeIsOn = true
-                        if AltitudeHold then ToggleAltitudeHold() end -- Make sure to cancel this.
+                    elseif coreAltitude < 100000 then
+                        HoldAltitude = planet.noAtmosphericDensityAltitude + 2000
+                        VectorToTarget = true
+                        OrbitAchieved = false
+                        OrbitTargetSet = true
+                        orbitalParams.AutopilotAlign = true
+                        IntoOrbit = true
+                        -- spaceLand = true
+                        -- ProgradeIsOn = true
+                        -- if AltitudeHold then ToggleAltitudeHold() end -- Make sure to cancel this.
                     end
                 end
             else
@@ -6199,7 +6205,6 @@ function script.onTick(timerId)
             if OrbitTargetPlanet == nil then
                 if VectorToTarget then
                     OrbitTargetPlanet = autopilotTargetPlanet
-                    
                 else
                     OrbitTargetPlanet = planet
                 end
@@ -6215,8 +6220,6 @@ function script.onTick(timerId)
             if AltitudeHold or VectorToTarget then
                 if not spaceLaunch then 
                     OrbitTargetOrbit = HoldAltitude
-                    orbitAligned = true
-                    -- orbitalParams.AltitudeHold = AltitudeHold
                     AltitudeHold = false
                 end
                 if VectorToTarget then
@@ -6254,7 +6257,7 @@ function script.onTick(timerId)
                                     reentryMode = true
                                     finalLand = true
                                     BeginReentry()
-                                    orbitalParams.VectorToTarget = false -- Let it disable orbit
+                                    orbitalParams.VectorToTarget, orbitalParams.AutopilotAlign = false, false -- Let it disable orbit
                                 end
                             end
                             if not orbitalParams.VectorToTarget then
@@ -6266,7 +6269,7 @@ function script.onTick(timerId)
                                 if not finalLand then
                                     msgText = "Orbit established"
                                 end
-                                orbitalParams.VectorToTarget = false
+                                orbitalParams.VectorToTarget, orbitalParams.AutopilotAlign = false, false
                                 CancelIntoOrbit = false
                                 IntoOrbit = false
                                 orbitAligned = false
@@ -6326,20 +6329,23 @@ function script.onTick(timerId)
                 if mod > 0 then pcs = (pcs - mod) + 50 end
                 BrakeIsOn = false
                 if not orbitAligned then
+                    cmdThrottle(0)
+                    orbitRoll = 0
+                    orbitMsg = "Aligning to orbital path"
                     local pitchAligned = false
                     local rollAligned = false
-                    if coreAltitude < OrbitTargetOrbit then
-                        orbitMsg = "Aligning to orbital path"
+                    if CustomTarget ~= nil and orbitalParams.AutopilotAlign then
+                        orbitPitch = nil
+                        pitchAligned = AlignToWorldVector(CustomTarget.position-worldPos,0.01)
+                    elseif not orbitalParams.VectorToTarget then
+                        orbitPitch = 0
+                        if adjustedPitch <= orbitPitch+1 and adjustedPitch >= orbitPitch-1 then
+                            pitchAligned = true
+                        else
+                            pitchAligned = false
+                        end
                     else
-                        -- TODO: Target a point in space at the proper distance and point there.
-                        orbitMsg = "Aligning to orbital point"
-                    end
-                    orbitPitch = 0
-                    orbitRoll = 0
-                    if adjustedPitch <= orbitPitch+1 and adjustedPitch >= orbitPitch-1 then
                         pitchAligned = true
-                    else
-                        pitchAligned = false
                     end
                     if orbitalRoll <= orbitRoll+1 and orbitalRoll >= orbitRoll-1 then
                         rollAligned = true
@@ -6369,16 +6375,18 @@ function script.onTick(timerId)
                         pcs = pcs*0.75
                         if vSpd < 0 or orbitalRecover then
                             orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*1.5, OrbitTargetOrbit*1.01, -30, 0) -- Going down? pitch up.
+                            --orbitPitch = utils.map(vSpd, 100, -100, -15, 65)
                         else
                             orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.99, OrbitTargetOrbit*1.5, 0, 30) -- Going up? pitch down.
                         end
                     elseif coreAltitude > OrbitTargetOrbit*1.5 then
                         orbitMsg = "Reentering orbital corridor"
-                        orbitPitch = utils.map(vSpd, 100, -100, -65, 0)
-                        pcs = pcs*0.75
+                        orbitPitch = -85 --utils.map(vSpd, 25, -200, -65, -30)
+                        local pcsAdjust = utils.map(vSpd, -150, -300, 1, 0.45)
+                        pcs = pcs*pcsAdjust
                     end
+                    cmdCruise(math.floor(pcs))
                 end
-                cmdCruise(math.floor(pcs))
             end
             if orbitPitch ~= nil then
                 if (OrbitPitchPID == nil) then
@@ -6405,6 +6413,7 @@ function script.onTick(timerId)
             -- BrakeIsOn = true
             -- brakeInput = 1
             -- msgText = "Orbitting cancelled, parking"
+            orbitalParams.VectorToTarget, orbitalParams.AutopilotAlign = false, false
             OrbitTargetSet = false
             OrbitTargetPlanet = nil
             cmdThrottle(0)
