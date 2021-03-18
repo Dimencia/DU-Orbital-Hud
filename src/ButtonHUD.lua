@@ -6244,8 +6244,7 @@ function script.onTick(timerId)
                                 local targetVec = CustomTarget.position - worldPos
 
                                 local brakeDistance, _ =  Kinematic.computeDistanceAndTime(velMag, adjustedAtmoSpeedLimit/3.6, constructMass(), 0, 0, LastMaxBrake)
-
-                                if velocity:normalize():dot(targetVec:normalize()) > 0.5 and targetVec:len() > 10000+brakeDistance+coreAltitude then -- Triggers when we get close to passing it or within 12km+height I guess
+                                if velocity:normalize():dot(targetVec:normalize()) > 0.5 and targetVec:len() > 15000+brakeDistance+coreAltitude then -- Triggers when we get close to passing it or within 12km+height I guess
                                     orbitMsg = "Orbiting to Target"
                                 else 
                                     msgText = "Orbit complete, proceeding with reentry"
