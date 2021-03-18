@@ -1125,7 +1125,7 @@ function ToggleAltitudeHold()
                 HoldAltitude = planet.spaceEngineMinAltitude - 50
             else
                 if unit.getClosestPlanetInfluence() > 0 then
-                    HoldAltitude = planet.noAtmosphericDensityAltitude + 2000
+                    HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
                 end
             end
             ahDoubleClick = -1
@@ -1285,7 +1285,7 @@ function ToggleAutopilot()
                         OrbitAchieved = false
                         Autopilot = true
                     elseif coreAltitude < 100000 then
-                        HoldAltitude = planet.noAtmosphericDensityAltitude + 2000
+                        HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
                         VectorToTarget = true
                         OrbitAchieved = false
                         OrbitTargetSet = true
@@ -5593,7 +5593,7 @@ end
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 
 function script.onStart()
-    VERSION_NUMBER = 5.443
+    VERSION_NUMBER = 5.450
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,

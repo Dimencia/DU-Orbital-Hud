@@ -5,10 +5,11 @@ Version 5.443
     - Improved efficiency of achieving orbit
     - Improved accuracy with final orbit
     - When in space near a planet, `Alt-6` now orbits you at the altitude you activated at.
-    - When in space near a planet, `Alt-6-6` now orbits you at 2km above atmosphere. This will take you into near planet orbit.
+    - When in space near a planet, `Alt-6-6` now orbits you at 1km above atmosphere. This will take you into near planet orbit.
     - Limit for orbital hop using `Alt-4` has been removed. Autopilot will recover if you overshoot your target.
     - When on ground in atmo, `Alt-4-4` will perform orbital hop to target at 1000m above atmosphere.
     - Added space engine check for `Alt-4-4` to be allowed.
+    - Using `Alt-4` in space within 100k of target planet will place you in orbit 1km above atmosphere then ap to target.
 
 Version 5.442
 - Orbiting
