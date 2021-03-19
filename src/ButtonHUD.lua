@@ -1212,7 +1212,7 @@ end
 
 function ToggleAutopilot()
     local time = system.getTime()
-    if (time - apDoubleClick) < 1.5 then
+    if (time - apDoubleClick) < 1.5 and atmosphere() > 0 then
         if not SpaceEngines then
             msgText = "No space engines detected, Orbital Hop not supported"
             return

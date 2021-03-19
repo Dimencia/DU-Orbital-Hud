@@ -1,7 +1,7 @@
 ## ChangeLog - Most recent changes at the top
 
 KNOWN ISSUES:
-Alt-4 while in space < 100k altitude will immediate start re-entry
+Alt-4 while in space < 100k altitude will immediate start re-entry and AP to target at 11% atmo.
 
 Version 5.451
 - Orbiting
