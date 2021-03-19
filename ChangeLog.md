@@ -1,7 +1,14 @@
 ## ChangeLog - Most recent changes at the top
 
-Fixed script unloading when away from control unit.  Note: We are now at our script limit even minimized.  We are trying to clean up to give more room, 
-but this might be the limit of everything in the hud meaning new features would remove old features or we might have to get creative on some things.
+Version 5.450
+- Orbiting
+    - Improved efficiency of achieving orbit
+    - Improved accuracy with final orbit
+    - When in space near a planet, `Alt-6` now orbits you at the altitude you activated at.
+    - When in space near a planet, `Alt-6-6` now orbits you at 1km above atmosphere. This will take you into near planet orbit.
+    - Limit for orbital hop using `Alt-4` has been removed. Autopilot will recover if you overshoot your target.
+    - When on ground in atmo, `Alt-4-4` will perform orbital hop to target at 1000m above atmosphere.
+    - Added space engine check for `Alt-4-4` to be allowed.
 
 Version 5.442
 - Orbiting
@@ -20,6 +27,9 @@ Version 5.44
 - New user Variable: DisplayDeadZone, defaults true.  If set to false, deadzone circle and line to cursor will not be drawn when in virtual joystick mode..
 - Bugfix
     - When using `Alt-6` without a target selected (using `Alt-1` or `Alt-2`) no longer gives an error.
+
+Fixed script unloading when away from control unit.  Note: We are now at our script limit even minimized.  We are trying to clean up to give more room, 
+but this might be the limit of everything in the hud meaning new features would remove old features or we might have to get creative on some things.
 
 Version 5.43
 - Removed `VertTakeOffMode` user variable.  Mode determined by checking to see if AGG is on prior to beginning ascent.
