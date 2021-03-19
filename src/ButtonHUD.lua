@@ -213,6 +213,8 @@ local holdingCtrl = false
 local msgText = "empty"
 local holdAltitudeButtonModifier = 5
 local antiGravButtonModifier = 5
+local currentHoldAltModifier = holdAltitudeButtonModifier
+local currentAggModifier = antiGravButtonModifier
 local isBoosting = false -- Dodgin's Don't Die Rocket Govenor
 local brakeDistance, brakeTime = 0
 local maxBrakeDistance, maxBrakeTime = 0
@@ -1081,21 +1083,21 @@ function ToggleIntoOrbit()
             OrbitTargetPlanet = nil
             OrbitTicks = 0
             autoRoll = autoRollPreference
-            if AltitudeHold then ToggleAltitudeHold() end
+            if AltitudeHold then AltitudeHold = false AutoTakeoff = false end
             orbitalParams.VectorToTarget = false
             orbitalParams.AutopilotAlign = false
+            OrbitTargetSet = false
         elseif unit.getClosestPlanetInfluence() > 0 then
             IntoOrbit = true
             autoRoll = true
             OrbitAchieved = false
-            orbitAligned = false
             orbitPitch = nil
             orbitRoll = nil
             OrbitTicks = 0
             if OrbitTargetPlanet == nil then
                 OrbitTargetPlanet = planet
             end
-            if AltitudeHold then ToggleAltitudeHold() end
+            if AltitudeHold then AltitudeHold = false AutoTakeoff = false end
         else
             msgText = "Unable to engage orbiting, not near planet"
         end
@@ -1112,6 +1114,7 @@ function ToggleIntoOrbit()
         if AltitudeHold then ToggleAltitudeHold() end
         orbitalParams.VectorToTarget = false
         orbitalParams.AutopilotAlign = false
+        OrbitTargetSet = false
     end
 end
 
@@ -1133,31 +1136,44 @@ end
 function ToggleAltitudeHold()
     local time = system.getTime()
     if (time - ahDoubleClick) < 1.5 then
-        if planet.hasAtmosphere then
+        local skip = false
+        if planet.hasAtmosphere and ((atmosphere() > 0 and HoldAltitude == planet.spaceEngineMinAltitude-50))  then -- or (atmosphere() == 0 and HoldAltitude == planet.noAtmosphericDensityAltitude + 1000))
+            -- We need to cancel alt hold, it's already set at what we want, this is a triple click
+            skip = true
+            if IntoOrbit then ToggleIntoOrbit() end
+            ahDoubleClick = 0
+            return
+        end
+        if planet.hasAtmosphere and not skip then
             if atmosphere() > 0 then
                 HoldAltitude = planet.spaceEngineMinAltitude - 50
             else
                 if unit.getClosestPlanetInfluence() > 0 then
                     HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
                     OrbitTargetOrbit = HoldAltitude
-                    ToggleIntoOrbit()
+                    OrbitTargetSet = true
+                    if not IntoOrbit then ToggleIntoOrbit() end
                     orbitAligned = true
-                    return -- return without adjusting whatever alt hold is at right now
                 end
             end
             ahDoubleClick = -1
-            if AltitudeHold then 
+            if AltitudeHold or IntoOrbit then 
                 return 
             end
         end
     else
         ahDoubleClick = time
     end
-    if unit.getClosestPlanetInfluence() > 0 and not AltitudeHold and atmosphere() == 0 then
+    if unit.getClosestPlanetInfluence() > 0 and atmosphere() == 0 then
         OrbitTargetOrbit = coreAltitude
         OrbitTargetSet = true
-        if not IntoOrbit then ToggleIntoOrbit() end
         orbitAligned = true
+        ToggleIntoOrbit()
+        if IntoOrbit then
+            ahDoubleClick = time
+        else
+            ahDoubleClick = 0
+        end
         return -- return without adjusting whatever alt hold is at right now
     end
     AltitudeHold = not AltitudeHold
@@ -1185,6 +1201,7 @@ function ToggleAltitudeHold()
             Nav.axisCommandManager:setTargetGroundAltitude(TargetHoverHeight)
         end
         if spaceLaunch then HoldAltitude = 100000 end
+        ahDoubleClick = time
     else
         autoRoll = autoRollPreference
         AutoTakeoff = false
@@ -1192,7 +1209,10 @@ function ToggleAltitudeHold()
         Reentry = false
         AutoTakeoff = false
         VectorToTarget = false
+        if IntoOrbit then ToggleIntoOrbit() end
+        ahDoubleClick = 0
     end
+    
 end
 
 function ToggleFollowMode()
@@ -1227,7 +1247,7 @@ end
 
 function ToggleAutopilot()
     local time = system.getTime()
-    if (time - apDoubleClick) < 1.5 and inAtmo and not Autopilot then
+    if (time - apDoubleClick) < 1.5 and inAtmo then
         if not SpaceEngines then
             msgText = "No space engines detected, Orbital Hop not supported"
             return
@@ -1287,7 +1307,10 @@ function ToggleAutopilot()
                         -- end
                    -- else
                         -- Vector to target
-                        
+                        if apDoubleClick == -1 then
+                            ahDoubleClick = 0 -- Don't let alt hold take a double click from us
+                        end
+                        HoldAltitude = coreAltitude
                         if not VectorToTarget then
                             ToggleVectorToTarget(SpaceTarget)
                         end
@@ -1298,12 +1321,12 @@ function ToggleAutopilot()
                         OrbitAchieved = false
                         Autopilot = true
                     elseif coreAltitude <= 100000 then
-                        
-                        HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
-                        OrbitTargetOrbit = HoldAltitude
+                        if IntoOrbit then ToggleIntoOrbit() end -- Reset all appropriate vars
+                        OrbitTargetOrbit = planet.noAtmosphericDensityAltitude + 1000
                         OrbitTargetSet = true
                         orbitalParams.AutopilotAlign = true
                         orbitalParams.VectorToTarget = true
+                        orbitAligned = false
                         if not IntoOrbit then ToggleIntoOrbit() end
                         -- spaceLand = true
                         -- ProgradeIsOn = true
@@ -1355,7 +1378,9 @@ function ToggleAutopilot()
         HoldAltitude = coreAltitude
         TargetSet = false
         Reentry = false
+        if IntoOrbit then ToggleIntoOrbit() end
     end
+    apDoubleClick = time
 end
 
 function ProgradeToggle()
@@ -1818,6 +1843,7 @@ function AlignToWorldVector(vector, tolerance, damping)
         previousPitchAmount = pitchAmount
         -- Return true or false depending on whether or not we're aligned
         if math.abs(yawAmount) < tolerance and math.abs(pitchAmount) < tolerance then
+        --if vec3(core.getConstructWorldOrientationForward()):dot(targetVec:normalize()) > (1-tolerance) then -- Probably better, but untested
             return true
         end
         return false
@@ -6228,6 +6254,8 @@ function script.onTick(timerId)
             end     
             local targetVec
             local yawAligned = false
+            local heightstring, heightunit = getDistanceDisplayString(OrbitTargetOrbit)
+            local orbitHeightString = heightstring .. heightunit
             if orbitalParams.VectorToTarget then
                 targetVec = CustomTarget.position - worldPos
             end
@@ -6237,13 +6265,15 @@ function script.onTick(timerId)
             if not orbitAligned then
                 cmdThrottle(0)
                 orbitRoll = 0
-                orbitMsg = "Aligning to orbital path"
+                orbitMsg = "Aligning to orbital path - OrbitHeight: "..orbitHeightString
                 local pitchAligned = false
                 local rollAligned = false
                 if orbitalParams.VectorToTarget then
-                    yawAligned = AlignToWorldVector(targetVec:normalize():project_on_plane(worldV),0.05)
+                    AlignToWorldVector(targetVec:normalize():project_on_plane(worldV)) -- Returns a value that wants both pitch and yaw to align, which we don't do
+                    yawAligned = constrF:dot(targetVec:project_on_plane(constrUp):normalize()) > 0.95
                 else
-                    yawAligned = AlignToWorldVector(velocity,0.05)
+                    AlignToWorldVector(velocity)
+                    yawAligned = currentYaw < 0.5
                     if velMag < 150 then yawAligned = true end -- Low velocities can never truly align yaw
                 end
                 pitchInput2 = 0
@@ -6269,6 +6299,7 @@ function script.onTick(timerId)
                 elseif velMag > 150 then
                     AlignToWorldVector(velocity)
                 end
+                pitchInput2 = 0
                 if orbitalParams.VectorToTarget then
                     -- Orbit to target...
 
@@ -6309,7 +6340,7 @@ function script.onTick(timerId)
                             end
                             
                         else
-                            orbitMsg = "Adjusting Orbit"
+                            orbitMsg = "Adjusting Orbit - OrbitHeight: "..orbitHeightString
                             orbitalRecover = true
                             -- Just set cruise to endspeed...
                             cmdCruise(endSpeed*3.6+1)
@@ -6342,13 +6373,6 @@ function script.onTick(timerId)
                             OrbitAltPID:inject(altdiff) -- We clamp this to max 15 degrees so it doesn't screw us too hard
                             -- And this will fight with the other PID to keep vspd reasonable
                             orbitPitch = utils.clamp(orbitPitch - utils.clamp(OrbitAltPID:get(),-15,15),-90,90)
-                            -- And, try to keep yaw straight.  
-                            if orbitalParams.VectorToTarget then
-                                yawAligned = AlignToWorldVector(targetVec:normalize():project_on_plane(worldV))
-                            else
-                                AlignToWorldVector(velocity)
-                            end
-                            pitchInput2 = 0
                         end
                     end
                 else
@@ -6357,12 +6381,11 @@ function script.onTick(timerId)
                     local mod = pcs%50
                     if mod > 0 then pcs = (pcs - mod) + 50 end
                     BrakeIsOn = false
-                    system.print(coreAltitude .. " < " .. OrbitTargetOrbit*0.8)
                     if coreAltitude < OrbitTargetOrbit*0.8 then
-                        orbitMsg = "Escaping planet gravity"
+                        orbitMsg = "Escaping planet gravity - OrbitHeight: "..orbitHeightString
                         orbitPitch = utils.map(vSpd, 200, 0, -15, 80)
                     elseif coreAltitude >= OrbitTargetOrbit*0.8 and coreAltitude < OrbitTargetOrbit*1.15 then
-                        orbitMsg = "Approaching orbital corridor"
+                        orbitMsg = "Approaching orbital corridor - OrbitHeight: "..orbitHeightString
                         pcs = pcs*0.75
                         -- if vSpd > 100 then
                         --     orbitPitch = -30
@@ -6371,7 +6394,7 @@ function script.onTick(timerId)
                         -- end
                         orbitPitch = utils.map(vSpd, 100, -100, -15, 65)
                     elseif coreAltitude >= OrbitTargetOrbit*1.15 and coreAltitude < OrbitTargetOrbit*1.5 then
-                        orbitMsg = "Approaching orbital corridor"
+                        orbitMsg = "Approaching orbital corridor - OrbitHeight: "..orbitHeightString
                         pcs = pcs*0.75
                         if vSpd < 0 or orbitalRecover then
                             orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*1.5, OrbitTargetOrbit*1.01, -30, 0) -- Going down? pitch up.
@@ -6380,7 +6403,7 @@ function script.onTick(timerId)
                             orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.99, OrbitTargetOrbit*1.5, 0, 30) -- Going up? pitch down.
                         end
                     elseif coreAltitude > OrbitTargetOrbit*1.5 then
-                        orbitMsg = "Reentering orbital corridor"
+                        orbitMsg = "Reentering orbital corridor - OrbitHeight: "..orbitHeightString
                         orbitPitch = -85 --utils.map(vSpd, 25, -200, -65, -30)
                         local pcsAdjust = utils.map(vSpd, -150, -400, 1, 0.55)
                         pcs = pcs*pcsAdjust
@@ -7104,13 +7127,11 @@ function script.onTick(timerId)
             if atmosphere() == 0 and (AltitudeHold and HoldAltitude > planet.noAtmosphericDensityAltitude) and not (spaceLaunch or IntoOrbit or Reentry ) then
                 if not OrbitAchieved and not IntoOrbit then
                     --ToggleAltitudeHold()
-                    if VectorToTarget then
-                        OrbitTargetSet = false
-                    else
-                        OrbitTargetOrbit = HoldAltitude
-                        OrbitTargetSet = true
-                    end
+                    OrbitTargetOrbit = HoldAltitude -- If AP/VectorToTarget, AP already set this.  
+                    OrbitTargetSet = true
+                    if VectorToTarget then orbitalParams.VectorToTarget = true end
                     ToggleIntoOrbit() -- Should turn off alt hold
+                    VectorToTarget = false -- WTF this gets stuck on? 
                     orbitAligned = true
                 end
             end
@@ -7852,8 +7873,6 @@ function script.onActionStart(action)
         Nav.axisCommandManager:deactivateGroundEngineAltitudeStabilization()
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.vertical, -1.0)
     elseif action == "groundaltitudeup" then
-        OldButtonMod = holdAltitudeButtonModifier
-        OldAntiMod = antiGravButtonModifier
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil  then
                 if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
@@ -7867,12 +7886,12 @@ function script.onActionStart(action)
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude + holdAltitudeButtonModifier
+        elseif IntoOrbit then
+            OrbitTargetOrbit = OrbitTargetOrbit + holdAltitudeButtonModifier
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionStart(1.0)
         end
     elseif action == "groundaltitudedown" then
-        OldButtonMod = holdAltitudeButtonModifier
-        OldAntiMod = antiGravButtonModifier
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then
                 if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
@@ -7888,6 +7907,9 @@ function script.onActionStart(action)
             end
         elseif AltitudeHold then
             HoldAltitude = HoldAltitude - holdAltitudeButtonModifier
+        elseif IntoOrbit then
+            OrbitTargetOrbit = OrbitTargetOrbit - holdAltitudeButtonModifier
+            if OrbitTargetOrbit < planet.noAtmosphericDensityAltitude+100 then OrbitTargetOrbit = planet.noAtmosphericDensityAltitude+100 end
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionStart(-1.0)
         end
@@ -8034,20 +8056,12 @@ function script.onActionStop(action)
         Nav.axisCommandManager:activateGroundEngineAltitudeStabilization(currentGroundAltitudeStabilization)
         Nav:setEngineForceCommand('hover', vec3(), 1) 
     elseif action == "groundaltitudeup" then
-        if antigrav and not ExternalAGG and antigrav.getState() == 1 then
-            antiGravButtonModifier = OldAntiMod
-        end
-        if AltitudeHold then
-            holdAltitudeButtonModifier = OldButtonMod
-        end
+        currentAggModifier = antiGravButtonModifier
+        currentHoldAltModifier = holdAltitudeButtonModifier
         toggleView = false
     elseif action == "groundaltitudedown" then
-        if antigrav and not ExternalAGG and antigrav.getState() == 1 then
-            antiGravButtonModifier = OldAntiMod
-        end
-        if AltitudeHold then
-            holdAltitudeButtonModifier = OldButtonMod
-        end
+        currentAggModifier = antiGravButtonModifier
+        currentHoldAltModifier = holdAltitudeButtonModifier
         toggleView = false
     elseif action == "lshift" then
         if system.isViewLocked() == 1 then
@@ -8091,20 +8105,23 @@ function script.onActionLoop(action)
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then 
                 if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
-                    AntigravTargetAltitude = AntigravTargetAltitude + antiGravButtonModifier
+                    AntigravTargetAltitude = AntigravTargetAltitude + currentAggModifier
                     HoldAltitude = AntigravTargetAltitude
                 else
-                    AntigravTargetAltitude = AntigravTargetAltitude + antiGravButtonModifier
+                    AntigravTargetAltitude = AntigravTargetAltitude + currentAggModifier
                 end
-                antiGravButtonModifier = antiGravButtonModifier * 1.05
+                currentAggModifier = currentAggModifier * 1.05
                 BrakeIsOn = false
             else
                 AntigravTargetAltitude = desiredBaseAltitude + 100
                 BrakeIsOn = false
             end
         elseif AltitudeHold then
-            HoldAltitude = HoldAltitude + holdAltitudeButtonModifier
-            holdAltitudeButtonModifier = holdAltitudeButtonModifier * 1.05
+            HoldAltitude = HoldAltitude + currentHoldAltModifier
+            currentHoldAltModifier = currentHoldAltModifier * 1.05
+        elseif IntoOrbit then
+            OrbitTargetOrbit = OrbitTargetOrbit + currentHoldAltModifier
+            currentHoldAltModifier = currentHoldAltModifier * 1.05
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionLoop(1.0)
         end
@@ -8112,22 +8129,26 @@ function script.onActionLoop(action)
         if antigrav and not ExternalAGG and antigrav.getState() == 1 then
             if AntigravTargetAltitude ~= nil then
                 if AltitudeHold and AntigravTargetAltitude < HoldAltitude + 10 and AntigravTargetAltitude > HoldAltitude - 10 then 
-                    AntigravTargetAltitude = AntigravTargetAltitude - antiGravButtonModifier
+                    AntigravTargetAltitude = AntigravTargetAltitude - currentAggModifier
                     if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                     HoldAltitude = AntigravTargetAltitude
                 else
-                    AntigravTargetAltitude = AntigravTargetAltitude - antiGravButtonModifier
+                    AntigravTargetAltitude = AntigravTargetAltitude - currentAggModifier
                     if AntigravTargetAltitude < 1000 then AntigravTargetAltitude = 1000 end
                 end
-                antiGravButtonModifier = antiGravButtonModifier * 1.05
+                currentAggModifier = currentAggModifier * 1.05
                 BrakeIsOn = false
             else
                 AntigravTargetAltitude = desiredBaseAltitude - 100
                 BrakeIsOn = false
             end
         elseif AltitudeHold then
-            HoldAltitude = HoldAltitude - holdAltitudeButtonModifier
-            holdAltitudeButtonModifier = holdAltitudeButtonModifier * 1.05
+            HoldAltitude = HoldAltitude - currentHoldAltModifier
+            currentHoldAltModifier = currentHoldAltModifier * 1.05
+        elseif IntoOrbit then
+            OrbitTargetOrbit = OrbitTargetOrbit - currentHoldAltModifier
+            if OrbitTargetOrbit < planet.noAtmosphericDensityAltitude+100 then OrbitTargetOrbit = planet.noAtmosphericDensityAltitude+100 end
+            currentHoldAltModifier = currentHoldAltModifier * 1.05
         else
             Nav.axisCommandManager:updateTargetGroundAltitudeFromActionLoop(-1.0)
         end

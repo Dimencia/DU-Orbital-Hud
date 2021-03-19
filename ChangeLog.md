@@ -2,6 +2,10 @@
 
 Version 5.451
 - Autopilot to surface destination will now orbit if engaged in space below 100km
+- Fixed issue with Cruise not applying brakes if pointing very retrograde
+- Fixed issue with alt hold and agg scaling that caused it to go far too fast if used repeatedly
+- Added ability to adjust orbital height at any point during orbit with Alt+Space and Alt+C
+- Fixed issues with `Alt-6-6` and `Alt-4-4` interfering with eachother
 
 Version 5.450
 - Orbiting
