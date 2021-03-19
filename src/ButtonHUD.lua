@@ -313,6 +313,7 @@ local SpaceEngineVertUp = false
 local SpaceEngineVertDn = false
 local SpaceEngines = false
 local OrbitTicks = 0
+local OrbitDefaultAltitude = 2000
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -1134,7 +1135,7 @@ function ToggleAltitudeHold()
                 HoldAltitude = planet.spaceEngineMinAltitude - 50
             else
                 if unit.getClosestPlanetInfluence() > 0 then
-                    HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
+                    HoldAltitude = planet.noAtmosphericDensityAltitude + OrbitDefaultAltitude
                     OrbitTargetOrbit = HoldAltitude
                     OrbitTargetSet = true
                     if not IntoOrbit then ToggleIntoOrbit() end
@@ -1250,7 +1251,7 @@ function ToggleAutopilot()
         end
         if planet.hasAtmosphere then
             if atmosphere() > 0 then
-                HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
+                HoldAltitude = planet.noAtmosphericDensityAltitude + OrbitDefaultAltitude
             end
             apDoubleClick = -1
             if Autopilot or VectorToTarget then 
@@ -1318,7 +1319,7 @@ function ToggleAutopilot()
                         Autopilot = true
                     elseif coreAltitude <= 100000 then
                         if IntoOrbit then ToggleIntoOrbit() end -- Reset all appropriate vars
-                        OrbitTargetOrbit = planet.noAtmosphericDensityAltitude + 1000
+                        OrbitTargetOrbit = planet.noAtmosphericDensityAltitude + OrbitDefaultAltitude
                         OrbitTargetSet = true
                         orbitalParams.AutopilotAlign = true
                         orbitalParams.VectorToTarget = true
@@ -7035,7 +7036,7 @@ function script.onTick(timerId)
                     --     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                     -- end
                     cmdCruise(ReentrySpeed)-- Then we have to wait a tick for it to take our new speed.
-                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == adjustedAtmoSpeedLimit then
+                    if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == adjustedAtmoSpeedLimit and velMag < adjustedAtmoSpeedLimit/3.6+1 then
                         --targetPitch = -MaxPitch -- It will handle pitching for us after this.
                         reentryMode = false
                         Reentry = false
