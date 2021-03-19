@@ -244,7 +244,6 @@ local gyroIsOn = nil
 local speedLimitBreaking = false
 local rgb = [[rgb(]] .. mfloor(PrimaryR + 0.5) .. "," .. mfloor(PrimaryG + 0.5) .. "," .. mfloor(PrimaryB + 0.5) .. [[)]]
 local rgbdim = [[rgb(]] .. mfloor(PrimaryR * 0.9 + 0.5) .. "," .. mfloor(PrimaryG * 0.9 + 0.5) .. "," ..   mfloor(PrimaryB * 0.9 + 0.5) .. [[)]]
-
 local markers = {}
 local previousYawAmount = 0
 local previousPitchAmount = 0
@@ -308,7 +307,7 @@ local orbitPitch = 0
 local orbitRoll = 0
 local orbitAligned = false
 local orbitalRecover = false
-local orbitalParams = { VectorToTarget , AutopilotAlign }
+local orbitalParams = { VectorToTarget = false } --, AltitudeHold = false }
 local OrbitTargetSet = false
 local OrbitTargetOrbit = 0
 local OrbitTargetPlanet = nil
@@ -401,7 +400,8 @@ function CalculateFuelVolume(curMass, vanillaMaxVolume)
         vanillaMaxVolume = vanillaMaxVolume - (vanillaMaxVolume * FuelTankOptimization * 0.05)
     end
     return vanillaMaxVolume            
-end
+end        
+
 
 function ProcessElements()
     local checkTanks = (fuelX ~= 0 and fuelY ~= 0)
@@ -1100,10 +1100,8 @@ function ToggleIntoOrbit()
             end
             if AltitudeHold then AltitudeHold = false AutoTakeoff = false end
         else
-            msgText = "Unable to engage orbiting, not near planet"
+            CancelIntoOrbit = true
         end
-    else
-        -- If this got called while in atmo, make sure it's all false
         OrbitAchieved = false
         IntoOrbit = false
         orbitAligned = false
@@ -1188,10 +1186,20 @@ function ToggleAltitudeHold()
         autoRoll = true
         LockPitch = nil
         OrbitAchieved = false
-        if (hoverDetectGround() == -1) or not inAtmo then -- Never autotakeoff in space
+        if (hoverDetectGround() == -1) then -- Never autotakeoff in space
             AutoTakeoff = false
-            if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
-                Nav.control.cancelCurrentControlMasterMode()
+            if ahDoubleClick > -1 then
+                if unit.getClosestPlanetInfluence() > 0 then
+                    HoldAltitude = coreAltitude
+                end
+            end
+            if not inAtmo then
+                OrbitAchieved = false
+                OrbitTargetSet = true
+                IntoOrbit = true
+                if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
             end
         else
             AutoTakeoff = true
@@ -1204,6 +1212,7 @@ function ToggleAltitudeHold()
         if spaceLaunch then HoldAltitude = 100000 end
         ahDoubleClick = time
     else
+        if IntoOrbit then ToggleIntoOrbit() end
         autoRoll = autoRollPreference
         AutoTakeoff = false
         BrakeLanding = false
@@ -1345,9 +1354,8 @@ function ToggleAutopilot()
             end
         elseif atmosphere() == 0 then -- Planetary autopilot
             local nearPlanet = unit.getClosestPlanetInfluence() > 0
-            if CustomTarget == nil and (autopilotTargetPlanet.name == planet.name and nearPlanet) and not IntoOrbit then
+            if CustomTarget == nil and (autopilotTargetPlanet.name == planet.name and nearPlanet) then
                 OrbitAchieved = false
-                orbitAligned = false
                 ToggleIntoOrbit() -- this works much better here
             else
                 Autopilot = true
@@ -1437,7 +1445,6 @@ function BrakeToggle()
         spaceLand = false
         finalLand = false
         upAmount = 0
-
     end
 end
 
@@ -6219,9 +6226,14 @@ function script.onTick(timerId)
                     end
                 else
                     autoRoll = autoRollPreference
-                    if not IntoOrbit then
-                        orbitAligned = true
-                        ToggleIntoOrbit()
+                    IntoOrbit = true
+                    OrbitAchieved = false
+                    CancelIntoOrbit = false
+                    orbitAligned = false
+                    orbitPitch = nil
+                    orbitRoll = nil
+                    if OrbitTargetPlanet == nil then
+                        OrbitTargetPlanet = planet
                     end
                     VertTakeOff = false
                 end
@@ -6241,6 +6253,7 @@ function script.onTick(timerId)
             if OrbitTargetPlanet == nil then
                 if VectorToTarget then
                     OrbitTargetPlanet = autopilotTargetPlanet
+                    
                 else
                     OrbitTargetPlanet = planet
                 end
@@ -6333,13 +6346,26 @@ function script.onTick(timerId)
                                 if not orbitalParams.VectorToTarget then
                                     ToggleIntoOrbit()
                                 end
-                            else
-                                OrbitTicks = OrbitTicks + 1 -- We want to see a good orbit for 2 consecutive ticks plz
-                                if OrbitTicks >= 2 then
-                                    OrbitAchieved = true
-                                end
                             end
-                            
+                            if not orbitalParams.VectorToTarget then
+                                orbitMsg = nil
+                                orbitalRecover = false
+                                OrbitTargetSet = false
+                                OrbitTargetPlanet = nil
+                                autoRoll = autoRollPreference
+                                if not finalLand then
+                                    msgText = "Orbit established"
+                                end
+                                orbitalParams.VectorToTarget = false
+                                CancelIntoOrbit = false
+                                IntoOrbit = false
+                                orbitAligned = false
+                                orbitPitch = nil
+                                orbitRoll = nil
+                                OrbitTargetPlanet = nil
+                                OrbitAchieved = false
+                                OrbitTicks = 0
+                            end
                         else
                             orbitMsg = "Adjusting Orbit - OrbitHeight: "..orbitHeightString
                             orbitalRecover = true
@@ -6375,7 +6401,7 @@ function script.onTick(timerId)
                             -- And this will fight with the other PID to keep vspd reasonable
                             orbitPitch = utils.clamp(orbitPitch - utils.clamp(OrbitAltPID:get(),-15,15),-90,90)
                         end
-                    end
+                    end   
                 else
                     local orbitalMultiplier = 2.75
                     local pcs = math.abs(utils.round(escapeVel*orbitalMultiplier))
@@ -6399,7 +6425,6 @@ function script.onTick(timerId)
                         pcs = pcs*0.75
                         if vSpd < 0 or orbitalRecover then
                             orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*1.5, OrbitTargetOrbit*1.01, -30, 0) -- Going down? pitch up.
-                            --orbitPitch = utils.map(vSpd, 100, -100, -15, 65)
                         else
                             orbitPitch = utils.map(coreAltitude, OrbitTargetOrbit*0.99, OrbitTargetOrbit*1.5, 0, 30) -- Going up? pitch down.
                         end
@@ -6409,8 +6434,8 @@ function script.onTick(timerId)
                         local pcsAdjust = utils.map(vSpd, -150, -400, 1, 0.55)
                         pcs = pcs*pcsAdjust
                     end
-                    cmdCruise(math.floor(pcs))
                 end
+                cmdCruise(math.floor(pcs))
             end
             if orbitPitch ~= nil then
                 if (OrbitPitchPID == nil) then
@@ -6421,6 +6446,23 @@ function script.onTick(timerId)
                 local orbitPitchInput = utils.clamp(OrbitPitchPID:get(),-0.5,0.5)
                 pitchInput2 = orbitPitchInput
             end
+            if orbitRoll ~= nil then
+                if adjustedPitch < 85 then
+                    local rollFactor = math.max(autoRollFactor, 0.01)/4
+                    if (OrbitRollPID == nil) then
+                        OrbitRollPID = pid.new(rollFactor * 0.01, 0, rollFactor * 0.1)
+                    end
+                    local orbitalRollDiff = orbitRoll - orbitalRoll
+                    OrbitRollPID:inject(orbitalRollDiff)
+                    local orbitRollInput = utils.clamp(OrbitRollPID:get(),-0.5,0.5)
+                    rollInput2 = orbitRollInput
+                end
+            end
+        elseif CancelIntoOrbit then
+            OrbitTargetSet = false
+            OrbitTargetPlanet = nil
+            cmdThrottle(0)
+            CancelIntoOrbit = false
         end
 
         if Autopilot and atmosphere() == 0 and not spaceLand then
@@ -6979,7 +7021,7 @@ function script.onTick(timerId)
                 -- And is wrong?
                 --local targetYaw = math.deg(math.atan(flatForward.y-vectorInYawDirection.y, flatForward.x-vectorInYawDirection.x))
                 -- These projections save it from bugging out at weird angles.
-                
+                local targetYaw = math.deg(signedRotationAngle(worldV:normalize(),velocity,targetVec))*2
                 --local targetYaw = math.deg(math.acos((vectorInYawDirection:dot(flatForward)))) * -utils.sign(targetVec:dot(velocity:cross(worldV)))*2
                 --system.print(math.abs(worldV:dot(targetVec:normalize())))
                 -- or math.abs(targetYaw) > 350
@@ -6989,9 +7031,6 @@ function script.onTick(timerId)
                 -- Let's go twice what they tell us to, which should converge quickly, within our clamp
                 --system.print("Target yaw " .. targetYaw)
                 -- We can try it with roll... 
-
-                local targetYaw = math.deg(signedRotationAngle(worldV:normalize(),velocity,targetVec))*2
-
                 local rollRad = math.rad(math.abs(roll))
                 if velMag > minRollVelocity and atmosphere() > 0.01 then
                     local maxRoll = utils.clamp(90-targetPitch*2,-90,90) -- No downwards roll allowed? :( 
@@ -7422,7 +7461,7 @@ function script.onFlush()
         finalPitchInput * pitchSpeedFactor * constructRight + finalRollInput * rollSpeedFactor * constructForward +
             finalYawInput * yawSpeedFactor * constructUp
 
-    if worldVertical:len() > 0.01 and (atmosphere > 0.0 or ProgradeIsOn or Reentry or spaceLand or AltitudeHold or IntoOrbit) then
+    if worldVertical:len() > 0.01 and (atmosphere > 0.0 or ProgradeIsOn or Reentry or spaceLand or AltitudeHold) then
         -- autoRoll on AND currentRollDeg is big enough AND player is not rolling
         local roll = getRoll(worldVertical, constructForward, constructRight) 
         local radianRoll = (roll / 180) * math.pi
@@ -7644,7 +7683,7 @@ function script.onFlush()
 
         if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed then -- Use a PID to brake past targetSpeed
             if (brakePID == nil) then
-                brakePID = pid.new(10 * 0.1, 0, 10 * 0.1)
+                brakePID = pid.new(1 * 0.01, 0, 1 * 0.1)
             end
             brakePID:inject(constructVelocity:len() - (targetSpeed/3.6)) 
             local calculatedBrake = utils.clamp(brakePID:get(),0,1)
