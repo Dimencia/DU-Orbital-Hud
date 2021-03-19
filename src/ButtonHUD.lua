@@ -1081,6 +1081,9 @@ function ToggleIntoOrbit()
             OrbitTargetPlanet = nil
             OrbitTicks = 0
             autoRoll = autoRollPreference
+            if AltitudeHold then ToggleAltitudeHold() end
+            orbitalParams.VectorToTarget = false
+            orbitalParams.AutopilotAlign = false
         elseif unit.getClosestPlanetInfluence() > 0 then
             IntoOrbit = true
             autoRoll = true
@@ -1092,6 +1095,7 @@ function ToggleIntoOrbit()
             if OrbitTargetPlanet == nil then
                 OrbitTargetPlanet = planet
             end
+            if AltitudeHold then ToggleAltitudeHold() end
         else
             msgText = "Unable to engage orbiting, not near planet"
         end
@@ -1105,6 +1109,9 @@ function ToggleIntoOrbit()
         OrbitTargetPlanet = nil
         OrbitTicks = 0
         autoRoll = autoRollPreference
+        if AltitudeHold then ToggleAltitudeHold() end
+        orbitalParams.VectorToTarget = false
+        orbitalParams.AutopilotAlign = false
     end
 end
 
@@ -1130,7 +1137,7 @@ function ToggleAltitudeHold()
             if atmosphere() > 0 then
                 HoldAltitude = planet.spaceEngineMinAltitude - 50
             else
-                if unit.getClosestPlanetInfluence() > 0 and not AltitudeHold then
+                if unit.getClosestPlanetInfluence() > 0 then
                     HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
                     OrbitTargetOrbit = HoldAltitude
                     ToggleIntoOrbit()
@@ -1145,6 +1152,13 @@ function ToggleAltitudeHold()
         end
     else
         ahDoubleClick = time
+    end
+    if unit.getClosestPlanetInfluence() > 0 and not AltitudeHold and atmosphere() == 0 then
+        OrbitTargetOrbit = coreAltitude
+        OrbitTargetSet = true
+        if not IntoOrbit then ToggleIntoOrbit() end
+        orbitAligned = true
+        return -- return without adjusting whatever alt hold is at right now
     end
     AltitudeHold = not AltitudeHold
     if AltitudeHold then
@@ -1283,17 +1297,16 @@ function ToggleAutopilot()
                         --spaceLaunch = true
                         OrbitAchieved = false
                         Autopilot = true
-                    elseif coreAltitude <= 100000 and not IntoOrbit then
+                    elseif coreAltitude <= 100000 then
                         
                         HoldAltitude = planet.noAtmosphericDensityAltitude + 1000
                         OrbitTargetOrbit = HoldAltitude
                         OrbitTargetSet = true
                         orbitalParams.AutopilotAlign = true
                         orbitalParams.VectorToTarget = true
-                        ToggleIntoOrbit()
+                        if not IntoOrbit then ToggleIntoOrbit() end
                         -- spaceLand = true
                         -- ProgradeIsOn = true
-                        if AltitudeHold then ToggleAltitudeHold() end -- Make sure to cancel this.
                     end
                 end
             else
@@ -1313,18 +1326,18 @@ function ToggleAutopilot()
                 orbitAligned = false
                 ToggleIntoOrbit() -- this works much better here
             else
-            Autopilot = true
-            RetrogradeIsOn = false
-            ProgradeIsOn = false
-            AutopilotRealigned = false
-            followMode = false
-            AltitudeHold = false
-            BrakeLanding = false
-            Reentry = false
-            AutoTakeoff = false
-            apThrottleSet = false
-            LockPitch = nil
-            WaypointSet = false
+                Autopilot = true
+                RetrogradeIsOn = false
+                ProgradeIsOn = false
+                AutopilotRealigned = false
+                followMode = false
+                AltitudeHold = false
+                BrakeLanding = false
+                Reentry = false
+                AutoTakeoff = false
+                apThrottleSet = false
+                LockPitch = nil
+                WaypointSet = false
             end
         else
             spaceLaunch = true
@@ -5594,7 +5607,7 @@ end
 -- Start of actual HUD Script. Written by Dimencia and Archaegeo. Optimization and Automation of scripting by ChronosWS  Linked sources where appropriate, most have been modified.
 
 function script.onStart()
-    VERSION_NUMBER = 5.450
+    VERSION_NUMBER = 5.451
     SetupComplete = false
     beginSetup = coroutine.create(function()
         Nav.axisCommandManager:setupCustomTargetSpeedRanges(axisCommandId.longitudinal,
@@ -6207,9 +6220,9 @@ function script.onTick(timerId)
             end
             if not OrbitTargetSet then
                 if OrbitTargetPlanet.hasAtmosphere then
-                    OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius + OrbitTargetPlanet.noAtmosphericDensityAltitude + 2000)
+                    OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius + OrbitTargetPlanet.noAtmosphericDensityAltitude + 1000)
                 else
-                    OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius + OrbitTargetPlanet.surfaceMaxAltitude + 2000)
+                    OrbitTargetOrbit = math.floor(OrbitTargetPlanet.radius + OrbitTargetPlanet.surfaceMaxAltitude + 1000)
                 end
                 OrbitTargetSet = true
             end     
@@ -6251,6 +6264,11 @@ function script.onTick(timerId)
                     orbitAligned = true
                 end
             else
+                if orbitalParams.VectorToTarget then
+                    AlignToWorldVector(targetVec:normalize():project_on_plane(worldV))
+                elseif velMag > 150 then
+                    AlignToWorldVector(velocity)
+                end
                 if orbitalParams.VectorToTarget then
                     -- Orbit to target...
 
@@ -6310,7 +6328,7 @@ function script.onTick(timerId)
                                 speedToInject = speedToInject*2
                             end
                             -- I really hate this, but, it really needs it still/again... 
-                            if speedToInject < 10 and math.abs(adjustedPitch) < 10 and absAltdiff < 100 then -- And do it again when it's even closer
+                            if speedToInject < 5 and math.abs(adjustedPitch) < 5 and absAltdiff < 100 then -- And do it again when it's even closer
                                 speedToInject = speedToInject*4
                             end
                             -- TBH these might not be super necessary anymore after changes, might can remove at least one, but two tends to make everything smoother
@@ -7054,45 +7072,45 @@ function script.onTick(timerId)
                     end
                     LastDistanceToTarget = distanceToTarget
                 end
-            elseif VectorToTarget and atmosphere() == 0 and HoldAltitude > planet.noAtmosphericDensityAltitude and not (spaceLaunch or Reentry) then
+            elseif VectorToTarget and atmosphere() == 0 and HoldAltitude > planet.noAtmosphericDensityAltitude and not (spaceLaunch or Reentry or IntoOrbit) then
                 if CustomTarget ~= nil and autopilotTargetPlanet.name == planet.name then
                     local targetVec = CustomTarget.position - vec3(core.getConstructWorldPos())
                     local targetAltitude = planet:getAltitude(CustomTarget.position)
                     local distanceToTarget = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
                     local curBrake = LastMaxBrakeInAtmo
-                    if not OrbitAchieved then 
-                        OrbitTargetSet = false
-                        orbitAligned = true
-                        IntoOrbit = true
-                    else
-                        curBrake = LastMaxBrake
-                        --local hSpd = velocity:len() - math.abs(vSpd)
-                        brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
-                        StrongBrakes = true
-                        if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and velocity:project_on_plane(worldV):normalize():dot(targetVec:project_on_plane(worldV):normalize()) > 0.99 then 
-                            if planet.hasAtmosphere then
-                                BrakeIsOn = false
-                                ProgradeIsOn = false
-                                reentryMode = true
-                                spaceLand = false   
-                                finalLand = true
-                                Autopilot = false
-                                -- VectorToTarget = true
-                                BeginReentry()
-                            end
+                    
+                    curBrake = LastMaxBrake
+                    --local hSpd = velocity:len() - math.abs(vSpd)
+                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
+                    StrongBrakes = true
+                    if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and velocity:project_on_plane(worldV):normalize():dot(targetVec:project_on_plane(worldV):normalize()) > 0.99 then 
+                        if planet.hasAtmosphere then
+                            BrakeIsOn = false
+                            ProgradeIsOn = false
+                            reentryMode = true
+                            spaceLand = false   
+                            finalLand = true
+                            Autopilot = false
+                            -- VectorToTarget = true
+                            BeginReentry()
                         end
-                        LastDistanceToTarget = distanceToTarget
                     end
+                    LastDistanceToTarget = distanceToTarget
+                
                 end
             end
 
             -- Altitude hold and AutoTakeoff orbiting
-            if atmosphere() == 0 and (AltitudeHold and HoldAltitude > planet.noAtmosphericDensityAltitude) and not (spaceLaunch or VectorToTarget or IntoOrbit or Reentry ) then
+            if atmosphere() == 0 and (AltitudeHold and HoldAltitude > planet.noAtmosphericDensityAltitude) and not (spaceLaunch or IntoOrbit or Reentry ) then
                 if not OrbitAchieved and not IntoOrbit then
-                    ToggleAltitudeHold()
-                    OrbitTargetOrbit = HoldAltitude
-                    OrbitTargetSet = true
-                    ToggleIntoOrbit()
+                    --ToggleAltitudeHold()
+                    if VectorToTarget then
+                        OrbitTargetSet = false
+                    else
+                        OrbitTargetOrbit = HoldAltitude
+                        OrbitTargetSet = true
+                    end
+                    ToggleIntoOrbit() -- Should turn off alt hold
                     orbitAligned = true
                 end
             end
@@ -7686,7 +7704,7 @@ function script.onFlush()
 
         -- Auto Navigation (Cruise Control)
         if (autoNavigationAcceleration:len() > constants.epsilon) then -- This means it's in cruise
-            if (brakeInput ~= 0 or autoNavigationUseBrake or math.abs(constructVelocityDir:dot(constructForward)) < 0.8)
+            if (brakeInput ~= 0 or autoNavigationUseBrake or constructVelocityDir:dot(constructForward) < 0.8)
             then
                 autoNavigationEngineTags = autoNavigationEngineTags .. ', brake'
             end

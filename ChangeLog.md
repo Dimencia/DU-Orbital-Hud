@@ -1,5 +1,18 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.451
+- Autopilot to surface destination will now orbit if engaged in space below 100km
+
+Version 5.450
+- Orbiting
+    - Improved efficiency of achieving orbit
+    - Improved accuracy with final orbit
+    - When in space near a planet, `Alt-6` now orbits you at the altitude you activated at.
+    - When in space near a planet, `Alt-6-6` now orbits you at 1km above atmosphere. This will take you into near planet orbit.
+    - Limit for orbital hop using `Alt-4` has been removed. Autopilot will recover if you overshoot your target.
+    - When on ground in atmo, `Alt-4-4` will perform orbital hop to target at 1000m above atmosphere.
+    - Added space engine check for `Alt-4-4` to be allowed.
+
 Version 5.443
 - Orbiting
     - Improved efficiency of achieving orbit
