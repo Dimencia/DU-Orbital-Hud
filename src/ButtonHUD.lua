@@ -1145,18 +1145,20 @@ function ToggleAltitudeHold()
         autoRoll = true
         LockPitch = nil
         OrbitAchieved = false
-        if (hoverDetectGround() == -1) or not inAtmo then -- Never autotakeoff in space
+        if (hoverDetectGround() == -1) then -- Never autotakeoff in space
             AutoTakeoff = false
             if ahDoubleClick > -1 then
-                if unit.getClosestPlanetInfluence() > 0 then -- Orbit at 2km above Atmo
+                if unit.getClosestPlanetInfluence() > 0 then
                     HoldAltitude = coreAltitude
                 end
             end
-            OrbitAchieved = false
-            OrbitTargetSet = true
-            IntoOrbit = true
-            if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
-                Nav.control.cancelCurrentControlMasterMode()
+            if not inAtmo then
+                OrbitAchieved = false
+                OrbitTargetSet = true
+                IntoOrbit = true
+                if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
+                    Nav.control.cancelCurrentControlMasterMode()
+                end
             end
         else
             AutoTakeoff = true
@@ -1168,9 +1170,7 @@ function ToggleAltitudeHold()
         end
         if spaceLaunch then HoldAltitude = 100000 end
     else
-        IntoOrbit = false
-        OrbitAchieved = false
-        CancelIntoOrbit = true
+        if IntoOrbit then ToggleIntoOrbit() end
         autoRoll = autoRollPreference
         AutoTakeoff = false
         BrakeLanding = false
@@ -6211,7 +6211,7 @@ function script.onTick(timerId)
             end     
             if AltitudeHold or VectorToTarget then
                 if not spaceLaunch then 
-                    OrbitTargetOrbit = HoldAltitude
+                    OrbitTargetOrbit = round(HoldAltitude,1)
                     orbitAligned = true
                     -- orbitalParams.AltitudeHold = AltitudeHold
                     AltitudeHold = false
@@ -6399,9 +6399,6 @@ function script.onTick(timerId)
                 end
             end
         elseif CancelIntoOrbit then
-            -- BrakeIsOn = true
-            -- brakeInput = 1
-            -- msgText = "Orbitting cancelled, parking"
             OrbitTargetSet = false
             OrbitTargetPlanet = nil
             cmdThrottle(0)
