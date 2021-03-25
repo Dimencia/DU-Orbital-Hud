@@ -6421,7 +6421,7 @@ function script.onTick(timerId)
             end
             if orbitPitch ~= nil then
                 if (OrbitPitchPID == nil) then
-                    OrbitPitchPID = pid.new(2 * 0.01, 0, 2 * 0.1)
+                    OrbitPitchPID = pid.new(1 * 0.01, 0, 5 * 0.1)
                 end
                 local orbitPitchDiff = orbitPitch - adjustedPitch
                 OrbitPitchPID:inject(orbitPitchDiff)
