@@ -7439,7 +7439,7 @@ function script.onFlush()
         local corrX = math.cos(radianRoll)
         local corrY = math.sin(radianRoll)
         local adjustedPitch = getPitch(worldVertical, constructForward, (constructRight * corrX) + (constructUp * corrY)) -- Don't roll if pitch is basically straight up/down
-        if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 and math.abs(adjustedPitch) < 85 then
+        if autoRoll == true and math.abs(targetRoll-currentRollDeg) > autoRollRollThreshold and finalRollInput == 0 and math.abs(adjustedPitch) < 80 then
             local targetRollDeg = targetRoll
             local rollFactor = autoRollFactor
             if atmosphere == 0 then

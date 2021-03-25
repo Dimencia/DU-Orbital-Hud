@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.452
+- Autoroll now stops at +/-80 pitch instead of 85
+
 Version 5.451
 - Autopilot to surface destination will now orbit if engaged in space below 100km
 - Fixed issue with Cruise not applying brakes if pointing very retrograde
