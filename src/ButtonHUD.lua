@@ -6412,7 +6412,7 @@ function script.onTick(timerId)
                         end
                     elseif coreAltitude > OrbitTargetOrbit*1.5 then
                         orbitMsg = "Reentering orbital corridor - OrbitHeight: "..orbitHeightString
-                        orbitPitch = -70 --utils.map(vSpd, 25, -200, -65, -30)
+                        orbitPitch = -85 --utils.map(vSpd, 25, -200, -65, -30)
                         local pcsAdjust = utils.map(vSpd, -150, -400, 1, 0.55)
                         pcs = pcs*pcsAdjust
                     end
@@ -6421,7 +6421,7 @@ function script.onTick(timerId)
             end
             if orbitPitch ~= nil then
                 if (OrbitPitchPID == nil) then
-                    OrbitPitchPID = pid.new(2 * 0.01, 0, 2 * 0.1)
+                    OrbitPitchPID = pid.new(1 * 0.01, 0, 5 * 0.1)
                 end
                 local orbitPitchDiff = orbitPitch - adjustedPitch
                 OrbitPitchPID:inject(orbitPitchDiff)
