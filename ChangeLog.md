@@ -6,6 +6,8 @@ Version 5.451
 - Fixed issue with alt hold and agg scaling that caused it to go far too fast if used repeatedly
 - Added ability to adjust orbital height at any point during orbit with Alt+Space and Alt+C
 - Fixed issues with `Alt-6-6` and `Alt-4-4` interfering with eachother
+- Reentry no longer pitches down until the speed is appropriate
+- User Parameter: OrbitDefaultAltitude = 2000 -- export: (Default: 2000) The height above atmosphere that an orbit should try to reach by default
 
 Version 5.450
 - Orbiting

@@ -93,6 +93,7 @@ ForceAlignment = false --export: (Default: false)
 minRollVelocity = 150 --export: (Default: 150)
 VertTakeOffEngine = false --export: (Default: false)
 DisplayDeadZone = true -- export: (Default: true)
+OrbitDefaultAltitude = 2000 -- export: (Default: 2000)
 
 -- Auto Variable declarations that store status of ship. Must be global because they get saved/read to Databank due to using _G assignment
 BrakeToggleStatus = BrakeToggleDefault
@@ -317,7 +318,6 @@ local SpaceEngineVertUp = false
 local SpaceEngineVertDn = false
 local SpaceEngines = false
 local OrbitTicks = 0
-local OrbitDefaultAltitude = 2000
 
 -- BEGIN FUNCTION DEFINITIONS
 
@@ -1165,6 +1165,11 @@ function ToggleAltitudeHold()
     else
         ahDoubleClick = time
     end
+    if (time - apDoubleClick) < 1.5 and VectorToTarget then -- Preserve alt+4+6 functionality to AP at max height
+        HoldAltitude = planet.spaceEngineMinAltitude-50
+        apDoubleClick = 0 -- Don't let another alt-4 count as a double
+        return -- Don't touch anything else in alt hold
+    end
     if unit.getClosestPlanetInfluence() > 0 and atmosphere() == 0 then
         OrbitTargetOrbit = coreAltitude
         OrbitTargetSet = true
@@ -1193,6 +1198,7 @@ function ToggleAltitudeHold()
             if not spaceLaunch and Nav.axisCommandManager:getAxisCommandType(0) == 0  and not AtmoSpeedAssist then
                 Nav.control.cancelCurrentControlMasterMode()
             end
+            if ahDoubleClick > -1 then HoldAltitude = coreAltitude end
         else
             AutoTakeoff = true
             if ahDoubleClick > -1 then HoldAltitude = coreAltitude + AutoTakeoffAltitude end
@@ -6305,7 +6311,7 @@ function script.onTick(timerId)
                     -- Orbit to target...
 
                     local brakeDistance, _ =  Kinematic.computeDistanceAndTime(velMag, adjustedAtmoSpeedLimit/3.6, constructMass(), 0, 0, LastMaxBrake)
-                    if OrbitAchieved and velocity:normalize():dot(targetVec:normalize()) > 0.5 and targetVec:len() > 15000+brakeDistance+coreAltitude then -- Triggers when we get close to passing it or within 12km+height I guess
+                    if OrbitAchieved and targetVec:len() > 15000+brakeDistance+coreAltitude then -- Triggers when we get close to passing it or within 12km+height I guess
                         orbitMsg = "Orbiting to Target"
                     elseif OrbitAchieved or targetVec:len() < 15000+brakeDistance+coreAltitude then
                         msgText = "Orbit complete, proceeding with reentry"
@@ -6331,6 +6337,7 @@ function script.onTick(timerId)
                                 orbitPitch = 0
                                 
                                 if not orbitalParams.VectorToTarget then
+                                    msgText = "Orbit complete"
                                     ToggleIntoOrbit()
                                 end
                             else
@@ -6939,6 +6946,7 @@ function script.onTick(timerId)
                     --     Nav.axisCommandManager:setTargetSpeedCommand(axisCommandId.lateral, 0)
                     -- end
                     cmdCruise(ReentrySpeed)-- Then we have to wait a tick for it to take our new speed.
+                    targetPitch = 0 -- Don't pitch until we finish slowing down
                     if Nav.axisCommandManager:getAxisCommandType(0) == axisCommandType.byTargetSpeed and Nav.axisCommandManager:getTargetSpeed(axisCommandId.longitudinal) == adjustedAtmoSpeedLimit and velMag < adjustedAtmoSpeedLimit/3.6+1 then
                         --targetPitch = -MaxPitch -- It will handle pitching for us after this.
                         reentryMode = false
@@ -7103,20 +7111,22 @@ function script.onTick(timerId)
                     local distanceToTarget = math.sqrt(targetVec:len()^2-(coreAltitude-targetAltitude)^2)
                     local curBrake = LastMaxBrakeInAtmo
                     
-                    curBrake = LastMaxBrake
+                    if curBrake then -- If we don't have an atmo brake value, don't even try yet, maybe we will soon
+                    --curBrake = LastMaxBrake
                     --local hSpd = velocity:len() - math.abs(vSpd)
-                    brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
-                    StrongBrakes = true
-                    if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and velocity:project_on_plane(worldV):normalize():dot(targetVec:project_on_plane(worldV):normalize()) > 0.99 then 
-                        if planet.hasAtmosphere then
-                            BrakeIsOn = false
-                            ProgradeIsOn = false
-                            reentryMode = true
-                            spaceLand = false   
-                            finalLand = true
-                            Autopilot = false
-                            -- VectorToTarget = true
-                            BeginReentry()
+                        brakeDistance, brakeTime = Kinematic.computeDistanceAndTime(velMag, 0, constructMass(), 0, 0, curBrake/2)
+                        StrongBrakes = true
+                        if distanceToTarget <= brakeDistance + (velMag*deltaTick)/2 and velocity:project_on_plane(worldV):normalize():dot(targetVec:project_on_plane(worldV):normalize()) > 0.99 then 
+                            if planet.hasAtmosphere then
+                                BrakeIsOn = false
+                                ProgradeIsOn = false
+                                reentryMode = true
+                                spaceLand = false   
+                                finalLand = true
+                                Autopilot = false
+                                -- VectorToTarget = true
+                                BeginReentry()
+                            end
                         end
                     end
                     LastDistanceToTarget = distanceToTarget
@@ -7859,9 +7869,11 @@ function script.onActionStart(action)
     elseif action == "yawleft" then
         yawInput = yawInput + 1
     elseif action == "straferight" then
+        toggleView = false
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.lateral, 1.0)
         LeftAmount = 1
     elseif action == "strafeleft" then
+        toggleView = false
         Nav.axisCommandManager:updateCommandFromActionStart(axisCommandId.lateral, -1.0)
         LeftAmount = -1
     elseif action == "up" then
