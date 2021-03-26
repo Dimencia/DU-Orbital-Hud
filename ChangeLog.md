@@ -1,17 +1,5 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 5.452
-- Autoroll now stops at +/-80 pitch instead of 85
-
-Version 5.451
-- Autopilot to surface destination will now orbit if engaged in space below 100km
-- Fixed issue with Cruise not applying brakes if pointing very retrograde
-- Fixed issue with alt hold and agg scaling that caused it to go far too fast if used repeatedly
-- Added ability to adjust orbital height at any point during orbit with Alt+Space and Alt+C
-- Fixed issues with `Alt-6-6` and `Alt-4-4` interfering with eachother
-- Reentry no longer pitches down until the speed is appropriate
-- User Parameter: OrbitDefaultAltitude = 2000 -- export: (Default: 2000) The height above atmosphere that an orbit should try to reach by default
-
 Version 5.450
 - Orbiting
     - Improved efficiency of achieving orbit
@@ -21,17 +9,6 @@ Version 5.450
     - Limit for orbital hop using `Alt-4` has been removed. Autopilot will recover if you overshoot your target.
     - When on ground in atmo, `Alt-4-4` will perform orbital hop to target at 1000m above atmosphere.
     - Added space engine check for `Alt-4-4` to be allowed.
-
-Version 5.443
-- Orbiting
-    - Improved efficiency of achieving orbit
-    - Improved accuracy with final orbit
-    - When in space near a planet, `Alt-6` now orbits you at the altitude you activated at.
-    - When in space near a planet, `Alt-6-6` now orbits you at 1km above atmosphere. This will take you into near planet orbit.
-    - Limit for orbital hop using `Alt-4` has been removed. Autopilot will recover if you overshoot your target.
-    - When on ground in atmo, `Alt-4-4` will perform orbital hop to target at 1000m above atmosphere.
-    - Added space engine check for `Alt-4-4` to be allowed.
-    - Using `Alt-4` in space within 100k of target planet will place you in orbit 1km above atmosphere then ap to target.
 
 Version 5.442
 - Orbiting
