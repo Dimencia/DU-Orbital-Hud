@@ -1,5 +1,8 @@
 ## ChangeLog - Most recent changes at the top
 
+Version 5.453
+- Fixed Autopilot from the ground not setting a takeoff height
+
 Version 5.452
 - Autoroll now stops at +/-80 pitch instead of 85
 
