@@ -1,7 +1,10 @@
 ## ChangeLog - Most recent changes at the top
 
-Version 5.453
+Version 5.454
 - Orbit now locks pitch to 0 when not in Autopilot. Tapping ctrl (brake) releases the lock.
+
+Version 5.453
+- Fixed Autopilot from the ground not setting a takeoff height
 
 Version 5.452
 - Autoroll now stops at +/-80 pitch instead of 85
