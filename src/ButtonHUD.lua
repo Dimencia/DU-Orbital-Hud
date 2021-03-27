@@ -1165,11 +1165,6 @@ function ToggleAltitudeHold()
     else
         ahDoubleClick = time
     end
-    if (time - apDoubleClick) < 1.5 and VectorToTarget then -- Preserve alt+4+6 functionality to AP at max height
-        HoldAltitude = planet.spaceEngineMinAltitude-50
-        apDoubleClick = 0 -- Don't let another alt-4 count as a double
-        return -- Don't touch anything else in alt hold
-    end
     if unit.getClosestPlanetInfluence() > 0 and atmosphere() == 0 then
         OrbitTargetOrbit = coreAltitude
         OrbitTargetSet = true
@@ -1317,7 +1312,7 @@ function ToggleAutopilot()
                         if apDoubleClick == -1 then
                             ahDoubleClick = 0 -- Don't let alt hold take a double click from us
                         end
-                        HoldAltitude = coreAltitude
+                        -- Setting altitude isn't our job.  Don't do it here.
                         if not VectorToTarget then
                             ToggleVectorToTarget(SpaceTarget)
                         end
