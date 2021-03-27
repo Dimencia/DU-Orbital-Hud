@@ -6333,6 +6333,7 @@ function script.onTick(timerId)
                                 
                                 if not orbitalParams.VectorToTarget then
                                     msgText = "Orbit complete"
+                                    LockPitch = 0
                                     ToggleIntoOrbit()
                                 end
                             else
