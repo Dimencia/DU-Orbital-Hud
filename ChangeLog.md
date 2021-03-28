@@ -2,6 +2,8 @@
 
 Version 5.454
 - Orbit now locks pitch to 0 when not in Autopilot. Tapping ctrl (brake) releases the lock.
+- Autopilot to destination only attempts orbit if below TargetOrbit (listed on interplanetary helper)
+- Alt+4 now appropriately cancels orbiting
 
 Version 5.453
 - Fixed Autopilot from the ground not setting a takeoff height
