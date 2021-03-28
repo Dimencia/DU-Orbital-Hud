@@ -1268,7 +1268,7 @@ function ToggleAutopilot()
     end
     TargetSet = false -- No matter what
     -- Toggle Autopilot, as long as the target isn't None
-    if AutopilotTargetIndex > 0 and not Autopilot and not VectorToTarget and not spaceLaunch then
+    if AutopilotTargetIndex > 0 and not Autopilot and not VectorToTarget and not spaceLaunch and not IntoOrbit then
         -- If it's a custom location... 
         -- Behavior is probably 
         -- a. If not at the same nearest planet and in space and the target has gravity, autopilot to that planet
@@ -1318,11 +1318,18 @@ function ToggleAutopilot()
                         end
                     --end -- TBH... this is the only thing we need to do, make sure Alt Hold is on.  
                 else
-                    if coreAltitude > 100000 or coreAltitude == 0 then
+                    local targetOrbit = 1000
+                    if planet.hasAtmosphere then 
+                        targetOrbit = math.floor(planet.radius*(TargetOrbitRadius-1) + planet.noAtmosphericDensityAltitude)
+                    else
+                        targetOrbit = math.floor(planet.radius*(TargetOrbitRadius-1) + planet.surfaceMaxAltitude)
+                    end
+                    
+                    if coreAltitude > targetOrbit or coreAltitude == 0 then
                         --spaceLaunch = true
                         OrbitAchieved = false
                         Autopilot = true
-                    elseif coreAltitude <= 100000 then
+                    elseif coreAltitude <= targetOrbit then
                         if IntoOrbit then ToggleIntoOrbit() end -- Reset all appropriate vars
                         OrbitTargetOrbit = planet.noAtmosphericDensityAltitude + OrbitDefaultAltitude
                         OrbitTargetSet = true
