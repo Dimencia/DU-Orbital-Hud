@@ -3,6 +3,10 @@
 
 <!--Intro information-->
 # DU-Orbital-HUD
+
+# This project is deprecated, and new updates are being done at https://github.com/Archaegeo/Archaegeo-Orbital-Hud
+## This version is stable and will likely have fewer bugs than ArchHUD, but will not have as many nice features
+
 ## A general purpose HUD for Dual Universe
 #### Cockpits are *NOT* supported.
 ###### For assistance, see our [Discord](https://discord.gg/sRaqzmS)
